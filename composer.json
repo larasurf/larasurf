@@ -1,0 +1,15 @@
+{
+    "name": "larasurf/larasurf",
+    "description": "",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Brice Hartmann",
+            "email": "brice@bricehartmann.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
+
