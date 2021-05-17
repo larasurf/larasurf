@@ -36,5 +36,7 @@ elif [[ "$1" == "phpunit" ]]; then
 elif [[ "$1" == "--help" ]]; then
   echo 'See: https://larasurf.com/docs'
 else
+  cd $(pwd)
   docker-compose "$@"
+  cd $(pwd)
 fi
