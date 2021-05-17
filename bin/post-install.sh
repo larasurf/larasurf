@@ -25,5 +25,4 @@ done
 
 # see: https://github.com/docker/compose/issues/7899
 cd $(pwd)
-docker-compose exec laravel bash -c "$POST_INSTALL_CMD"
-cd $(pwd)
+docker-compose exec laravel bash -c "$POST_INSTALL_CMD" && cd $(pwd)
