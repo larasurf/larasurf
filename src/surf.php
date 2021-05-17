@@ -78,13 +78,10 @@ function publishGitignore() {
     if (file_exists('.gitignore')) {
         $contents = array_map('trim', file('.gitignore', FILE_SKIP_EMPTY_LINES));
 
-        var_export($contents);
-
         $appends = [];
 
         foreach ($entries as $entry) {
             if (!in_array($entry, $contents)) {
-                echo "'$entry' not found" . PHP_EOL;
                 $appends[] = $entry;
             }
         }
