@@ -136,7 +136,7 @@ return (new PhpCsFixer\Config())
         'linebreak_after_opening_tag' => true,
         'unary_operator_spaces' => true,
         'blank_line_before_statement' => false,
-        'trailing_comma_in_multiline_array' => true,
+        'trailing_comma_in_multiline' => true,
 
         // PHPDOC Rules
         'phpdoc_align' => false,
