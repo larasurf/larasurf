@@ -98,8 +98,8 @@ function publishGitignore() {
 
 function publishCodeStyleConfig() {
     if (file_exists('composer.json')) {
-        if (file_exists('.php_cs.dist')) {
-            echo '.php_cs.dist already exists' . PHP_EOL;
+        if (file_exists('.php-cs-fixer.dist.php')) {
+            echo '.php-cs-fixer.dist.php already exists' . PHP_EOL;
         } else {
             $composer_contents = file_get_contents('composer.json');
 
@@ -150,9 +150,9 @@ return (new PhpCsFixer\Config())
     ->setFinder(\$finder);
 
 EOD;
-                file_put_contents('.php_cs.dist', $contents);
+                file_put_contents('.php-cs-fixer.dist.php', $contents);
 
-                echo '.php_cs.dist created' . PHP_EOL;
+                echo '.php-cs-fixer.dist.php created' . PHP_EOL;
             }
         }
     }
