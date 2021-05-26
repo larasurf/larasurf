@@ -1,61 +1,74 @@
 <?php
 
-function echoSplashImage(array $message_names, $with_color = true) {
-    if (in_array('running', $message_names)) {
-        $message_names = array_filter($message_names, function ($message_name) {
-            return $message_name !== 'running';
-        });
-
-        $contents = file_get_contents('.docker/nginx/laravel.conf.template');
-
-        if (strstr($contents, 'listen 443 ssl;')) {
-            $message_names[] = 'running-https';
-        } else {
-            $message_names[] = 'running-http';
-        }
-    }
-
-    $c = $with_color ? "\033[36m" : '';
-    $y = $with_color ? "\033[33m" : '';
-    $w = $with_color ? "\033[97m" : '';
-    $n = $with_color ? "\033[0m" : '';
+function echoSplashImage($with_color = true) {
+/*
+╔═══════════════════════════╦══════════════════════════════════════════════════╗
+║                           ║                                                  ║
+║                           ║                    ▄▄▄▄████▄▄▄                   ║
+║   Welcome to LaraSurf!    ║                 ▄███████████████▄                ║
+║                           ║              ▄████████████████████▄              ║
+║                           ║             ▄███████████████████████▄            ║
+╠═══════════════════════════╣            ███████████████████████████           ║
+║                           ║           ▐████████████████████████████          ║
+║                           ║ ╤▄,       ████████▀▀▀▀▀╙╙╙▀▀▀▀█████████          ║
+║     Your application      ║,Å▐▀2▄     █████▀T  ;└*∞ⁿ ┌└┘*═*▀███████          ║
+║    has been generated     ║▐▌)╙½½Q▄   ▐▀▀▄═  └▄▄¢▄▄╤Ä▄▌µJ▐█▄j▀████           ║
+║ and is up and running at  ║]▀ÑXXh2╬▐ZÅ┘└ ¬≡T^█▀Ü▐[▌▐⌠▓██▄████████       ;¿▄▄=║
+║    https://localhost      ║ ▀b▒Ç▀▀▄▄▄▄▄╛▐▐▐▐⌠║Ü▐▐├╙X▀┘▀█████████╖╖╤╤▄e▌▄▄└▄▄ ║
+║                           ║  ▐j=▐ ▐ ▐ ▐ ▐▐"╙▐▐▌¼¼XN,' ═▄▀▀▀▀▀▀v«╧▀▀çÄ╩░Y╙▀╧▀ ║
+║                           ║   "═▐ ▐  ▄ W'▄Y ╙╙╙▌▄² ╙*Φ╛T╧wÅÜÅ╝╧;╓▄e*T└└└7*w  ║
+╠═══════════════════════════╣    ▀ ▄ ▌ ▐ ╘.└╕   ,*▄      └└└└└└└╓µ∞rⁿ└└└└└²*   ║
+║                           ║      └Ç ╕ ▀,╙▄ ╘▄ └*w¿└└        ", ;¿∞*ⁿ7²7ⁿ*    ║
+║                           ║          ╙.└X└X¿ ╙Y▄   └└└└└└└  ,;;;;;,          ║
+║   To get started, visit   ║        ⁿΓ2ZZJ*∞▄▀«w╓└╙ⁿⁿⁿ**   ".   ≡∞4Q╤┘'       ║
+║ https://larasurf.com/docs ║           ⁿ777≡c*wJ╤▄╕▄ÄÅ└└└└└└²Φ╗≡▄▄╘└          ║
+║                           ║             ':└²»▄½f∞,╘▀º*╝╩PPw+─ ⁿ└             ║
+║                           ║                           '└└`                   ║
+╚═══════════════════════════╩══════════════════════════════════════════════════╝
+ */
+    $c_n = $with_color ? "\033[36;49m" : '';
+    $c_y = $with_color ? "\033[36;43m" : '';
+    $c_b = $with_color ? "\033[36;44m" : '';
+    $y_n = $with_color ? "\033[33;49m" : '';
+    $y_b = $with_color ? "\033[33;44m" : '';
+    $w_n = $with_color ? "\033[97;49m" : '';
+    $r = $with_color ? "\033[0m" : '';
     $d = $with_color ? "\033[2m" : '';
     $u = $with_color ? "\033[4m" : '';
 
+    $file = '.docker/nginx/laravel.conf.template';
+
+    $contents = file_exists($file) ? file_get_contents($file) : false;
+
+    $url = $contents && strstr($contents, 'listen 443 ssl;') ? 'https://localhost' : "http://localhost${r}" . ' ';
+
     $splash = <<<EOD
-${w}╔══════════════════════════════════════════════════════════════════════════════╗
-${w}║$y    ##############    ####        #####   ###############     #############   ${w}║
-║$y   #####      #####   ####        #####   ####       #####    ####            ${w}║
-║$y   #########          ####        #####   ####        ####    ####            ${w}║
-║$y     #############    ####        $y#####   #############       ##########      ${w}║
-║$y               ####   ####        $y####    ####      ######    ####            ${w}║
-║$c   $y######    ######    $c%$y#############     ####  $c%     $y####    ####        $c%   ${w}║
-║$c%    $y############    $c%%% $y##########       ####$c%%%     $y####    ####      $c%%%   ${w}║
-║$c%%%                %%%%%%%                  %%%%%%%                   %%%%%%% ${w}║
-║$c%%%%%%%       %%%%%%%%%%%%%%%          %%%%%%%%%%%%%               %%%%%%%%%%%${w}║
-║$c%%%%%%%%%% %%%%%%%%%%%%%%%%%%%%%  %%%%%%%%%%%%%%%%%%%%%%%%%  %%%%%%%%%%%%%%%%%${w}║
-║$c%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%${w}║
-║$c%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%${w}║
-╠══════════════════════════════════════════════════════════════════════════════╣
-$n
+${w_n}╔═══════════════════════════╦══════════════════════════════════════════════════╗
+║                           ║                                                  ║
+║                           ║                    ${y_n}▄▄▄▄████▄▄▄${w_n}                   ║
+║   ${r}Welcome to ${y_n}LaraSurf${w_n}!    ║                 ${y_n}▄███████████████▄${w_n}                ║
+║                           ║              ${y_n}▄████████████████████▄              ${w_n}║
+║                           ║             ${y_n}▄███████████████████████▄           ${w_n} ║
+╠═══════════════════════════╣            ${y_n}███████████████████████████           ${w_n}║
+║                           ║           ${y_n}▐████████████████████████████          ${w_n}║
+║                           ║${c_b} ╤${c_n}▄,${r}       ${y_n}████████${y_b}▀▀▀▀▀${c_b}╙╙╙${y_b}▀▀▀▀${y_n}█████████          ${w_n}║
+║     Your application      ║${c_b},Å▐▀2▄${r}     ${y_n}█████${y_b}▀${c_b}T  ;└*∞ⁿ ┌└┘*═*${y_b}▀${y_n}███████          ${w_n}║
+║    has been generated     ║${c_b}▐▌)╙½½Q▄${r}   ${y_n}▐${y_b}▀▀${c_y}▄${c_b}═  └▄▄¢▄▄╤Ä▄▌µJ${y_b}▐█▄${c_b}j${y_b}▀${y_n}████           ${w_n}║
+║ and is up and running at  ║${c_b}]▀ÑXXh2╬▐ZÅ┘└ ¬≡T^█▀Ü▐[▌▐⌠▓${y_n}██${y_b}▄${y_n}████████       ${c_n};¿${c_b}▄▄=${w_n}║
+║    ${c_n}${u}${url}      ${w_n}║${c_b} ▀b▒Ç▀▀▄▄▄▄▄╛▐▐▐▐⌠║Ü▐▐├╙X▀┘${y_b}▀${y_n}█████████${c_b}╖╖╤╤▄e▌▄▄└▄▄ ${w_n}║
+║                           ║  ${c_n}▐${c_b}j=▐ ▐ ▐ ▐ ▐▐"╙▐▐▌¼¼XN,' ═▄${y_b}▀▀▀▀▀▀${c_b}v«╧▀▀çÄ╩░Y╙▀╧▀ ${w_n}║
+║                           ║   ${c_b}"═▐ ▐  ▄ W'▄Y ╙╙╙▌▄² ╙*Φ╛T╧wÅÜÅ╝╧;╓▄e*T└└└7*w${w_n}  ║
+╠═══════════════════════════╣    ${c_b}▀ ▄ ▌ ▐ ╘.└╕   ,*▄      └└└└└└└╓µ∞rⁿ└└└└└²*${w_n}   ║
+║                           ║     ${c_n}`${c_b}└Ç ╕ ▀,╙▄ ╘▄ └*w¿└└        ", ;¿∞*ⁿ7²7ⁿ${c_n}*${w_n}    ║
+║                           ║       ${c_b}   ╙.└X└X¿ ╙Y▄   └└└└└└└  ,;;;;;,    ${w_n}      ║
+║ ${r}${d}For more information, see ${r}${w_n}║        ${c_n}ⁿ${c_b}Γ2ZZJ*∞▄▀«w╓└╙ⁿⁿⁿ**   ".   ≡∞4Q╤┘'${w_n}       ║
+║ ${r}${c_n}${u}https://larasurf.com/docs${r}${w_n} ║           ${c_n}ⁿ${c_b}777≡c*wJ╤▄╕▄ÄÅ└└└└└└²Φ╗≡▄▄╘└ ${c_n}'        ${w_n}║
+║                           ║             ${c_n}'${c_b}:└²»▄½f∞,╘▀º*╝╩PPw+─ ⁿ└${c_n}'            ${w_n}║
+║                           ║                   ${c_b}        '└└`${w_n}                   ║
+╚═══════════════════════════╩══════════════════════════════════════════════════╝
 EOD;
 
-    $messages = [
-        'welcome' => "${w}║                            ${d}Welcome to $n${y}LaraSurf${n}!                              ${w}║$n",
-        'running-http' => "${w}║           ${d}Your application is up and running at $n$w${u}http://localhost$n$w             ║$n",
-        'running-https' => "${w}║           ${d}Your application is up and running at $n$w${u}https://localhost$n$w            ║$n",
-        'docs' => "${w}║                ${d}See $n$c${u}https://larasurf.com/docs$n$d to get started!$n$w                 ║$n",
-    ];
-
-    foreach ($message_names as $message_name) {
-        if (isset($messages[$message_name])) {
-            $splash .= $messages[$message_name] . PHP_EOL;
-        }
-    }
-
-    $splash .= "${w}╚══════════════════════════════════════════════════════════════════════════════╝$n" . PHP_EOL;
-
-    echo $splash;
+    echo $splash . PHP_EOL;
 }
 
 function publishGitignore() {
@@ -188,10 +201,8 @@ if (php_sapi_name() !== 'cli') {
 
 array_shift($argv);
 
-if (isset($argv[0]) && $argv[0] === 'splash' && isset($argv[1])) {
-    $message_names = array_values(array_unique(array_map('trim', explode(',', $argv[1]))));
-
-    echoSplashImage($message_names);
+if (isset($argv[0]) && $argv[0] === 'splash') {
+    echoSplashImage();
 } else if (isset($argv[0]) && $argv[0] === 'publish') {
     publishGitignore();
     publishFilesystem();
