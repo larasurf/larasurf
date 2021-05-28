@@ -82,7 +82,7 @@ function publishGitignore() {
         'clover.xml',
         'storage/coverage',
         'storage/test-results',
-        '.php_cs.cache',
+        '.php-cs-fixer.cache',
         '.phpstorm.meta.php',
         '_ide_helper*',
     ];
