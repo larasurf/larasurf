@@ -165,6 +165,8 @@ EOD;
                 file_put_contents('.php-cs-fixer.dist.php', $contents);
 
                 echo '.php-cs-fixer.dist.php created' . PHP_EOL;
+            } else {
+                echo 'php-cs-fixer not installed' . PHP_EOL;
             }
         }
     }

@@ -24,7 +24,6 @@ if [[ "$1" == "ssl" ]]; then
     fi
   elif [[ "$2" == "nginx-config" ]]; then
     if [[ -f ".docker/nginx/laravel.conf.template" ]] && ! grep -q "listen 443 ssl;" ".docker/nginx/laravel.conf.template"; then
-      echo "Updating NGINX config template"
       cat << 'EOF' >> ".docker/nginx/laravel.conf.template"
 
 server {
@@ -52,7 +51,8 @@ server {
 }
 EOF
 
-      echo "NGINX config template updated. Rebuild your NGINX image!"
+      echo "NGINX config template updated."
+      echo "Rebuild the webserver image then restart the container!"
     elif grep -q "listen 443 ssl;" ".docker/nginx/laravel.conf.template"; then
       echo "NGINX config template already listens on port 443"
     else
