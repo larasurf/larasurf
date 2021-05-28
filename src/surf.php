@@ -193,6 +193,32 @@ EOD;
     }
 }
 
+function publishEnvironmentFile() {
+    foreach (['.env.example', '.env'] as $env_file) {
+        if (file_exists($env_file)) {
+            $contents = array_map('trim', file($env_file));
+
+            foreach ($contents as &$content) {
+                if (strpos($content, 'CACHE_DRIVER=') === 0) {
+                    $content = 'CACHE_DRIVER=redis';
+                }
+
+                if (strpos($content, 'QUEUE_CONNECTION=') === 0) {
+                    $content = 'QUEUE_CONNECTION=sqs';
+                }
+
+                if (strpos($content, 'SESSION_DRIVER=') === 0) {
+                    $content = 'SESSION_DRIVER=redis';
+                }
+            }
+
+            file_put_contents($env_file, implode(PHP_EOL, array_merge($contents, [''])));
+
+            echo "$env_file modified" . PHP_EOL;
+        }
+    }
+}
+
 if (php_sapi_name() !== 'cli') {
     echo "This script must be run from the CLI";
     die(1);
@@ -207,6 +233,7 @@ if (isset($argv[0]) && $argv[0] === 'splash') {
         publishGitignore();
         publishFilesystem();
         publishCodeStyleConfig();
+        publishEnvironmentFile();
     } else if ($argv[1] === 'cs-fixer-config') {
         publishCodeStyleConfig();
     }
