@@ -203,7 +203,11 @@ array_shift($argv);
 if (isset($argv[0]) && $argv[0] === 'splash') {
     echoSplashImage();
 } else if (isset($argv[0]) && $argv[0] === 'publish') {
-    publishGitignore();
-    publishFilesystem();
-    publishCodeStyleConfig();
+    if (empty($argv[1])) {
+        publishGitignore();
+        publishFilesystem();
+        publishCodeStyleConfig();
+    } else if ($argv[1] === 'cs-fixer-config') {
+        publishCodeStyleConfig();
+    }
 }
