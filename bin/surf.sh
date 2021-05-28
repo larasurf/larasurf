@@ -53,7 +53,7 @@ server {
 EOF
 
       echo "NGINX config template updated. Rebuild your NGINX image!"
-    elif grep -q "listen 443 ssl;" ".docker/nginx/laravel.conf.template"
+    elif grep -q "listen 443 ssl;" ".docker/nginx/laravel.conf.template"; then
       echo "NGINX config template already listens on port 443"
     else
       echo "NGINX config template not found"
