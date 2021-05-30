@@ -35,11 +35,45 @@ function echoSplashImage($with_color = true) {
     $r = $with_color ? "\033[0m" : ''; // reset
     $u = $with_color ? "\033[4m" : ''; // underline
 
-    $file = '.docker/nginx/laravel.conf.template';
+    $nginx_file = '.docker/nginx/laravel.conf.template';
 
-    $contents = file_exists($file) ? file_get_contents($file) : false;
+    $nginx_contents = file_exists($nginx_file) ? file_get_contents($nginx_file) : false;
 
-    $url = $contents && strstr($contents, 'listen 443 ssl;') ? "${u}https://localhost${r}" : " ${u}http://localhost${r}";
+    $is_ssl = $nginx_contents && strstr($nginx_contents, 'listen 443 ssl;'); // ? "${u}https://localhost${r}" : " ${u}http://localhost${r}";
+
+    $app_port_search = $is_ssl ? 'SURF_APP_TLS_PORT=' : 'SURF_APP_PORT=';
+
+    $env_file = '.env';
+
+    $env_contents = file_exists($env_file) ? array_map('trim', file($env_file)) : false;
+
+    $app_port = '';
+
+    if ($env_contents) {
+        foreach ($env_contents as $env_content) {
+            if (strpos($env_content, $app_port_search) === 0) {
+                $app_port = str_replace($app_port_search, '', $env_content);
+
+                break;
+            }
+        }
+    }
+
+    if (($is_ssl && $app_port === '443') || (!$is_ssl && $app_port === '80')) {
+        $app_port = '';
+    }
+
+    if ($is_ssl) {
+        $url = $app_port ? "https://localhost:${app_port}" : 'https://localhost';
+    } else {
+        $url = $app_port ? "http://localhost:${app_port}" : 'http://localhost';
+    }
+
+    $url_length = strlen($url);
+    $total_padding = 29 - $url_length;
+    $padding_left = str_repeat(' ', floor($total_padding / 2));
+    $padding_right = str_repeat(' ', ceil($total_padding / 2));
+    $url_info = "${c_n}${padding_left}${u}${url}${r}${padding_right}${w_n}";
 
     $splash = <<<EOD
 ${w_n}╔═════════════════════════════╦════════════════════════════════════════════════╗
@@ -54,7 +88,7 @@ ${w_n}╔═══════════════════════�
 ║      ${r}Your application       ${w_n}║${c_b}Å▐▀2▄${r}     ${g_n}█████${g_b}▀${c_b}T  ;└*∞ⁿ ┌└┘*═*${g_b}▀${g_n}███████         ${w_n}║
 ║     ${r}has been generated      ${w_n}║${c_b}▌)╙½½Q▄${r}   ${g_n}▐${g_b}▀▀${c_g}▄${c_b}═  └▄▄¢▄▄╤Ä▄▌µJ${g_b}▐█▄${c_b}j${g_b}▀${g_n}████▌         ${w_n}║
 ║  ${r}and is up and running at   ${w_n}║${c_b}▀ÑXXh2╬▐ZÅ┘└ ¬≡T^█▀Ü▐[▌▐⌠▓${g_n}██${g_b}▄${g_n}████████▌      ${c_n};¿${c_b}▄▄${w_n}║
-║     ${c_n}${url}       ${w_n}║${c_b}▀b▒Ç▀▀▄▄▄▄▄╛▐▐▐▐⌠║Ü▐▐├╙X▀┘${g_b}▀${g_n}█████████${c_b}╖╖╤╤▄e▌▄▄└▄▄${w_n}║
+║${url_info}║${c_b}▀b▒Ç▀▀▄▄▄▄▄╛▐▐▐▐⌠║Ü▐▐├╙X▀┘${g_b}▀${g_n}█████████${c_b}╖╖╤╤▄e▌▄▄└▄▄${w_n}║
 ║                             ║ ${c_n}▐${c_b}j=▐ ▐ ▐ ▐ ▐▐"╙▐▐▌¼¼XN,' ═▄${g_b}▀▀▀▀▀▀${c_b}v«╧▀▀çÄ╩░Y╙▀╧▀${w_n}║
 ║                             ║  ${c_b}"═▐ ▐  ▄ W'▄Y ╙╙╙▌▄² ╙*Φ╛T╧wÅÜÅ╝╧;╓▄e*T└└└7*w${w_n} ║
 ╠═════════════════════════════╣   ${c_b}▀ ▄ ▌ ▐ ╘.└╕   ,*▄      └└└└└└└╓µ∞rⁿ└└└└└²*${w_n}  ║
