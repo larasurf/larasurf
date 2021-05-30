@@ -1,5 +1,43 @@
 <?php
 
+function deriveAppUrl() {
+    $nginx_file = '.docker/nginx/laravel.conf.template';
+
+    $nginx_contents = file_exists($nginx_file) ? file_get_contents($nginx_file) : false;
+
+    $is_ssl = $nginx_contents && strstr($nginx_contents, 'listen 443 ssl;');
+
+    $app_port_search = $is_ssl ? 'SURF_APP_TLS_PORT=' : 'SURF_APP_PORT=';
+
+    $env_file = '.env';
+
+    $env_contents = file_exists($env_file) ? array_map('trim', file($env_file)) : false;
+
+    $app_port = '';
+
+    if ($env_contents) {
+        foreach ($env_contents as $env_content) {
+            if (strpos($env_content, $app_port_search) === 0) {
+                $app_port = str_replace($app_port_search, '', $env_content);
+
+                break;
+            }
+        }
+    }
+
+    if (($is_ssl && $app_port === '443') || (!$is_ssl && $app_port === '80')) {
+        $app_port = '';
+    }
+
+    if ($is_ssl) {
+        $url = $app_port ? "https://localhost:${app_port}" : 'https://localhost';
+    } else {
+        $url = $app_port ? "http://localhost:${app_port}" : 'http://localhost';
+    }
+
+    return $url;
+}
+
 function echoSplashImage($with_color = true) {
 /*
 ╔═════════════════════════════╦════════════════════════════════════════════════╗
@@ -35,39 +73,7 @@ function echoSplashImage($with_color = true) {
     $r = $with_color ? "\033[0m" : ''; // reset
     $u = $with_color ? "\033[4m" : ''; // underline
 
-    $nginx_file = '.docker/nginx/laravel.conf.template';
-
-    $nginx_contents = file_exists($nginx_file) ? file_get_contents($nginx_file) : false;
-
-    $is_ssl = $nginx_contents && strstr($nginx_contents, 'listen 443 ssl;'); // ? "${u}https://localhost${r}" : " ${u}http://localhost${r}";
-
-    $app_port_search = $is_ssl ? 'SURF_APP_TLS_PORT=' : 'SURF_APP_PORT=';
-
-    $env_file = '.env';
-
-    $env_contents = file_exists($env_file) ? array_map('trim', file($env_file)) : false;
-
-    $app_port = '';
-
-    if ($env_contents) {
-        foreach ($env_contents as $env_content) {
-            if (strpos($env_content, $app_port_search) === 0) {
-                $app_port = str_replace($app_port_search, '', $env_content);
-
-                break;
-            }
-        }
-    }
-
-    if (($is_ssl && $app_port === '443') || (!$is_ssl && $app_port === '80')) {
-        $app_port = '';
-    }
-
-    if ($is_ssl) {
-        $url = $app_port ? "https://localhost:${app_port}" : 'https://localhost';
-    } else {
-        $url = $app_port ? "http://localhost:${app_port}" : 'http://localhost';
-    }
+    $url = deriveAppUrl();
 
     $url_length = strlen($url);
     $total_padding = 29 - $url_length;
@@ -230,28 +236,50 @@ EOD;
     }
 }
 
-function publishEnvironmentFile() {
-    foreach (['.env.example', '.env'] as $env_file) {
-        if (file_exists($env_file)) {
-            $contents = array_map('trim', file($env_file));
+function publishEnvironmentFiles()
+{
+    $url = deriveAppUrl();
 
-            foreach ($contents as &$content) {
-                foreach ([
-                    'CACHE_DRIVER=' => 'CACHE_DRIVER=redis',
-                    'QUEUE_CONNECTION=' => 'QUEUE_CONNECTION=sqs',
-                    'SESSION_DRIVER=' => 'SESSION_DRIVER=redis',
-                    'MAIL_HOST=' => 'MAIL_HOST=mail',
-                         ] as $find => $replace) {
-                    if (strpos($content, $find) === 0) {
-                        $content = $replace;
-                    }
+    $env_file = '.env';
+
+    if (file_exists($env_file)) {
+        $contents = array_map('trim', file($env_file));
+
+        foreach ($contents as &$content) {
+            foreach ([
+                         'APP_URL=' => "APP_URL=$url",
+                     ] as $find => $replace) {
+                if (strpos($content, $find) === 0) {
+                    $content = $replace;
                 }
             }
-
-            file_put_contents($env_file, implode(PHP_EOL, array_merge($contents, [''])));
-
-            echo "$env_file modified" . PHP_EOL;
         }
+
+        file_put_contents($env_file, implode(PHP_EOL, array_merge($contents, [''])));
+
+        echo "$env_file modified" . PHP_EOL;
+    }
+
+    $example_env_file = '.env.example';
+
+    if (file_exists($example_env_file)) {
+        $contents = array_map('trim', file($example_env_file));
+
+        $url = strstr($url, 'https:') ? 'https://localhost' : 'http://localhost';
+
+        foreach ($contents as &$content) {
+            foreach ([
+                         'APP_URL=' => "APP_URL=$url",
+                     ] as $find => $replace) {
+                if (strpos($content, $find) === 0) {
+                    $content = $replace;
+                }
+            }
+        }
+
+        file_put_contents($example_env_file, implode(PHP_EOL, array_merge($contents, [''])));
+
+        echo "$example_env_file modified" . PHP_EOL;
     }
 }
 
@@ -269,7 +297,7 @@ if (isset($argv[0]) && $argv[0] === 'splash') {
         publishGitignore();
         publishFilesystem();
         publishCodeStyleConfig();
-        publishEnvironmentFile();
+        publishEnvironmentFiles();
     } else if ($argv[1] === 'cs-fixer-config') {
         publishCodeStyleConfig();
     }
