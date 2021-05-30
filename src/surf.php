@@ -201,16 +201,15 @@ function publishEnvironmentFile() {
             $contents = array_map('trim', file($env_file));
 
             foreach ($contents as &$content) {
-                if (strpos($content, 'CACHE_DRIVER=') === 0) {
-                    $content = 'CACHE_DRIVER=redis';
-                }
-
-                if (strpos($content, 'QUEUE_CONNECTION=') === 0) {
-                    $content = 'QUEUE_CONNECTION=sqs';
-                }
-
-                if (strpos($content, 'SESSION_DRIVER=') === 0) {
-                    $content = 'SESSION_DRIVER=redis';
+                foreach ([
+                    'CACHE_DRIVER=' => 'CACHE_DRIVER=redis',
+                    'QUEUE_CONNECTION=' => 'QUEUE_CONNECTION=sqs',
+                    'SESSION_DRIVER=' => 'SESSION_DRIVER=redis',
+                    'MAIL_HOST=' => 'MAIL_HOST=mail',
+                         ] as $find => $replace) {
+                    if (strpos($content, $find) === 0) {
+                        $content = $replace;
+                    }
                 }
             }
 
