@@ -108,6 +108,7 @@ function publishGitignore() {
     $entries = [
         '.idea',
         'desktop.ini',
+        'thumbs.db',
         '.DS_STORE',
         'public/js',
         'public/css',
