@@ -4,12 +4,13 @@ set -e
 
 ERROR='\033[91m'
 SUCCESS='\033[92m'
+RESET='\033[0m'
 
 function exit_if_containers_not_running() {
   CONTAINERS_RUNNING="$(docker-compose ps -q)"
 
   if [[ -z "$CONTAINERS_RUNNING" ]]; then
-    echo -e "${ERROR}Containers are not running!"
+    echo -e "${ERROR}Containers are not running!${RESET}"
 
     exit 1
   fi
@@ -22,7 +23,7 @@ if [[ "$1" == 'ssl' ]]; then
     elif [[ -n "$(which mkcert)" ]]; then
       mkcert -install && mkcert -key-file .docker/ssl/local.pem -cert-file .docker/ssl/local.crt localhost
     else
-      echo -e "${ERROR}To use local SSL, please install mkcert from: https://github.com/FiloSottile/mkcert"
+      echo -e "${ERROR}To use local SSL, please install mkcert from: https://github.com/FiloSottile/mkcert${RESET}"
       exit 1
     fi
   elif [[ "$2" == 'nginx-config' ]]; then
@@ -54,21 +55,21 @@ server {
 }
 EOF
 
-      echo -e "${SUCCESS}NGINX config template updated."
-      echo -e "${SUCCESS}Rebuild the webserver image then restart the container!"
+      echo -e "${SUCCESS}NGINX config template updated.${RESET}"
+      echo -e "${SUCCESS}Rebuild the webserver image then restart the container!${RESET}"
     elif grep -q 'listen 443 ssl;' '.docker/nginx/laravel.conf.template'; then
-      echo -e "${ERROR}NGINX config template already listens on port 443"
+      echo -e "${ERROR}NGINX config template already listens on port 443${RESET}"
     else
-      echo -e "${ERROR}NGINX config template not found"
+      echo -e "${ERROR}NGINX config template not found${RESET}"
     fi
   else
-    echo -e "${ERROR}Unrecognized ssl command"
+    echo -e "${ERROR}Unrecognized ssl command${RESET}"
   fi
 elif [[ "$1" == 'publish' ]]; then
   if [[ "$2" == 'cs-fixer-config' ]]; then
     docker-compose run --rm --no-deps laravel php ./vendor/larasurf/larasurf/src/surf.php publish cs-fixer-config
   else
-    echo -e "${ERROR}Unrecognized publish command"
+    echo -e "${ERROR}Unrecognized publish command${RESET}"
   fi
 elif [[ "$1" == 'composer' ]]; then
   cd $(pwd)
@@ -116,7 +117,7 @@ elif [[ "$1" == 'refresh' ]]; then
   if [[ "$2" == '--seed' ]]; then
     REFRESH_COMMAND="$REFRESH_COMMAND --seed"
   elif [[ -n "$2" ]]; then
-    echo -e "${ERROR}Unrecognized option $2"
+    echo -e "${ERROR}Unrecognized option '$2'${RESET}"
 
     exit 1
   fi
@@ -138,7 +139,7 @@ elif [[ "$1" == 'refresh' ]]; then
   do
       {
         echo 'Waiting for database to be ready...'
-        ((COUNT++)) && ((COUNT==20)) && echo -e "${ERROR}Could not connect to database after 20 tries!" && exit 1
+        ((COUNT++)) && ((COUNT==20)) && echo -e "${ERROR}Could not connect to database after 20 tries!${RESET}" && exit 1
         sleep 3
       } 1>&2
   done
@@ -147,7 +148,7 @@ elif [[ "$1" == 'refresh' ]]; then
   docker-compose exec laravel "$REFRESH_COMMAND"
 
 elif [[ "$1" == '--help' ]]; then
-  echo -e "${SUCCESS}See: https://larasurf.com/docs"
+  echo -e "${SUCCESS}See: https://larasurf.com/docs${RESET}"
 else
   cd $(pwd)
   docker-compose "$@"
