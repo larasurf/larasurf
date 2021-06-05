@@ -223,7 +223,6 @@ function publishFilesystem() {
             $replace = <<<EOD
 'endpoint' => env('AWS_ENDPOINT'),
             'bucket_endpoint' => false,
-            'use_path_style_endpoint' => 'local' === env('APP_ENV'),
 EOD;
 
             $contents = str_replace('\'endpoint\' => env(\'AWS_ENDPOINT\'),', $replace, $contents);

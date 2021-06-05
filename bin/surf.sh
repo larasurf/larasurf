@@ -144,7 +144,6 @@ elif [[ "$1" == 'refresh' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel $REFRESH_COMMAND
-
 elif [[ "$1" == '--help' ]]; then
   echo -e "${SUCCESS}See: https://larasurf.com/docs${RESET}"
 else
