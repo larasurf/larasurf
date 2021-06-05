@@ -80,15 +80,11 @@ elif [[ "$1" == 'yarn' ]]; then
 elif [[ "$1" == 'aws' ]]; then
   docker run --rm -it -v ~/.aws:/root/.aws amazon/aws-cli:2.0.6 "${@:2}"
 elif [[ "$1" == 'awslocal' ]]; then
-  if [[ -f '.env' ]]; then
-    AWSLOCAL_PORT=$(cat .env | grep SURF_AWSLOCAL_PORT= | sed s/SURF_AWSLOCAL_PORT=//)
-  fi
+  exit_if_containers_not_running
 
-  if [[ -z "$AWSLOCAL_PORT" ]]; then
-    AWSLOCAL_PORT=4566
-  fi
+  NETWORK_NAME="$(basename $(pwd))_default"
 
-  docker run --rm -it -e AWS_DEFAULT_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=local -e AWS_SECRET_ACCESS_KEY=local amazon/aws-cli:2.0.6 --endpoint http://localhost:$AWSLOCAL_PORT "${@:2}"
+  docker run --rm -it --network="$NETWORK_NAME" -e AWS_DEFAULT_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=local -e AWS_SECRET_ACCESS_KEY=local amazon/aws-cli:2.0.6 --endpoint http://awslocal:4566 "${@:2}"
 elif [[ "$1" == 'artisan' ]]; then
   exit_if_containers_not_running
 
@@ -143,6 +139,8 @@ elif [[ "$1" == 'refresh' ]]; then
         sleep 3
       } 1>&2
   done
+
+  echo 'Database is ready!'
 
   cd $(pwd)
   docker-compose exec laravel "$REFRESH_COMMAND"
