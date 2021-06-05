@@ -15,16 +15,6 @@ function exit_if_containers_not_running() {
   fi
 }
 
-function exit_if_aws_not_found() {
-  AWS_LOCATION="$(which aws)"
-
-  if [[ -z "$AWS_LOCATION" ]]; then
-    echo -e "${ERROR}Please install the AWS CLI v2: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html"
-
-    exit 1
-  fi
-}
-
 if [[ "$1" == 'ssl' ]]; then
   if [[ "$2" == 'generate' ]]; then
     if [[ -n "$(which mkcert.exe)" ]]; then
@@ -86,14 +76,18 @@ elif [[ "$1" == 'composer' ]]; then
 elif [[ "$1" == 'yarn' ]]; then
   cd $(pwd)
   docker-compose run --rm --no-deps laravel yarn "${@:2}"
+elif [[ "$1" == 'aws' ]]; then
+  docker run --rm -it -v ~/.aws:/root/.aws amazon/aws-cli:2.0.6 "${@:2}"
 elif [[ "$1" == 'awslocal' ]]; then
-  exit_if_aws_not_found
+  if [[ -f '.env' ]]; then
+    AWSLOCAL_PORT=$(cat .env | grep SURF_AWSLOCAL_PORT= | sed s/SURF_AWSLOCAL_PORT=//)
+  fi
 
-  export AWS_DEFAULT_REGION=us-east-1
-  export AWS_ACCESS_KEY_ID=local
-  export AWS_SECRET_ACCESS_KEY=local
+  if [[ -z "$AWSLOCAL_PORT" ]]; then
+    AWSLOCAL_PORT=4566
+  fi
 
-  aws --endpoint http://localhost:4566 "${@:2}"
+  docker run --rm -it -e AWS_DEFAULT_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=local -e AWS_SECRET_ACCESS_KEY=local amazon/aws-cli:2.0.6 --endpoint http://localhost:$AWSLOCAL_PORT "${@:2}"
 elif [[ "$1" == 'artisan' ]]; then
   exit_if_containers_not_running
 
@@ -131,7 +125,7 @@ elif [[ "$1" == 'refresh' ]]; then
     DB_PORT=$(cat .env | grep SURF_DB_PORT= | sed s/SURF_DB_PORT=//)
   fi
 
-  if [[ -z "$DBPORT" ]]; then
+  if [[ -z "$DB_PORT" ]]; then
     DB_PORT=3306
   fi
 
