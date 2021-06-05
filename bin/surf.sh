@@ -107,7 +107,7 @@ elif [[ "$1" == 'fix' ]]; then
     cd $(pwd)
     docker-compose exec laravel ./vendor/bin/php-cs-fixer fix
   fi
-elif [[ "$1" == 'refresh' ]]; then
+elif [[ "$1" == 'fresh' ]]; then
   REFRESH_COMMAND='php artisan migrate'
 
   if [[ "$2" == '--seed' ]]; then
