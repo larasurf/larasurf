@@ -313,6 +313,7 @@ server {
 EOD;
 
     $https_config = <<<EOD
+
 server {
     listen 443 ssl;
     server_name localhost;

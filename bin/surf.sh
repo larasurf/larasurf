@@ -68,8 +68,7 @@ EOF
 elif [[ "$1" == 'publish' ]]; then
   if [[ "$2" == 'cs-fixer-config' ]]; then
     docker-compose run --rm --no-deps laravel php ./vendor/larasurf/larasurf/src/surf.php publish cs-fixer-config
-  else
-  if [[ "$2" == 'ssl-nginx-config' ]]; then
+  elif [[ "$2" == 'ssl-nginx-config' ]]; then
     docker-compose run --rm --no-deps laravel php ./vendor/larasurf/larasurf/src/surf.php publish nginx-tls
   else
     echo -e "${ERROR}Unrecognized publish command${RESET}"
