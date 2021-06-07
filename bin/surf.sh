@@ -69,6 +69,9 @@ elif [[ "$1" == 'publish' ]]; then
   if [[ "$2" == 'cs-fixer-config' ]]; then
     docker-compose run --rm --no-deps laravel php ./vendor/larasurf/larasurf/src/surf.php publish cs-fixer-config
   else
+  if [[ "$2" == 'ssl-nginx-config' ]]; then
+    docker-compose run --rm --no-deps laravel php ./vendor/larasurf/larasurf/src/surf.php publish nginx-tls
+  else
     echo -e "${ERROR}Unrecognized publish command${RESET}"
   fi
 elif [[ "$1" == 'composer' ]]; then
@@ -144,8 +147,8 @@ elif [[ "$1" == 'fresh' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel $REFRESH_COMMAND
-elif [[ "$1" == '--help' ]]; then
-  echo -e "${SUCCESS}See: https://larasurf.com/docs${RESET}"
+elif [[ "$1" == '--help' ]] || [[ "$1" == 'help' ]]; then
+  echo 'See: https://larasurf.com/docs'
 else
   cd $(pwd)
   docker-compose "$@"

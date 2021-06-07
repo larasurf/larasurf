@@ -7,7 +7,7 @@ function deriveAppUrl() {
 
     $is_ssl = $nginx_contents && strstr($nginx_contents, 'listen 443 ssl;');
 
-    $app_port_search = $is_ssl ? 'SURF_APP_TLS_PORT=' : 'SURF_APP_PORT=';
+    $app_port_search = $is_ssl ? 'SURF_APP_SSL_PORT=' : 'SURF_APP_PORT=';
 
     $env_file = '.env';
 
@@ -139,13 +139,21 @@ function publishGitignore() {
             }
         }
 
-        file_put_contents('.gitignore', implode(PHP_EOL, array_merge($appends, [''])), FILE_APPEND);
+        $result = file_put_contents('.gitignore', implode(PHP_EOL, array_merge($appends, [''])), FILE_APPEND);
 
-        echo '.gitignore modified' . PHP_EOL;
+        if ($result !== false) {
+            echo 'Modified .gitignore' . PHP_EOL;
+        } else {
+            echo 'Failed to modify .gitignore' . PHP_EOL;
+        }
     } else {
-        file_put_contents('.gitignore', implode(PHP_EOL, array_merge($entries, [''])));
+        $result = file_put_contents('.gitignore', implode(PHP_EOL, array_merge($entries, [''])));
 
-        echo '.gitignore created' . PHP_EOL;
+        if ($result !== false) {
+            echo 'Created .gitignore' . PHP_EOL;
+        } else {
+            echo 'Failed to create .gitignore' . PHP_EOL;
+        }
     }
 }
 
@@ -203,9 +211,13 @@ return (new PhpCsFixer\Config())
     ->setFinder(\$finder);
 
 EOD;
-                file_put_contents('.php-cs-fixer.dist.php', $contents);
+                $result = file_put_contents('.php-cs-fixer.dist.php', $contents);
 
-                echo '.php-cs-fixer.dist.php created' . PHP_EOL;
+                if ($result !== false) {
+                    echo '.php-cs-fixer.dist.php created' . PHP_EOL;
+                } else {
+                    echo 'Failed to create .php-cs-fixer.dist.php' . PHP_EOL;
+                }
             } else {
                 echo 'php-cs-fixer not installed' . PHP_EOL;
             }
@@ -228,9 +240,14 @@ EOD;
             $contents = str_replace('\'endpoint\' => env(\'AWS_ENDPOINT\'),', $replace, $contents);
             $contents = str_replace('\'endpoint\' => env("AWS_ENDPOINT"),', $replace, $contents);
 
-            file_put_contents('config/filesystems.php', $contents);
+            $result = file_put_contents('config/filesystems.php', $contents);
 
-            echo 'config/filesystems.php modified' . PHP_EOL;
+            if ($result !== false) {
+                echo 'Modified config/filesystems.php' . PHP_EOL;
+            } else {
+                echo 'Failed to modify config/filesystems.php' . PHP_EOL;
+            }
+
         }
     }
 }
@@ -239,51 +256,120 @@ function publishEnvironmentFiles()
 {
     $url = deriveAppUrl();
 
-    $env_file = '.env';
+    foreach (['.env', '.env.example'] as $env_file) {
+        if (file_exists($env_file)) {
+            $contents = array_map('trim', file($env_file));
 
-    if (file_exists($env_file)) {
-        $contents = array_map('trim', file($env_file));
+            if ($env_file === '.env') {
+                $app_url = $url;
+            } else {
+                $app_url = $env_file === '.env.example' && strstr($url, 'https:')
+                    ? 'https://localhost'
+                    : 'http://localhost';
+            }
 
-        foreach ($contents as &$content) {
-            foreach ([
-                         'APP_URL=' => "APP_URL=$url",
-                     ] as $find => $replace) {
-                if (strpos($content, $find) === 0) {
-                    $content = $replace;
+            foreach ($contents as &$content) {
+                foreach ([
+                             'APP_URL=' => "APP_URL=$app_url",
+                         ] as $find => $replace) {
+                    if (strpos($content, $find) === 0) {
+                        $content = $replace;
+                    }
                 }
             }
+
+            $result = file_put_contents($env_file, implode(PHP_EOL, array_merge($contents, [''])));
+
+            if ($result !== false) {
+                echo "Modified $env_file" . PHP_EOL;
+            } else {
+                echo "Failed to modify $env_file" . PHP_EOL;
+            }
         }
+    }
+}
 
-        file_put_contents($env_file, implode(PHP_EOL, array_merge($contents, [''])));
+function publishSslNginxConfig() {
+    $http_config = <<<EOD
+server {
+    listen 80;
+    index index.php index.html;
+    root /var/www/public;
 
-        echo "$env_file modified" . PHP_EOL;
+    location / {
+        try_files \$uri /index.php?\$args;
     }
 
-    $example_env_file = '.env.example';
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass "\${UPSTREAM_HOST}:\${UPSTREAM_PORT}";
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
+    }
+}
 
-    if (file_exists($example_env_file)) {
-        $contents = array_map('trim', file($example_env_file));
+EOD;
 
-        $url = strstr($url, 'https:') ? 'https://localhost' : 'http://localhost';
+    $https_config = <<<EOD
+server {
+    listen 443 ssl;
+    server_name localhost;
+    ssl_certificate /var/ssl/local.crt;
+    ssl_certificate_key /var/ssl/local.pem;
+    ssl_protocols TLSv1.2;
 
-        foreach ($contents as &$content) {
-            foreach ([
-                         'APP_URL=' => "APP_URL=$url",
-                     ] as $find => $replace) {
-                if (strpos($content, $find) === 0) {
-                    $content = $replace;
-                }
+    index index.php index.html;
+    root /var/www/public;
+
+    location / {
+        try_files \$uri /index.php?\$args;
+    }
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass "\${UPSTREAM_HOST}:\${UPSTREAM_PORT}";
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
+    }
+}
+
+EOD;
+
+    $file = '.docker/nginx/laravel.conf.template';
+
+    if (file_exists($file)) {
+        $contents = file_get_contents($file);
+
+        if (!strstr($contents, 'listen 443 ssl;')) {
+            $result = file_put_contents($file, $https_config, FILE_APPEND);
+
+            if ($result !== false) {
+                echo "Modified $file" . PHP_EOL;
+            } else {
+                echo "Failed to modify $file" . PHP_EOL;
             }
+        } else {
+            echo 'NGINX config template is already listening on 443' . PHP_EOL;
         }
+    } else {
+        $config = $http_config . PHP_EOL . PHP_EOL . $https_config;
 
-        file_put_contents($example_env_file, implode(PHP_EOL, array_merge($contents, [''])));
+        $result = file_put_contents($file, $config);
 
-        echo "$example_env_file modified" . PHP_EOL;
+        if ($result !== false) {
+            echo "Created $file" . PHP_EOL;
+        } else {
+            echo "Failed to create $file" . PHP_EOL;
+        }
     }
 }
 
 if (php_sapi_name() !== 'cli') {
-    echo "This script must be run from the CLI";
+    echo 'This script must be run from the CLI';
     die(1);
 }
 
@@ -299,5 +385,7 @@ if (isset($argv[0]) && $argv[0] === 'splash') {
         publishEnvironmentFiles();
     } else if ($argv[1] === 'cs-fixer-config') {
         publishCodeStyleConfig();
+    } else if ($argv[1] === 'ssl-nginx-config') {
+        publishSslNginxConfig();
     }
 }
