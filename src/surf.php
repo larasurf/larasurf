@@ -126,6 +126,7 @@ function publishGitignore() {
         '.php-cs-fixer.cache',
         '.phpstorm.meta.php',
         '_ide_helper*',
+        'docker-compose.override.yml',
     ];
 
     if (file_exists('.gitignore')) {
