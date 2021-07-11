@@ -91,20 +91,8 @@ EOD;
         $nginx_file = '.docker/nginx/laravel.conf.template';
         $nginx_contents = File::exists($nginx_file) ? File::get($nginx_file) : false;
         $is_ssl = $nginx_contents && Str::contains($nginx_contents, 'listen 443 ssl;');
-        $app_port_search = $is_ssl ? 'SURF_APP_SSL_PORT=' : 'SURF_APP_PORT=';
-        $env_file = '.env';
-        $env_contents = File::exists($env_file) ? array_map('trim', file($env_file)) : false;
-        $app_port = '';
-
-        if ($env_contents) {
-            foreach ($env_contents as $env_content) {
-                if (strpos($env_content, $app_port_search) === 0) {
-                    $app_port = str_replace($app_port_search, '', $env_content);
-
-                    break;
-                }
-            }
-        }
+        $app_port_env_name = $is_ssl ? 'SURF_APP_SSL_PORT' : 'SURF_APP_PORT';
+        $app_port = env($app_port_env_name);
 
         if (($is_ssl && $app_port === '443') || (!$is_ssl && $app_port === '80')) {
             $app_port = '';
