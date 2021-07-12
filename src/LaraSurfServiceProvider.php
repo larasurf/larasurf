@@ -2,8 +2,9 @@
 
 namespace LaraSurf\LaraSurf;
 
-use LaraSurf\LaraSurf\Console\Splash;
 use Illuminate\Support\ServiceProvider;
+use LaraSurf\LaraSurf\Console\Publish;
+use LaraSurf\LaraSurf\Console\Splash;
 
 class LaraSurfServiceProvider extends ServiceProvider
 {
@@ -17,6 +18,7 @@ class LaraSurfServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 Splash::class,
+                Publish::class,
             ]);
         }
     }

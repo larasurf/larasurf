@@ -17,7 +17,7 @@ function exit_if_containers_not_running() {
 }
 
 if [[ "$1" == 'ssl' ]]; then
-  if [[ "$2" == 'generate' ]]; then
+  if [[ "$2" == 'generate-certificate' ]]; then
     if [[ -n "$(which mkcert.exe)" ]]; then
       mkcert.exe -install && mkcert.exe -key-file .docker/ssl/local.pem -cert-file .docker/ssl/local.crt localhost
     elif [[ -n "$(which mkcert)" ]]; then
@@ -26,52 +26,8 @@ if [[ "$1" == 'ssl' ]]; then
       echo -e "${ERROR}To use local SSL, please install mkcert from: https://github.com/FiloSottile/mkcert${RESET}"
       exit 1
     fi
-  elif [[ "$2" == 'nginx-config' ]]; then
-    if [[ -f '.docker/nginx/laravel.conf.template' ]] && ! grep -q 'listen 443 ssl;' '.docker/nginx/laravel.conf.template'; then
-      cat << 'EOF' >> '.docker/nginx/laravel.conf.template'
-
-server {
-    listen 443 ssl;
-    server_name localhost;
-    ssl_certificate /var/ssl/local.crt;
-    ssl_certificate_key /var/ssl/local.pem;
-    ssl_protocols TLSv1.2;
-
-    index index.php index.html;
-    root /var/www/public;
-
-    location / {
-        try_files $uri /index.php?$args;
-    }
-
-    location ~ \.php$ {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass "${UPSTREAM_HOST}:${UPSTREAM_PORT}";
-        fastcgi_index index.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-    }
-}
-EOF
-
-      echo -e "${SUCCESS}NGINX config template updated.${RESET}"
-      echo -e "${SUCCESS}Rebuild the webserver image then restart the container!${RESET}"
-    elif grep -q 'listen 443 ssl;' '.docker/nginx/laravel.conf.template'; then
-      echo -e "${ERROR}NGINX config template already listens on port 443${RESET}"
-    else
-      echo -e "${ERROR}NGINX config template not found${RESET}"
-    fi
   else
     echo -e "${ERROR}Unrecognized ssl command${RESET}"
-  fi
-elif [[ "$1" == 'publish' ]]; then
-  if [[ "$2" == 'cs-fixer-config' ]]; then
-    docker-compose run --rm --no-deps laravel php ./vendor/larasurf/larasurf/src/surf.php publish cs-fixer-config
-  elif [[ "$2" == 'ssl-nginx-config' ]]; then
-    docker-compose run --rm --no-deps laravel php ./vendor/larasurf/larasurf/src/surf.php publish nginx-tls
-  else
-    echo -e "${ERROR}Unrecognized publish command${RESET}"
   fi
 elif [[ "$1" == 'composer' ]]; then
   cd $(pwd)
