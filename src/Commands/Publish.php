@@ -54,9 +54,9 @@ class Publish extends Command
                 $success = File::put($nginx_config_path, $new_config);
 
                 if ($success) {
-                    $this->info('Successfully modified NGINX config');
+                    $this->info('Successfully modified nginx config');
                 } else {
-                    $this->error('Failed to modify NGINX config');
+                    $this->error('Failed to modify nginx config');
                 }
             } else {
                 $this->warn('NGINX is already configured to listen on port 443');
