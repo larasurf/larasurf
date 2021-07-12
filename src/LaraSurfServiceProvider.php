@@ -3,8 +3,8 @@
 namespace LaraSurf\LaraSurf;
 
 use Illuminate\Support\ServiceProvider;
-use LaraSurf\LaraSurf\Console\Publish;
-use LaraSurf\LaraSurf\Console\Splash;
+use LaraSurf\LaraSurf\Commands\Publish;
+use LaraSurf\LaraSurf\Commands\Splash;
 
 class LaraSurfServiceProvider extends ServiceProvider
 {

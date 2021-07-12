@@ -1,11 +1,11 @@
 <?php
 
-namespace LaraSurf\LaraSurf\Console;
+namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use LaraSurf\LaraSurf\Console\Traits\DerivesAppUrl;
+use LaraSurf\LaraSurf\Commands\Traits\DerivesAppUrl;
 
 class Publish extends Command
 {

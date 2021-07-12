@@ -1,9 +1,9 @@
 <?php
 
-namespace LaraSurf\LaraSurf\Console;
+namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
-use LaraSurf\LaraSurf\Console\Traits\DerivesAppUrl;
+use LaraSurf\LaraSurf\Commands\Traits\DerivesAppUrl;
 
 class Splash extends Command
 {

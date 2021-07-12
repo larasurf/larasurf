@@ -1,6 +1,6 @@
 <?php
 
-namespace LaraSurf\LaraSurf\Console\Traits;
+namespace LaraSurf\LaraSurf\Commands\Traits;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
