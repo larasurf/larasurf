@@ -16,9 +16,8 @@ function exit_if_containers_not_running() {
   fi
 }
 
-if [[ "$1" == 'ssl' ]]; then
-  if [[ "$2" == 'generate-certificate' ]]; then
-    if [[ -n "$(which mkcert.exe)" ]]; then
+if [[ "$1" == 'ssl:generate' ]]; then
+  if [[ -n "$(which mkcert.exe)" ]]; then
       mkcert.exe -install && mkcert.exe -key-file .docker/ssl/local.pem -cert-file .docker/ssl/local.crt localhost
     elif [[ -n "$(which mkcert)" ]]; then
       mkcert -install && mkcert -key-file .docker/ssl/local.pem -cert-file .docker/ssl/local.crt localhost
@@ -26,9 +25,6 @@ if [[ "$1" == 'ssl' ]]; then
       echo -e "${ERROR}To use local SSL, please install mkcert from: https://github.com/FiloSottile/mkcert${RESET}"
       exit 1
     fi
-  else
-    echo -e "${ERROR}Unrecognized ssl command${RESET}"
-  fi
 elif [[ "$1" == 'composer' ]]; then
   cd $(pwd)
   docker-compose run --rm --no-deps laravel composer "${@:2}"
@@ -37,7 +33,7 @@ elif [[ "$1" == 'yarn' ]]; then
   docker-compose run --rm --no-deps laravel yarn "${@:2}"
 elif [[ "$1" == 'aws' ]]; then
   docker run --rm -it -v ~/.aws:/root/.aws amazon/aws-cli:2.0.6 "${@:2}"
-elif [[ "$1" == 'awslocal' ]]; then
+elif [[ "$1" == 'aws:local' ]]; then
   exit_if_containers_not_running
 
   NETWORK_NAME="$(basename $(pwd))_default"
@@ -48,6 +44,11 @@ elif [[ "$1" == 'artisan' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan "${@:2}"
+elif [[ "$1" == 'publish' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:publish "${@:2}"
 elif [[ "$1" == 'test' ]]; then
   exit_if_containers_not_running
 
