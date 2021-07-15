@@ -11,7 +11,7 @@ class Publish extends Command
 {
     use DerivesAppUrl;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--aws-local-filesystem} {--env-app-url}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--aws-local-filesystem} {--env}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
@@ -21,7 +21,7 @@ class Publish extends Command
             'cs-fixer' => [$this, 'publishCsFixerConfig'],
             'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
             'aws-local-filesystem' => [$this, 'publishAwsLocalFilesystemChanges'],
-            'env-app-url' => [$this, 'publishEnvAppUrlChanges'],
+            'env' => [$this, 'publishEnvAppUrlChanges'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -107,7 +107,7 @@ EOD;
                 if ($env_file === '.env') {
                     $app_url = $url;
                 } else {
-                    $app_url = $env_file === '.env.example' && Str::contains($url, 'https:')
+                    $app_url = $env_file === '.env.example' && Str::startsWith($url, 'https:')
                         ? 'https://localhost'
                         : 'http://localhost';
                 }
