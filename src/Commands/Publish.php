@@ -11,7 +11,7 @@ class Publish extends Command
 {
     use DerivesAppUrl;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--aws-local-filesystem} {--env-changes}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
@@ -20,7 +20,6 @@ class Publish extends Command
         foreach ([
             'cs-fixer' => [$this, 'publishCsFixerConfig'],
             'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
-            'aws-local-filesystem' => [$this, 'publishAwsLocalFilesystemChanges'],
             'env-changes' => [$this, 'publishEnvChanges'],
                  ] as $option => $method) {
             if ($this->option($option)) {
@@ -63,34 +62,6 @@ class Publish extends Command
             }
         } else {
             $this->error('Failed to modify nginx config; file does not exist');
-        }
-    }
-
-    protected function publishAwsLocalFilesystemChanges()
-    {
-        $filesystems_config_path = config_path('filesystems.php');
-
-        if (File::exists($filesystems_config_path)) {
-            $contents = File::get($filesystems_config_path);
-
-            if (preg_match('/\'disks\' =>[\s\S]+\'s3\' => [\s\S]+\'bucket_endpoint\' =>/', $contents)) {
-                $this->warn('config/filesystems.php has already been modified');
-            } else {
-                $replace = <<<EOD
-'endpoint' => env('AWS_ENDPOINT'),
-            'bucket_endpoint' => false,
-EOD;
-                $contents = str_replace('\'endpoint\' => env(\'AWS_ENDPOINT\'),', $replace, $contents);
-                $contents = str_replace('\'endpoint\' => env("AWS_ENDPOINT"),', $replace, $contents);
-
-                $success = File::put($filesystems_config_path, $contents);
-
-                if ($success) {
-                    $this->info('Successfully modified filesystems config');
-                } else {
-                    $this->error('Failed to modify filesystems config');
-                }
-            }
         }
     }
 
