@@ -1,0 +1,33 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.6
+      - run:
+          name: Build Images
+          command: |
+            DOCKER_BUILDKIT=1 docker build -t laravel-base --ssh default --progress plain .
+            DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg BASE_IMAGE=laravel-base .circleci/
+      - run:
+          name: Check Code Style and Run Tests
+          command: |
+            docker-compose -f .circleci/docker-compose.ci.yml run --rm --entrypoint bash laravel -c "
+              set -e
+              cp .env.example .env
+              php artisan key:generate --force
+              (test -f ".php-cs-fixer.dist.php" && ./vendor/bin/php-cs-fixer fix --dry-run) || echo "Code Style config not found"
+              curl \${DB_HOST}:\${DB_PORT} --http0.9 --retry-connrefused --retry 30 --output /dev/null --silent
+              php artisan migrate --force
+              ./vendor/bin/phpunit
+            "
+
+workflows:
+  version: 2
+  test-workflow:
+    jobs:
+      - test

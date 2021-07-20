@@ -11,7 +11,7 @@ class Publish extends Command
 {
     use DerivesAppUrl;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci-local} {--circleci-local-production}  {--circleci-local-stage-production}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
@@ -21,6 +21,9 @@ class Publish extends Command
             'cs-fixer' => [$this, 'publishCsFixerConfig'],
             'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
             'env-changes' => [$this, 'publishEnvChanges'],
+            'circleci-local' => [$this, 'publishCircleCiLocal'],
+            'circleci-local-production' => [$this, 'publishCircleCiLocalProduction'],
+            'circleci-local-stage-production' => [$this, 'publishCircleCiLocalStageProduction'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -30,7 +33,7 @@ class Publish extends Command
 
     protected function publishCsFixerConfig()
     {
-        $success = File::copy(__DIR__ . '/../../stubs/.php-cs-fixer.dist.php', base_path('.php-cs-fixer.dist.php'));
+        $success = File::copy(__DIR__ . '/../../templates/.php-cs-fixer.dist.php', base_path('.php-cs-fixer.dist.php'));
 
         if ($success) {
             $this->info('Successfully published code style fixer config');
@@ -44,7 +47,7 @@ class Publish extends Command
         $nginx_config_path = base_path('.docker/nginx/laravel.conf.template');
 
         if (File::exists($nginx_config_path)) {
-            $https_config = File::get(__DIR__ . '/../../stubs/nginx-https.conf');
+            $https_config = File::get(__DIR__ . '/../../templates/nginx-https.conf');
             $current_config = File::get($nginx_config_path);
 
             if (!Str::contains($current_config, 'listen 443 ssl;')) {
@@ -101,6 +104,39 @@ class Publish extends Command
                     $this->error("Failed to modify $file");
                 }
             }
+        }
+    }
+
+    protected function publishCircleCiLocal()
+    {
+        $this->publishCircleCi('circleci.config.local.yml');
+    }
+
+    protected function publishCircleCiLocalProduction()
+    {
+        $this->publishCircleCi('circleci.config.local-production.yml');
+    }
+
+    protected function publishCircleCiLocalStageProduction()
+    {
+        $this->publishCircleCi('circleci.config.local-stage-production.yml');
+    }
+
+    protected function publishCircleCi($filename)
+    {
+        if (!File::isDirectory(base_path('.circleci'))) {
+            File::makeDirectory(base_path('.circleci'));
+        }
+
+        $success =
+            File::copy(__DIR__ . "/../../templates/$filename", base_path('.circleci/config.yml')) &&
+            File::copy(__DIR__ . '/../../templates/docker-compose.ci.yml', base_path('.circleci/docker-compose.ci.yml')) &&
+            File::copy(__DIR__ . '/../../templates/Dockerfile.ci', base_path('.circleci/Dockerfile'));
+
+        if ($success) {
+            $this->info('Successfully published CircleCI config files');
+        } else {
+            $this->error('Failed to publish CircleCI config files');
         }
     }
 }
