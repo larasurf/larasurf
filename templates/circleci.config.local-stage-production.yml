@@ -28,8 +28,8 @@ jobs:
                 name: Check Required Envionment Variables
                 command: |
                   set -e
-                  (test -z "${AWS_ACCOUNT_ID}" && ! echo "AWS_ACCOUNT_ID environment variable not set") || echo "AWS_ACCOUNT_ID environment variable set"
-                  (test -z "${AWS_REGION}" && ! echo "AWS_REGION environment variable not set") || echo "AWS_REGION environment variable set"
+                  test -n "${AWS_ACCOUNT_ID}"
+                  test -n "${AWS_REGION}"
             - export_image_tag_variables
             - run:
                 name: Build Images
@@ -71,10 +71,10 @@ jobs:
           name: Check Required Envionment Variables
           command: |
             set -e
-            (test -z "${AWS_ACCOUNT_ID}" && ! echo "AWS_ACCOUNT_ID environment variable not set") || echo "AWS_ACCOUNT_ID environment variable set"
-            (test -z "${AWS_REGION}" && ! echo "AWS_REGION environment variable not set") || echo "AWS_REGION environment variable set"
-            (test -z "${AWS_ACCESS_KEY_ID}" && ! echo "AWS_ACCESS_KEY_ID environment variable not set") || echo "AWS_ACCESS_KEY_ID environment variable found"
-            (test -z "${AWS_SECRET_ACCESS_KEY}" && ! echo "AWS_SECRET_ACCESS_KEY environment variable not set") || echo "AWS_SECRET_ACCESS_KEY environment variable found"
+            test -n "${AWS_ACCOUNT_ID}"
+            test -n "${AWS_REGION}"
+            test -n "${AWS_ACCESS_KEY_ID}"
+            test -n "${AWS_SECRET_ACCESS_KEY}"
       - export_image_tag_variables
       - run: # todo: add AWS CLI orb, call aws cloudformation deploy
           name: Deploy CloudFormation Stack
