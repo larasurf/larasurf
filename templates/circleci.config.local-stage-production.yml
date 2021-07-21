@@ -6,7 +6,7 @@ commands:
       - run:
           name: Format Image Tags
           command: |
-            echo 'export ECR_REGISTRY_PREFIX="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"' >> $BASH_ENV
+            echo 'export ECR_PREFIX="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"' >> $BASH_ENV
             echo 'export WEBSERVER_VERSION_TAG_SUFFIX=":commit-${CIRCLE_SHA1}"' >> $BASH_ENV
             echo 'export APPLICATION_VERSION_TAG_SUFFIX=":commit-${CIRCLE_SHA1}"' >> $BASH_ENV
 
@@ -34,9 +34,9 @@ jobs:
             - run:
                 name: Build Images
                 command: |
-                  DOCKER_BUILDKIT=1 docker build -t "${ECR_REGISTRY_PREFIX}surf-test-2/laravel${APPLICATION_VERSION_TAG_SUFFIX}" --ssh default --progress plain .
-                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${ECR_REGISTRY_PREFIX}surf-test-2/laravel${APPLICATION_VERSION_TAG_SUFFIX}" .circleci/
-                  docker build -t "${ECR_REGISTRY_PREFIX}surf-test-2/webserver${WEBSERVER_VERSION_TAG_SUFFIX}" .docker/nginx
+                  DOCKER_BUILDKIT=1 docker build -t "${ECR_PREFIX}surf-test-2/laravel${APPLICATION_VERSION_TAG_SUFFIX}" --ssh default --progress plain .
+                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${ECR_PREFIX}surf-test-2/laravel${APPLICATION_VERSION_TAG_SUFFIX}" .circleci/
+                  docker build -t "${ECR_PREFIX}surf-test-2/webserver${WEBSERVER_VERSION_TAG_SUFFIX}" .docker/nginx
       - unless:
           condition: << parameters.should_publish_images >>
           steps:
