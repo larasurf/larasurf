@@ -1,0 +1,136 @@
+<?php
+
+namespace LaraSurf\LaraSurf\Commands\Traits;
+
+use Illuminate\Support\Facades\File;
+
+trait InteractsWithLaraSurfConfig
+{
+    protected $valid_environments = [
+        'stage', 'production',
+    ];
+
+    protected function validateEnvOption()
+    {
+        if (!in_array($this->option('env'), $this->valid_environments)) {
+            $this->error('Invalid environment specified');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function getValidLarasurfConfig()
+    {
+        if (!File::exists(base_path('larasurf.json'))) {
+            $this->error('larasurf.json does not exist');
+
+            return false;
+        }
+
+        $config = File::get(base_path('larasurf.json'));
+
+        $json = json_decode($config, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->error('Error parsing larasurf.json');
+            $this->error(json_last_error_msg());
+
+            return false;
+        }
+
+        if (!isset($json['schema-version'])) {
+            $this->error('Key \'schema-version\' not found in larasurf.json');
+
+            return false;
+        }
+
+        if ($json['schema-version'] === 1) {
+            return $this->getValidLarasurfConfigVersion1($json);
+        }
+
+        $this->error('Invalid larasurf.json schema version found');
+
+        return false;
+    }
+
+    protected function getValidLarasurfConfigVersion1(array $json)
+    {
+        if (!isset($json['project-name'])) {
+            $this->error('Key \'project-name\' not found in larasurf.json');
+
+            return false;
+        }
+
+        if (!preg_match('/^[a-z0-9-]+$/', $json['project-name'])) {
+            $this->error('Invalid project name in larasurf.json');
+
+            return false;
+        }
+
+        if (!isset($json['aws-profile'])) {
+            $this->error('Key \'aws-profile\' not found in larasurf.json');
+
+            return false;
+        }
+
+        if (isset($json['upstream-environments'])) {
+            $environments = array_keys($json['upstream-environments']);
+
+            foreach ($environments as $environment) {
+                if (!in_array($environment, $this->valid_environments)) {
+                    $this->error("Invalid environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!isset($json['upstream-environments'][$environment]['aws-region'])) {
+                    $this->error("Key 'aws-region' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!in_array($json['upstream-environments'][$environment]['aws-region'], $this->valid_aws_regions)) {
+                    $this->error("Invalid AWS region for environment '$environment'");
+
+                    return false;
+                }
+
+                if (!isset($json['upstream-environments'][$environment]['stack-deployed'])) {
+                    $this->error("Key 'stack-deployed' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!is_bool($json['upstream-environments'][$environment]['stack-deployed'])) {
+                    $this->error("Key 'stack-deployed' for environment '$environment' must be a boolean");
+
+                    return false;
+                }
+
+                if (!isset($json['upstream-environments'][$environment]['variables'])) {
+                    $this->error("Key 'variables' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!is_array($json['upstream-environments'][$environment]['variables'])) {
+                    $this->error("Key 'variables' for environment '$environment' in larasurf.json must be an array");
+
+                    return false;
+                }
+
+                foreach($json['upstream-environments'][$environment]['variables'] as $variable) {
+                    if (!preg_match('/^[A-Z0-9_]+$/', $variable)) {
+                        $this->error("Invalid environment variable name '$variable' for environment '$environment' in larasurf.json");
+
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return $json;
+    }
+}
