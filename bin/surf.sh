@@ -49,6 +49,21 @@ elif [[ "$1" == 'publish' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:publish "${@:2}"
+elif [[ "$1" == 'infra' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:infra "${@:2}"
+elif [[ "$1" == 'configure' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:configure "${@:2}"
+elif [[ "$1" == 'env' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:env "${@:2}"
 elif [[ "$1" == 'test' ]]; then
   exit_if_containers_not_running
 
