@@ -19,7 +19,7 @@ trait HasSubCommand
         return true;
     }
 
-    protected function runCommand()
+    protected function runSubCommand()
     {
         $command = $this->argument('command');
 

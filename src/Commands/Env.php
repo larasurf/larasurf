@@ -43,7 +43,7 @@ class Env extends Command
             return;
         }
 
-        $this->runCommand();
+        $this->runSubCommand();
     }
 
     protected function handleInit()

@@ -33,7 +33,7 @@ class Infra extends Command
             return;
         }
 
-        $this->runCommand();
+        $this->runSubCommand();
     }
 
     protected function handleCreate()

@@ -28,7 +28,7 @@ class Config extends Command
             return;
         }
 
-        $this->runCommand();
+        $this->runSubCommand();
     }
 
     protected function handleAwsProfile()
