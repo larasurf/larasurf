@@ -12,43 +12,82 @@ class Config extends Command
     use InteractsWithLaraSurfConfig;
     use HasSubCommand;
 
-    const COMMAND_AWS_PROFILE = 'aws-profile';
+    const COMMAND_GET = 'get';
+    const COMMAND_SET = 'set';
 
-    protected $signature = 'larasurf:config {command} {arg1?}';
+    const VALID_KEYS = [
+        'aws-profile',
+    ];
+
+    protected $signature = 'larasurf:config {subcommand} {key} {value?}';
 
     protected $description = 'Configure LaraSurf';
 
     protected $commands = [
-        self::COMMAND_AWS_PROFILE => 'handleAwsProfile',
+        self::COMMAND_GET => 'handleGet',
+        self::COMMAND_SET => 'handleSet',
     ];
 
     public function handle()
     {
-        if (!$this->validateCommandArgument()) {
+        if (!$this->validateSubCommandArgument()) {
+            return;
+        }
+
+        $key = $this->argument('key');
+
+        if (!in_array($key, self::VALID_KEYS)) {
+            $this->error('Invalid config key specified');
+
             return;
         }
 
         $this->runSubCommand();
     }
 
-    protected function handleAwsProfile()
+    protected function handleGet()
     {
-        $profile = $this->argument('arg1');
-
-        if (!$profile) {
-            $this->error('A profile name must be specified');
-
-            return;
-        }
+        $key = $this->argument('key');
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
+            $this->error('Failed to load larasurf.json');
+
             return;
         }
 
         if ($config['schema-version'] === 1) {
-            $config['aws-profile'] = $profile;
+            if (isset($config[$key])) {
+                $this->info($config[$key]);
+            } else {
+                $this->error("Key '$key' not found in larasurf.json");
+            }
+        }
+    }
+
+    protected function handleSet()
+    {
+        $value = $this->argument('value');
+
+        if (!$value) {
+            $this->error('A config value must be specified');
+
+            return;
+        }
+
+        $key = $this->argument('key');
+
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            $this->error('Failed to load larasurf.json');
+
+            return;
+        }
+
+        if ($config['schema-version'] === 1) {
+            $config[$key] = $value;
             $json = json_encode($config, JSON_PRETTY_PRINT);
 
             $success = File::put($json, app_path('larasurf.json'));

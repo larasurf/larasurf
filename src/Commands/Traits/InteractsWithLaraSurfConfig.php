@@ -6,21 +6,6 @@ use Illuminate\Support\Facades\File;
 
 trait InteractsWithLaraSurfConfig
 {
-    protected $valid_environments = [
-        'stage', 'production',
-    ];
-
-    protected function validateEnvOption()
-    {
-        if (!in_array($this->option('env'), $this->valid_environments)) {
-            $this->error('Invalid environment specified');
-
-            return false;
-        }
-
-        return true;
-    }
-
     protected function getValidLarasurfConfig()
     {
         if (!File::exists(base_path('larasurf.json'))) {

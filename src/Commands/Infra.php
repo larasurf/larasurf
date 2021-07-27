@@ -3,18 +3,20 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
 class Infra extends Command
 {
     use InteractsWithLaraSurfConfig;
+    use HasEnvironmentArgument;
     use HasSubCommand;
 
     const COMMAND_CREATE = 'create';
     const COMMAND_DESTROY = 'destroy';
 
-    protected $signature = 'larasurf:env {--env=} {command}';
+    protected $signature = 'larasurf:infra {subcommand} {environment}';
 
     protected $description = 'Manipulate the infrastructure for an upstream environment';
 
@@ -25,11 +27,11 @@ class Infra extends Command
 
     public function handle()
     {
-        if (!$this->validateEnvOption()) {
+        if (!$this->validateEnvironmentArgument()) {
             return;
         }
 
-        if (!$this->validateCommandArgument()) {
+        if (!$this->validateSubCommandArgument()) {
             return;
         }
 
@@ -38,6 +40,11 @@ class Infra extends Command
 
     protected function handleCreate()
     {
-        
+        $this->info('ToDo: handle create');
+    }
+
+    protected function handleDestroy()
+    {
+        $this->info('ToDo: handle destroy');
     }
 }

@@ -3,12 +3,14 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
 class Env extends Command
 {
     use InteractsWithLaraSurfConfig;
+    use HasEnvironmentArgument;
     use HasSubCommand;
 
     const COMMAND_INIT = 'init';
@@ -17,9 +19,9 @@ class Env extends Command
     const COMMAND_DELETE = 'delete';
     const COMMAND_LIST = 'list';
 
-    protected $signature = 'larasurf:env {--env=} {command} {arg1?} {arg2?}';
+    protected $signature = 'larasurf:env {subcommand} {environment} {--region=} {--key=} {--value=}';
 
-    protected $description = 'List all environment variables or get, put, or delete an environment variable in an upstream environment';
+    protected $description = 'Manipulate environment variables for an upstream environment';
 
     protected $commands = [
         self::COMMAND_INIT => 'handleInit',
@@ -35,11 +37,11 @@ class Env extends Command
 
     public function handle()
     {
-        if (!$this->validateEnvOption()) {
+        if (!$this->validateEnvironmentArgument()) {
             return;
         }
 
-        if (!$this->validateCommandArgument()) {
+        if (!$this->validateSubCommandArgument()) {
             return;
         }
 
@@ -48,15 +50,13 @@ class Env extends Command
 
     protected function handleInit()
     {
-        $environment = $this->argument('arg1');
+        $aws_region = $this->option('region');
 
-        if (!in_array($environment, $this->valid_environments)) {
-            $this->error('Invalid environment specified');
+        if (!$aws_region) {
+            $this->error('AWS region must be specified with the --region option');
 
             return;
         }
-
-        $aws_region = $this->argument('arg2');
 
         if (!in_array($aws_region, $this->valid_aws_regions)) {
             $this->error('Invalid AWS region specified');
@@ -67,6 +67,8 @@ class Env extends Command
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
+            $this->error('Failed to load larasurf.json');
+
             return;
         }
 
@@ -77,21 +79,21 @@ class Env extends Command
 
     protected function handleGet()
     {
-        $this->info("ToDo: handle get");
+        $this->info('ToDo: handle get');
     }
 
     protected function handlePut()
     {
-        $this->info("ToDo: handle put");
+        $this->info('ToDo: handle put');
     }
 
     protected function handleDelete()
     {
-        $this->info("ToDo: handle delete");
+        $this->info('ToDo: handle delete');
     }
 
     protected function handleList()
     {
-        $this->info("ToDo: handle list");
+        $this->info('ToDo: handle list');
     }
 }
