@@ -6,10 +6,10 @@ trait HasSubCommand
 {
     protected function validateSubCommandArgument()
     {
-        $command = $this->argument('command');
+        $command = $this->argument('subcommand');
 
         if (!in_array($command, array_keys($this->commands))) {
-            $this->error('Invalid command specified');
+            $this->error('Invalid subcommand specified');
 
             return false;
         }
@@ -19,7 +19,7 @@ trait HasSubCommand
 
     protected function runSubCommand()
     {
-        $command = $this->argument('command');
+        $command = $this->argument('subcommand');
 
         ([$this, $this->commands[$command]])();
     }

@@ -90,7 +90,7 @@ class Config extends Command
             $config[$key] = $value;
             $json = json_encode($config, JSON_PRETTY_PRINT);
 
-            $success = File::put($json, app_path('larasurf.json'));
+            $success = File::put(base_path('larasurf.json'), $json . PHP_EOL);
 
             if (!$success) {
                 $this->error('Failed to write larasurf.json');
