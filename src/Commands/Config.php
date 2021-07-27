@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
-class Configure extends Command
+class Config extends Command
 {
     use InteractsWithLaraSurfConfig;
     use HasSubCommand;
 
     const COMMAND_AWS_PROFILE = 'aws-profile';
 
-    protected $signature = 'larasurf:configure {command} {arg1?}';
+    protected $signature = 'larasurf:config {command} {arg1?}';
 
     protected $description = 'Configure LaraSurf';
 

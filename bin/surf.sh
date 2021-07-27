@@ -16,7 +16,7 @@ function exit_if_containers_not_running() {
   fi
 }
 
-if [[ "$1" == 'ssl:generate' ]]; then
+if [[ "$1" == 'ssl' ]]; then
   if [[ -n "$(which mkcert.exe)" ]]; then
       mkcert.exe -install && mkcert.exe -key-file .docker/ssl/local.pem -cert-file .docker/ssl/local.crt localhost
     elif [[ -n "$(which mkcert)" ]]; then
@@ -33,7 +33,7 @@ elif [[ "$1" == 'yarn' ]]; then
   docker-compose run --rm --no-deps laravel yarn "${@:2}"
 elif [[ "$1" == 'aws' ]]; then
   docker run --rm -it -v ~/.aws:/root/.aws amazon/aws-cli:2.0.6 "${@:2}"
-elif [[ "$1" == 'aws:local' ]]; then
+elif [[ "$1" == 'awslocal' ]]; then
   exit_if_containers_not_running
 
   NETWORK_NAME="$(basename $(pwd))_default"
@@ -54,11 +54,11 @@ elif [[ "$1" == 'infra' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:infra "${@:2}"
-elif [[ "$1" == 'configure' ]]; then
+elif [[ "$1" == 'config' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:configure "${@:2}"
+  docker-compose exec laravel php artisan larasurf:config "${@:2}"
 elif [[ "$1" == 'env' ]]; then
   exit_if_containers_not_running
 
