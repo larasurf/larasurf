@@ -52,14 +52,12 @@ class Config extends Command
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            $this->error('Failed to load larasurf.json');
-
             return;
         }
 
         if ($config['schema-version'] === 1) {
             if (isset($config[$key])) {
-                $this->info($config[$key]);
+                $this->info("$key: {$config[$key]}");
             } else {
                 $this->error("Key '$key' not found in larasurf.json");
             }
@@ -81,22 +79,13 @@ class Config extends Command
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            $this->error('Failed to load larasurf.json');
-
             return;
         }
 
         if ($config['schema-version'] === 1) {
             $config[$key] = $value;
-            $json = json_encode($config, JSON_PRETTY_PRINT);
-
-            $success = File::put(base_path('larasurf.json'), $json . PHP_EOL);
-
-            if (!$success) {
-                $this->error('Failed to write larasurf.json');
-            } else {
-                $this->info('File larasurf.json updated successfully');
-            }
         }
+
+        $this->writeLaraSurfConfig($config);
     }
 }
