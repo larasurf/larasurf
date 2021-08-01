@@ -3,7 +3,6 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 

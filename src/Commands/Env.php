@@ -2,14 +2,17 @@
 
 namespace LaraSurf\LaraSurf\Commands;
 
+use Aws\Ssm\SsmClient;
 use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
+use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
 class Env extends Command
 {
     use InteractsWithLaraSurfConfig;
+    use InteractsWithAws;
     use HasEnvironmentArgument;
     use HasSubCommand;
 
@@ -40,7 +43,7 @@ class Env extends Command
     ];
 
     protected $valid_aws_regions = [
-        'us-east-1',
+        'us-east-1', // todo: update
     ];
 
     public function handle()
@@ -84,7 +87,7 @@ class Env extends Command
 
         if ($config['schema-version'] === 1) {
             if (isset($config['upstream-environments'][$environment])) {
-                $this->warn("Environment $environment already exists in larasurf.json");
+                $this->warn("Environment '$environment' already exists in larasurf.json");
 
                 $existed = true;
             } else {
@@ -97,7 +100,7 @@ class Env extends Command
         if (!$existed) {
             $this->writeLaraSurfConfig($config);
         } else {
-            $this->warn("Environment $environment already exists in larasurf.json");
+            $this->warn("Environment '$environment' already exists in larasurf.json");
         }
     }
 
@@ -117,6 +120,10 @@ class Env extends Command
 
         $environment = $this->argument('environment');
 
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return;
+        }
+
         if ($config['schema-version'] === 1) {
             $exists = isset($config['upstream-environments'][$environment]['variables'][$name]);
         } else {
@@ -130,9 +137,9 @@ class Env extends Command
         }
 
         if ($exists) {
-            $this->info("Environment variable '$name' exists in the $environment environment");
+            $this->info("Environment variable '$name' exists in the '$environment' environment");
         } else {
-            $this->warn("Environment variable '$name' does not exist in the $environment environment");
+            $this->warn("Environment variable '$name' does not exist in the '$environment' environment");
         }
     }
 
@@ -156,13 +163,23 @@ class Env extends Command
             return;
         }
 
-        // todo: check parameter store
+        $client = $this->getSsmClient($config, $environment);
+
+        $path = $this->getParameterPath($config, $environment, $name);
+
         $value = 'foo';
+
+        $result = $client->getParameter([
+            'Name' => $path,
+            'WithDecryption' => true,
+        ]);
+
+        var_export($result);
 
         if ($value !== null) {
             $this->info($value);
         } else {
-            $this->warn("Environment variable '$name' does not exist in the $environment environment");
+            $this->warn("Environment variable '$name' does not exist in the '$environment' environment");
         }
     }
 
@@ -175,6 +192,7 @@ class Env extends Command
         }
 
         $value = $this->argument('arg2');
+        $value = is_string($value) ? trim($value, '"') : $value;
 
         if (!$value) {
             $this->error('Environment variable value must be specified');
@@ -193,6 +211,25 @@ class Env extends Command
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
             return;
         }
+
+        $client = $this->getSsmClient($config, $environment);
+
+        $path = $this->getParameterPath($config, $environment, $name);
+
+        $result = $client->putParameter([
+            'Name' => $path,
+            'Overwrite' => true,
+            'Tags' => [
+                [
+                    'Key' => 'Environment',
+                    'Value' => $environment,
+                ],
+            ],
+            'Type' => 'SecureString',
+            'Value' => $value,
+        ]);
+
+        var_export($result);
 
         // todo: write to parameter store
         $this->info('ToDo: write to parameter store');
@@ -243,6 +280,16 @@ class Env extends Command
             return;
         }
 
+        $client = $this->getSsmClient($config, $environment);
+
+        $path = $this->getParameterPath($config, $environment, $name);
+
+        $result = $client->deleteParameter([
+            'Name' => $path,
+        ]);
+
+        var_export($result);
+
         // todo: delete from parameter store
         $this->info('ToDo: delete from parameter store');
 
@@ -289,22 +336,47 @@ class Env extends Command
         if (!empty($config['upstream-environments'][$environment]['variables'])) {
             $this->info(implode(PHP_EOL, $config['upstream-environments'][$environment]['variables']));
         } else {
-            $this->warn("Environment $environment has no variables in larasurf.json");
+            $this->warn("Environment '$environment' has no variables in larasurf.json");
         }
     }
 
     protected function handleListValues()
     {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return;
+        }
+
+        $client = $this->getSsmClient($config, $environment);
+
+        $path = $this->getParameterPath($config, $environment);
+
+        $results = $client->getParametersByPath([
+           'Path' => $path,
+           'WithDecryption' => true,
+        ]);
+
+        var_export($results);
+
         $this->info('ToDo: handle list values via parameter store');
     }
 
     protected function validateEnvironmentExistsInConfig(array $config, string $environment)
     {
         if ($config['schema-version'] === 1) {
-            return isset($config['upstream-environments'][$environment]);
+            if (isset($config['upstream-environments'][$environment])) {
+                return true;
+            }
         }
 
-        $this->error("Environment $environment does not exist in larasurf.json");
+        $this->error("Environment '$environment' does not exist in larasurf.json");
 
         return false;
     }
@@ -362,7 +434,35 @@ class Env extends Command
         if ($existed) {
             $this->writeLaraSurfConfig($config);
         } else {
-            $this->warn("Environment variable '$name' did not exist in larasurf.json for environment $environment");
+            $this->warn("Environment variable '$name' did not exist in larasurf.json for environment '$environment'");
         }
+    }
+
+    protected function getSsmClient($config, $environment)
+    {
+        if ($config['schema-version'] === 1) {
+            return new SsmClient([
+                'version' => 'latest',
+                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+            ]);
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
+    }
+
+    protected function getParameterPath($config, $environment, $parameter = null)
+    {
+        $parameter = $parameter ?? '';
+
+        if ($config['schema-version'] === 1) {
+            return $config['project-name'] . '/' . $environment . '/' . $parameter;
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
     }
 }
