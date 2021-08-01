@@ -42,10 +42,6 @@ class Env extends Command
         self::COMMAND_LIST_VALUES => 'handleListValues',
     ];
 
-    protected $valid_aws_regions = [
-        'us-east-1', // todo: update
-    ];
-
     public function handle()
     {
         if (!$this->validateEnvironmentArgument()) {

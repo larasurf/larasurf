@@ -105,27 +105,33 @@ class Infra extends Command
 
         foreach ($default_env_vars as $key => $value) {
             $var_path = $this->getSsmParameterPath($config, $environment, $key);
+            $exists = false;
 
             foreach ($results['Parameters'] as $parameter) {
                 if ($parameter['Name'] === $var_path) {
                     $this->warn("Parameter $var_path already exists");
-                } else {
-                    $ssm_client->putParameter([
-                        'Name' => $var_path,
-                        'Type' => 'SecureString',
-                        'Value' => $value,
-                        'Tags' => [
-                            [
-                                'Key' => 'Project',
-                                'Value' => $config['project-name'],
-                            ],
-                            [
-                                'Key' => 'Environment',
-                                'Value' => $environment,
-                            ],
-                        ],
-                    ]);
+                    $exists = true;
                 }
+            }
+
+            if (!$exists) {
+                $ssm_client->putParameter([
+                    'Name' => $var_path,
+                    'Type' => 'SecureString',
+                    'Value' => $value,
+                    'Tags' => [
+                        [
+                            'Key' => 'Project',
+                            'Value' => $config['project-name'],
+                        ],
+                        [
+                            'Key' => 'Environment',
+                            'Value' => $environment,
+                        ],
+                    ],
+                ]);
+
+                $this->info("Successfully set parameter '$var_path'");
             }
         }
 
@@ -152,6 +158,56 @@ class Infra extends Command
             ],
             'TemplateBody' => $template,
         ]);
+
+        $this->info('Stack creation initiated');
+
+        $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['upstream-environments'][$environment]['aws-region']} for more information");
+
+        $finished = false;
+        $success = false;
+        $status = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $tries++;
+
+            $this->line('Checking statck status in 10 seconds...');
+
+            sleep(10);
+
+            $result = $client->describeStacks([
+                'StackName' => $stack_name,
+            ]);
+
+            if (isset($result['Stacks'][0]['StackStatus'])) {
+                $status = $result['Stacks'][0]['StackStatus'];
+                $finished = !str_ends_with($status, '_IN_PROGRESS');
+
+                if ($finished) {
+                    $success = $result['Stacks'][0]['StackStatus'] === 'CREATE_COMPLETE';
+                } else {
+                    $this->line('Stack creation is not yet finished');
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API');
+            }
+        }
+
+        if ($tries >= $limit) {
+            $this->error('Stack failed to be created within 30 minutes');
+
+            return 1;
+        } else {
+            if ($success) {
+                $this->info('Stack created successfully');
+            } else {
+                $this->error("Stack creation failed with status: '$status'");
+                $this->error("See https://console.aws.amazon.com/cloudformation/home?region={$config['upstream-environments'][$environment]['aws-region']} for more information");
+
+                return 1;
+            }
+        }
 
         return 0;
     }
@@ -182,9 +238,14 @@ class Infra extends Command
             return 1;
         }
 
-        $client->deleteStack([
-            'StackName' => $stack_name,
-        ]);
+        if ($this->confirm("Are you sure you want to destroy the '$environment' environment?")) {
+            $client->deleteStack([
+                'StackName' => $stack_name,
+            ]);
+
+            $this->info('Stack deletion initiated');
+            $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['upstream-environments'][$environment]['aws-region']} for stack deletion status");
+        }
 
         return 0;
     }

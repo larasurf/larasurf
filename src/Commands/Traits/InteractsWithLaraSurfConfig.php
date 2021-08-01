@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\File;
 
 trait InteractsWithLaraSurfConfig
 {
+    protected $valid_aws_regions = [
+        'us-east-1', // todo: update
+    ];
+
     protected function getValidLarasurfConfig()
     {
         if (!File::exists(base_path('larasurf.json'))) {

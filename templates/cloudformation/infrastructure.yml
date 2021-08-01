@@ -33,7 +33,7 @@ Resources:
         - 0
         - Fn::GetAZs: !Ref 'AWS::Region'
       CidrBlock: !Select [0, !Cidr [!GetAtt Vpc.CidrBlock, 3, 8]]
-      VpcId: !Ref VPC
+      VpcId: !Ref Vpc
       Tags:
         - Key: Name
           Value: !Sub '${VpcName} Subnet 1'
@@ -49,7 +49,7 @@ Resources:
         - 0
         - Fn::GetAZs: !Ref 'AWS::Region'
       CidrBlock: !Select [1, !Cidr [!GetAtt Vpc.CidrBlock, 3, 8]]
-      VpcId: !Ref VPC
+      VpcId: !Ref Vpc
       Tags:
         - Key: Name
           Value: !Sub '${VpcName} Subnet 2'
@@ -65,7 +65,7 @@ Resources:
         - 0
         - Fn::GetAZs: !Ref 'AWS::Region'
       CidrBlock: !Select [2, !Cidr [!GetAtt Vpc.CidrBlock, 3, 8]]
-      VpcId: !Ref VPC
+      VpcId: !Ref Vpc
       Tags:
         - Key: Name
           Value: !Sub '${VpcName} Subnet 3'
