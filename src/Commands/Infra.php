@@ -35,16 +35,20 @@ class Infra extends Command
             return;
         }
 
-        $this->runSubCommand();
+        return $this->runSubCommand();
     }
 
     protected function handleCreate()
     {
         $this->info('ToDo: handle create');
+
+        return 0;
     }
 
     protected function handleDestroy()
     {
         $this->info('ToDo: handle destroy');
+
+        return 0;
     }
 }

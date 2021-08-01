@@ -21,6 +21,6 @@ trait HasSubCommand
     {
         $command = $this->argument('subcommand');
 
-        ([$this, $this->commands[$command]])();
+        return ([$this, $this->commands[$command]])();
     }
 }
