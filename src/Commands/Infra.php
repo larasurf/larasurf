@@ -170,12 +170,6 @@ class Infra extends Command
         $limit = 180;
 
         while (!$finished && $tries < $limit) {
-            $tries++;
-
-            $this->line('Checking statck status in 10 seconds...');
-
-            sleep(10);
-
             $result = $client->describeStacks([
                 'StackName' => $stack_name,
             ]);
@@ -187,11 +181,17 @@ class Infra extends Command
                 if ($finished) {
                     $success = $result['Stacks'][0]['StackStatus'] === 'CREATE_COMPLETE';
                 } else {
-                    $this->line('Stack creation is not yet finished');
+                    $this->line('Stack creation is not yet finished, checking again in 10 seconds...');
+
+                    sleep(10);
                 }
             } else {
-                $this->warn('Unexpected response from AWS API');
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+
+                sleep(10);
             }
+
+            $tries++;
         }
 
         if ($tries >= $limit) {
