@@ -4,6 +4,7 @@ namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Encryption\Encrypter;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
@@ -73,6 +74,59 @@ class Infra extends Command
             $this->error("File '.cloudformation/infrastructure.yml' does not exist");
 
             return 1;
+        }
+
+        $ssm_client = $this->getSsmClient($config, $environment);
+
+        if (!$ssm_client) {
+            return 1;
+        }
+
+        $path = $this->getSsmParameterPath($config, $environment);
+
+        if (!$path) {
+            return 1;
+        }
+
+        $results = $ssm_client->getParametersByPath([
+            'Path' => $path,
+        ]);
+
+        $app_key = 'base64:' . base64_encode(Encrypter::generateKey('AES-256-CBC'));
+
+        $default_env_vars = [
+            'APP_ENV' => $environment,
+            'APP_KEY' => $app_key,
+            'CACHE_DRIVER' => 'redis',
+            'DB_CONNECTION' => 'mysql',
+            'LOG_CHANNEL' => 'errorlog',
+            'QUEUE_CONNECTION' => 'sqs',
+        ];
+
+        foreach ($default_env_vars as $key => $value) {
+            $var_path = $this->getSsmParameterPath($config, $environment, $key);
+
+            foreach ($results['Parameters'] as $parameter) {
+                if ($parameter['Name'] === $var_path) {
+                    $this->warn("Parameter $var_path already exists");
+                } else {
+                    $ssm_client->putParameter([
+                        'Name' => $var_path,
+                        'Type' => 'SecureString',
+                        'Value' => $value,
+                        'Tags' => [
+                            [
+                                'Key' => 'Project',
+                                'Value' => $config['project-name'],
+                            ],
+                            [
+                                'Key' => 'Environment',
+                                'Value' => $environment,
+                            ],
+                        ],
+                    ]);
+                }
+            }
         }
 
         $template = File::get($infrastructure_template_path);

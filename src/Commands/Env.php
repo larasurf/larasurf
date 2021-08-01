@@ -138,20 +138,18 @@ class Env extends Command
             return 1;
         }
 
-        $path = $this->getSsmParameterPath($config, $environment);
+        $path = $this->getSsmParameterPath($config, $environment, $name);
 
         if (!$path) {
             return 1;
         }
 
         if ($exists) {
-            try {
-                $client->getParameter([
-                    'Name' => $path,
-                ]);
-            } catch (SsmException $exception) {
-                $exists = false;
-            }
+            $results = $client->getParametersByPath([
+                'Path' => $path,
+            ]);
+
+            $exists = isset($results['Parameters'][0]) && $results['Parameters']['Name'] === $path;
         }
 
         if ($exists) {

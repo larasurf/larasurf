@@ -89,10 +89,13 @@ class Publish extends Command
 
                 foreach ($contents as &$content) {
                     foreach ([
-                                 'APP_URL=' => "APP_URL=$app_url",
-                             ] as $find => $replace) {
-                        if (strpos($content, $find) === 0) {
-                            $content = $replace;
+                                 'APP_URL=' => "$app_url",
+                                 'CACHE_DRIVER=' => 'redis',
+                                 'DB_CONNECTION=' => 'mysql',
+                                 'QUEUE_CONNECTION=' => 'sqs',
+                             ] as $find => $append) {
+                        if (str_starts_with($content, $find)) {
+                            $content = $find . $append;
                         }
                     }
                 }
