@@ -30,7 +30,7 @@ class Config extends Command
     public function handle()
     {
         if (!$this->validateSubCommandArgument()) {
-            return;
+            return 1;
         }
 
         $key = $this->argument('key');
@@ -38,10 +38,10 @@ class Config extends Command
         if (!in_array($key, self::VALID_KEYS)) {
             $this->error('Invalid config key specified');
 
-            return;
+            return 1;
         }
 
-        $this->runSubCommand();
+        return $this->runSubCommand();
     }
 
     protected function handleGet()
@@ -59,8 +59,12 @@ class Config extends Command
                 $this->info("$key: {$config[$key]}");
             } else {
                 $this->error("Key '$key' not found in larasurf.json");
+
+                return 1;
             }
         }
+
+        return 0;
     }
 
     protected function handleSet()
@@ -70,7 +74,7 @@ class Config extends Command
         if (!$value) {
             $this->error('A config value must be specified');
 
-            return;
+            return 1;
         }
 
         $key = $this->argument('key');
@@ -78,7 +82,7 @@ class Config extends Command
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         if ($config['schema-version'] === 1) {
@@ -86,5 +90,7 @@ class Config extends Command
         }
 
         $this->writeLaraSurfConfig($config);
+
+        return 0;
     }
 }

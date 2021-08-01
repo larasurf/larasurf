@@ -28,23 +28,27 @@ class Infra extends Command
     public function handle()
     {
         if (!$this->validateEnvironmentArgument()) {
-            return;
+            return 1;
         }
 
         if (!$this->validateSubCommandArgument()) {
-            return;
+            return 1;
         }
 
-        $this->runSubCommand();
+        return $this->runSubCommand();
     }
 
     protected function handleCreate()
     {
         $this->info('ToDo: handle create');
+
+        return 0;
     }
 
     protected function handleDestroy()
     {
         $this->info('ToDo: handle destroy');
+
+        return 0;
     }
 }

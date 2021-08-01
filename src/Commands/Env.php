@@ -50,14 +50,14 @@ class Env extends Command
     public function handle()
     {
         if (!$this->validateEnvironmentArgument()) {
-            return;
+            return 1;
         }
 
         if (!$this->validateSubCommandArgument()) {
-            return;
+            return 1;
         }
 
-        $this->runSubCommand();
+        return $this->runSubCommand();
     }
 
     protected function handleInit()
@@ -67,19 +67,19 @@ class Env extends Command
         if (!$aws_region) {
             $this->error('AWS region must be specified');
 
-            return;
+            return 1;
         }
 
         if (!in_array($aws_region, $this->valid_aws_regions)) {
             $this->error('Invalid AWS region specified');
 
-            return;
+            return 1;
         }
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
@@ -103,6 +103,8 @@ class Env extends Command
         } else {
             $this->warn("Environment '$environment' already exists in larasurf.json");
         }
+
+        return 0;
     }
 
     protected function handleExists()
@@ -110,19 +112,19 @@ class Env extends Command
         $name = $this->getEnvironmentVariableNameArgument();
 
         if (!$name) {
-            return;
+            return 1;
         }
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         if ($config['schema-version'] === 1) {
@@ -150,6 +152,8 @@ class Env extends Command
         } else {
             $this->warn("Environment variable '$name' does not exist in the '$environment' environment");
         }
+
+        return 0;
     }
 
     protected function handleGet()
@@ -157,19 +161,19 @@ class Env extends Command
         $name = $this->getEnvironmentVariableNameArgument();
 
         if (!$name) {
-            return;
+            return 1;
         }
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         $client = $this->getSsmClient($config, $environment);
@@ -188,6 +192,8 @@ class Env extends Command
         } else {
             $this->warn("Environment variable '$name' does not exist in the '$environment' environment");
         }
+
+        return 0;
     }
 
     protected function handlePut()
@@ -195,7 +201,7 @@ class Env extends Command
         $name = $this->getEnvironmentVariableNameArgument();
 
         if (!$name) {
-            return;
+            return 1;
         }
 
         $value = $this->argument('arg2');
@@ -203,13 +209,13 @@ class Env extends Command
         if (!$value) {
             $this->error('Environment variable value must be specified');
 
-            return;
+            return 1;
         }
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
@@ -246,6 +252,8 @@ class Env extends Command
         $this->info("Parameter Store parameter '$path' written successfully");
 
         $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name);
+
+        return 0;
     }
 
     protected function handlePutLocal()
@@ -253,22 +261,24 @@ class Env extends Command
         $name = $this->getEnvironmentVariableNameArgument();
 
         if (!$name) {
-            return;
+            return 1;
         }
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name);
+
+        return 0;
     }
 
     protected function handleDelete()
@@ -276,19 +286,19 @@ class Env extends Command
         $name = $this->getEnvironmentVariableNameArgument();
 
         if (!$name) {
-            return;
+            return 1;
         }
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         $client = $this->getSsmClient($config, $environment);
@@ -302,6 +312,8 @@ class Env extends Command
         $this->info("Parameter Store parameter '$path' deleted successfully");
 
         $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name);
+
+        return 0;
     }
 
     protected function handleDeleteLocal()
@@ -309,22 +321,24 @@ class Env extends Command
         $name = $this->getEnvironmentVariableNameArgument();
 
         if (!$name) {
-            return;
+            return 1;
         }
 
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name);
+
+        return 0;
     }
 
     protected function handleList()
@@ -332,13 +346,13 @@ class Env extends Command
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         if (!empty($config['upstream-environments'][$environment]['variables'])) {
@@ -346,6 +360,8 @@ class Env extends Command
         } else {
             $this->warn("Environment '$environment' has no variables in larasurf.json");
         }
+
+        return 0;
     }
 
     protected function handleListValues()
@@ -353,13 +369,13 @@ class Env extends Command
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         $client = $this->getSsmClient($config, $environment);
@@ -376,6 +392,8 @@ class Env extends Command
         }, $results['Parameters']);
 
         $this->info(implode(PHP_EOL, $keys_values));
+
+        return 0;
     }
 
     protected function validateEnvironmentExistsInConfig(array $config, string $environment)
