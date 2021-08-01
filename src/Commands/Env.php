@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\Commands;
 
+use Aws\Ssm\Exception\SsmException;
 use Aws\Ssm\SsmClient;
 use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
@@ -125,15 +126,23 @@ class Env extends Command
         }
 
         if ($config['schema-version'] === 1) {
-            $exists = isset($config['upstream-environments'][$environment]['variables'][$name]);
+            $exists = in_array($name, $config['upstream-environments'][$environment]['variables']);
         } else {
             $exists = false;
         }
 
-        if ($exists) {
-            // todo: check parameter store
+        $client = $this->getSsmClient($config, $environment);
 
-            $exists = true;
+        $path = $this->getParameterPath($config, $environment, $name);
+
+        if ($exists) {
+            try {
+                $client->getParameter([
+                    'Name' => $path,
+                ]);
+            } catch (SsmException $exception) {
+                $exists = false;
+            }
         }
 
         if ($exists) {
@@ -167,17 +176,15 @@ class Env extends Command
 
         $path = $this->getParameterPath($config, $environment, $name);
 
-        $value = 'foo';
-
         $result = $client->getParameter([
             'Name' => $path,
             'WithDecryption' => true,
         ]);
 
-        var_export($result);
+        $value = $result['Parameter']['Value'];
 
         if ($value !== null) {
-            $this->info($value);
+            $this->line($value);
         } else {
             $this->warn("Environment variable '$name' does not exist in the '$environment' environment");
         }
@@ -192,7 +199,6 @@ class Env extends Command
         }
 
         $value = $this->argument('arg2');
-        $value = is_string($value) ? trim($value, '"') : $value;
 
         if (!$value) {
             $this->error('Environment variable value must be specified');
@@ -216,23 +222,28 @@ class Env extends Command
 
         $path = $this->getParameterPath($config, $environment, $name);
 
-        $result = $client->putParameter([
+        $args = [
             'Name' => $path,
-            'Overwrite' => true,
-            'Tags' => [
+            'Type' => 'SecureString',
+            'Value' => $value,
+        ];
+
+        $parameter_exists = in_array($name, $config['upstream-environments'][$environment]['variables']);
+
+        if ($parameter_exists) {
+            $args['Overwrite'] = true;
+        } else {
+            $args['Tags'] = [
                 [
                     'Key' => 'Environment',
                     'Value' => $environment,
                 ],
-            ],
-            'Type' => 'SecureString',
-            'Value' => $value,
-        ]);
+            ];
+        }
 
-        var_export($result);
+        $client->putParameter($args);
 
-        // todo: write to parameter store
-        $this->info('ToDo: write to parameter store');
+        $this->info("Parameter Store parameter '$path' written successfully");
 
         $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name);
     }
@@ -284,14 +295,11 @@ class Env extends Command
 
         $path = $this->getParameterPath($config, $environment, $name);
 
-        $result = $client->deleteParameter([
+        $client->deleteParameter([
             'Name' => $path,
         ]);
 
-        var_export($result);
-
-        // todo: delete from parameter store
-        $this->info('ToDo: delete from parameter store');
+        $this->info("Parameter Store parameter '$path' deleted successfully");
 
         $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name);
     }
@@ -359,13 +367,15 @@ class Env extends Command
         $path = $this->getParameterPath($config, $environment);
 
         $results = $client->getParametersByPath([
-           'Path' => $path,
-           'WithDecryption' => true,
+            'Path' => $path,
+            'WithDecryption' => true,
         ]);
 
-        var_export($results);
+        $keys_values = array_map(function ($parameter) {
+            return "{$parameter['Name']}: {$parameter['Value']}";
+        }, $results['Parameters']);
 
-        $this->info('ToDo: handle list values via parameter store');
+        $this->info(implode(PHP_EOL, $keys_values));
     }
 
     protected function validateEnvironmentExistsInConfig(array $config, string $environment)
@@ -424,7 +434,7 @@ class Env extends Command
         if ($config['schema-version'] === 1) {
             $key = array_search($name, $config['upstream-environments'][$environment]['variables']);
 
-            if ($key) {
+            if ($key !== false) {
                 unset($config['upstream-environments'][$environment]['variables'][$key]);
 
                 $existed = true;
@@ -458,7 +468,7 @@ class Env extends Command
         $parameter = $parameter ?? '';
 
         if ($config['schema-version'] === 1) {
-            return $config['project-name'] . '/' . $environment . '/' . $parameter;
+            return '/' . $config['project-name'] . '/' . $environment . '/' . $parameter;
         }
 
         $this->error('Unsupported schema version in larasurf.json');
