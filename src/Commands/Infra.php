@@ -182,13 +182,22 @@ class Infra extends Command
                     $success = $result['Stacks'][0]['StackStatus'] === 'CREATE_COMPLETE';
                 } else {
                     $this->line('Stack creation is not yet finished, checking again in 10 seconds...');
-
-                    sleep(10);
                 }
             } else {
                 $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+            }
 
-                sleep(10);
+            if (!$finished) {
+                $bar = $this->output->createProgressBar(10);
+
+                $bar->start();
+
+                for ($i = 0; $i < 10; $i++) {
+                    sleep(1);
+                    $bar->advance();
+                }
+                
+                $bar->finish();
             }
 
             $tries++;
