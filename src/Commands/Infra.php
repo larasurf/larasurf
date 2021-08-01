@@ -2,7 +2,6 @@
 
 namespace LaraSurf\LaraSurf\Commands;
 
-use Aws\Ssm\SsmClient;
 use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;

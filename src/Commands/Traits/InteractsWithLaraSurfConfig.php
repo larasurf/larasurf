@@ -127,8 +127,12 @@ trait InteractsWithLaraSurfConfig
 
         if (!$success) {
             $this->error('Failed to write to larasurf.json');
+
+            return false;
         } else {
             $this->info('File larasurf.json updated successfully');
+
+            return true;
         }
     }
 

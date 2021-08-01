@@ -98,7 +98,7 @@ class Env extends Command
         }
 
         if (!$existed) {
-            $this->writeLaraSurfConfig($config);
+            return $this->writeLaraSurfConfig($config) ? 0 : 1;
         } else {
             $this->warn("Environment '$environment' already exists in larasurf.json");
         }
@@ -236,7 +236,7 @@ class Env extends Command
         $environment = $this->argument('environment');
 
         if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return;
+            return 1;
         }
 
         $client = $this->getSsmClient($config, $environment);
@@ -278,9 +278,7 @@ class Env extends Command
 
         $this->info("Parameter Store parameter '$path' written successfully");
 
-        $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name);
-
-        return 0;
+        return $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name) ? 0 : 1;
     }
 
     protected function handlePutLocal()
@@ -303,9 +301,7 @@ class Env extends Command
             return 1;
         }
 
-        $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name);
-
-        return 0;
+        return $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name) ? 0 : 1;
     }
 
     protected function handleDelete()
@@ -346,9 +342,7 @@ class Env extends Command
 
         $this->info("Parameter Store parameter '$path' deleted successfully");
 
-        $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name);
-
-        return 0;
+        return $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name) ? 0 : 1;
     }
 
     protected function handleDeleteLocal()
@@ -371,9 +365,7 @@ class Env extends Command
             return 1;
         }
 
-        $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name);
-
-        return 0;
+        return $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name) ? 0 : 1;
     }
 
     protected function handleList()
@@ -472,7 +464,7 @@ class Env extends Command
             $config['upstream-environments'][$environment]['variables'] = $variables;
         }
 
-        $this->writeLaraSurfConfig($config);
+        return $this->writeLaraSurfConfig($config);
     }
 
     protected function deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name)
@@ -490,9 +482,11 @@ class Env extends Command
         }
 
         if ($existed) {
-            $this->writeLaraSurfConfig($config);
-        } else {
-            $this->warn("Environment variable '$name' did not exist in larasurf.json for environment '$environment'");
+            return $this->writeLaraSurfConfig($config);
         }
+
+        $this->warn("Environment variable '$name' did not exist in larasurf.json for environment '$environment'");
+
+        return true;
     }
 }

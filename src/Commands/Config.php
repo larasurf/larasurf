@@ -89,8 +89,6 @@ class Config extends Command
             $config[$key] = $value;
         }
 
-        $this->writeLaraSurfConfig($config);
-
-        return 0;
+        return $this->writeLaraSurfConfig($config) ? 0 : 1;
     }
 }
