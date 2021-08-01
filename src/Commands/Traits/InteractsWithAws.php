@@ -2,8 +2,10 @@
 
 namespace LaraSurf\LaraSurf\Commands\Traits;
 
+use Aws\CloudFormation\CloudFormationClient;
 use Aws\Credentials\Credentials;
 use Aws\Exception\CredentialsException;
+use Aws\Ssm\SsmClient;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\RejectedPromise;
 use Illuminate\Support\Facades\File;
@@ -42,5 +44,59 @@ trait InteractsWithAws
     protected static function getAwsCredentialsFilePath()
     {
         return '/larasurf/aws/credentials';
+    }
+
+
+    protected function getSsmClient($config, $environment)
+    {
+        if ($config['schema-version'] === 1) {
+            return new SsmClient([
+                'version' => 'latest',
+                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+            ]);
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
+    }
+
+    protected function getSsmParameterPath($config, $environment, $parameter = null)
+    {
+        $parameter = $parameter ?? '';
+
+        if ($config['schema-version'] === 1) {
+            return '/' . $config['project-name'] . '/' . $environment . '/' . $parameter;
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
+    }
+
+    protected function getCloudFormationClient($config, $environment) {
+        if ($config['schema-version'] === 1) {
+            return new CloudFormationClient([
+                'version' => 'latest',
+                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+            ]);
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
+    }
+
+    protected function getCloudFormationStackName($config, $environment)
+    {
+        if ($config['schema-version'] === 1) {
+            return "{$config['project-name']}-{$environment}";
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
     }
 }

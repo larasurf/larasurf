@@ -131,4 +131,17 @@ trait InteractsWithLaraSurfConfig
             $this->info('File larasurf.json updated successfully');
         }
     }
+
+    protected function validateEnvironmentExistsInConfig(array $config, string $environment)
+    {
+        if ($config['schema-version'] === 1) {
+            if (isset($config['upstream-environments'][$environment])) {
+                return true;
+            }
+        }
+
+        $this->error("Environment '$environment' does not exist in larasurf.json");
+
+        return false;
+    }
 }

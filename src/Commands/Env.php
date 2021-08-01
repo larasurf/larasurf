@@ -3,7 +3,6 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Aws\Ssm\Exception\SsmException;
-use Aws\Ssm\SsmClient;
 use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
@@ -135,7 +134,15 @@ class Env extends Command
 
         $client = $this->getSsmClient($config, $environment);
 
-        $path = $this->getParameterPath($config, $environment, $name);
+        if (!$client) {
+            return 1;
+        }
+
+        $path = $this->getSsmParameterPath($config, $environment);
+
+        if (!$path) {
+            return 1;
+        }
 
         if ($exists) {
             try {
@@ -178,7 +185,15 @@ class Env extends Command
 
         $client = $this->getSsmClient($config, $environment);
 
-        $path = $this->getParameterPath($config, $environment, $name);
+        if (!$client) {
+            return 1;
+        }
+
+        $path = $this->getSsmParameterPath($config, $environment);
+
+        if (!$path) {
+            return 1;
+        }
 
         $result = $client->getParameter([
             'Name' => $path,
@@ -226,7 +241,15 @@ class Env extends Command
 
         $client = $this->getSsmClient($config, $environment);
 
-        $path = $this->getParameterPath($config, $environment, $name);
+        if (!$client) {
+            return 1;
+        }
+
+        $path = $this->getSsmParameterPath($config, $environment);
+
+        if (!$path) {
+            return 1;
+        }
 
         $args = [
             'Name' => $path,
@@ -240,6 +263,10 @@ class Env extends Command
             $args['Overwrite'] = true;
         } else {
             $args['Tags'] = [
+                [
+                    'Key' => 'Project',
+                    'Value' => $config['project-name'],
+                ],
                 [
                     'Key' => 'Environment',
                     'Value' => $environment,
@@ -303,7 +330,15 @@ class Env extends Command
 
         $client = $this->getSsmClient($config, $environment);
 
-        $path = $this->getParameterPath($config, $environment, $name);
+        if (!$client) {
+            return 1;
+        }
+
+        $path = $this->getSsmParameterPath($config, $environment);
+
+        if (!$path) {
+            return 1;
+        }
 
         $client->deleteParameter([
             'Name' => $path,
@@ -380,7 +415,15 @@ class Env extends Command
 
         $client = $this->getSsmClient($config, $environment);
 
-        $path = $this->getParameterPath($config, $environment);
+        if (!$client) {
+            return 1;
+        }
+
+        $path = $this->getSsmParameterPath($config, $environment);
+
+        if (!$path) {
+            return 1;
+        }
 
         $results = $client->getParametersByPath([
             'Path' => $path,
@@ -394,19 +437,6 @@ class Env extends Command
         $this->info(implode(PHP_EOL, $keys_values));
 
         return 0;
-    }
-
-    protected function validateEnvironmentExistsInConfig(array $config, string $environment)
-    {
-        if ($config['schema-version'] === 1) {
-            if (isset($config['upstream-environments'][$environment])) {
-                return true;
-            }
-        }
-
-        $this->error("Environment '$environment' does not exist in larasurf.json");
-
-        return false;
     }
 
     protected function getEnvironmentVariableNameArgument()
@@ -464,33 +494,5 @@ class Env extends Command
         } else {
             $this->warn("Environment variable '$name' did not exist in larasurf.json for environment '$environment'");
         }
-    }
-
-    protected function getSsmClient($config, $environment)
-    {
-        if ($config['schema-version'] === 1) {
-            return new SsmClient([
-                'version' => 'latest',
-                'region' => $config['upstream-environments'][$environment]['aws-region'],
-                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-            ]);
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
-    }
-
-    protected function getParameterPath($config, $environment, $parameter = null)
-    {
-        $parameter = $parameter ?? '';
-
-        if ($config['schema-version'] === 1) {
-            return '/' . $config['project-name'] . '/' . $environment . '/' . $parameter;
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
     }
 }
