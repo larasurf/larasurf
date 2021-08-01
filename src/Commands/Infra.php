@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
@@ -66,16 +67,23 @@ class Infra extends Command
             return 1;
         }
 
-        // todo: get infra template from file
-        $template = '';
+        $infrastructure_template_path = base_path('.cloudformation/infrastructure.yml');
+
+        if (!File::exists($infrastructure_template_path)) {
+            $this->error("File '.cloudformation/infrastructure.yml' does not exist");
+
+            return 1;
+        }
+
+        $template = File::get($infrastructure_template_path);
 
         $client->createStack([
             'Capabilities' => ['CAPABILITY_IAM'],
             'StackName' => $stack_name,
             'Parameters' => [
                 [
-                    'ParameterKey' => 'Environment',
-                    'ParameterValue' => $environment,
+                    'ParameterKey' => 'VpcName',
+                    'ParameterValue' => "{$config['project-name']}-$environment",
                 ],
             ],
             'Tags' => [

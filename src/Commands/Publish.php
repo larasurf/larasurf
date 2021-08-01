@@ -11,7 +11,7 @@ class Publish extends Command
 {
     use DerivesAppUrl;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci-local} {--circleci-local-production}  {--circleci-local-stage-production}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci-local} {--circleci-local-production}  {--circleci-local-stage-production} {--cloudformation}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
@@ -24,6 +24,7 @@ class Publish extends Command
             'circleci-local' => [$this, 'publishCircleCiLocal'],
             'circleci-local-production' => [$this, 'publishCircleCiLocalProduction'],
             'circleci-local-stage-production' => [$this, 'publishCircleCiLocalStageProduction'],
+            'cloudformation' => [$this, 'publishCloudFormation'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -109,17 +110,17 @@ class Publish extends Command
 
     protected function publishCircleCiLocal()
     {
-        $this->publishCircleCi('circleci.config.local.yml');
+        $this->publishCircleCi('config.local.yml');
     }
 
     protected function publishCircleCiLocalProduction()
     {
-        $this->publishCircleCi('circleci.config.local-production.yml');
+        $this->publishCircleCi('config.local-production.yml');
     }
 
     protected function publishCircleCiLocalStageProduction()
     {
-        $this->publishCircleCi('circleci.config.local-stage-production.yml');
+        $this->publishCircleCi('config.local-stage-production.yml');
     }
 
     protected function publishCircleCi($filename)
@@ -128,15 +129,71 @@ class Publish extends Command
             File::makeDirectory(base_path('.circleci'));
         }
 
-        $success =
-            File::copy(__DIR__ . "/../../templates/$filename", base_path('.circleci/config.yml')) &&
-            File::copy(__DIR__ . '/../../templates/docker-compose.ci.yml', base_path('.circleci/docker-compose.ci.yml')) &&
-            File::copy(__DIR__ . '/../../templates/Dockerfile.ci', base_path('.circleci/Dockerfile'));
+        $circle_config_path = base_path('.circleci/config.yml');
 
-        if ($success) {
-            $this->info('Successfully published CircleCI config files');
+        $success = true;
+
+        if (File::exists($circle_config_path)) {
+            $this->warn("File '.circleci/config.yml' already exists");
         } else {
-            $this->error('Failed to publish CircleCI config files');
+            $success = File::copy(__DIR__ . "/../../templates/circleci/$filename", $circle_config_path);
+
+            if ($success) {
+                $this->info('Successfully published CircleCI configuration file');
+            } else {
+                $this->error('Failed to publish CircleCI configuration file');
+            }
         }
+
+        $docker_compose_path = base_path('.circleci/docker-compose.ci.yml');
+
+        if (File::exists($docker_compose_path)) {
+            $this->warn("File '.circleci/docker-compose.ci.yml' already exists");
+        } else {
+            $success = File::copy(__DIR__ . '/../../templates/circleci/docker-compose.ci.yml', $docker_compose_path);
+
+            if ($success) {
+                $this->info('Successfully published docker-compose file');
+            } else {
+                $this->error('Failed to publish docker-compose file');
+            }
+        }
+
+        $dockerfile_path = base_path('.circleci/Dockerfile');
+
+        if (File::exists($dockerfile_path)) {
+            $this->warn("File '.circleci/Dockerfile' already exists");
+        } else {
+            $success = File::copy(__DIR__ . '/../../templates/circleci/Dockerfile', $dockerfile_path);
+
+            if ($success) {
+                $this->info('Successfully published Dockerfile file');
+            } else {
+                $this->error('Failed to publish Dockerfile file');
+            }
+        }
+    }
+
+    protected function publishCloudFormation()
+    {
+        if (!File::isDirectory(base_path('.cloudformation'))) {
+            File::makeDirectory(base_path('.cloudformation'));
+        }
+
+        $infrastructure_template_path = base_path('.cloudformation/infrastructure.yml');
+
+        if (File::exists($infrastructure_template_path)) {
+            $this->warn("File '.cloudformation/infrastructure.yml' already exists");
+        } else {
+            $success = File::copy(__DIR__ . "/../../templates/cloudformation/infrastructure.yml", $infrastructure_template_path);
+
+            if ($success) {
+                $this->info('Successfully published infrastructure CloudFormation template');
+            } else {
+                $this->error('Failed to publish infrastructure CloudFormation template');
+            }
+        }
+
+        // todo: publish app template file
     }
 }
