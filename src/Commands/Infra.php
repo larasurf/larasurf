@@ -133,7 +133,19 @@ class Infra extends Command
 
                 $this->info("Successfully set parameter '$var_path'");
             }
+
+            $config['upstream-environments'][$environment]['variables'][] = $key;
         }
+
+        sort($config['upstream-environments'][$environment]['variables']);
+
+        $success = $this->writeLaraSurfConfig($config);
+
+        if (!$success) {
+            return 1;
+        }
+
+        $this->info('Successfully updated larasurf.json');
 
         $template = File::get($infrastructure_template_path);
 
@@ -196,8 +208,10 @@ class Infra extends Command
                     sleep(1);
                     $bar->advance();
                 }
-                
+
                 $bar->finish();
+
+                $this->newLine();
             }
 
             $tries++;
@@ -216,6 +230,14 @@ class Infra extends Command
 
                 return 1;
             }
+        }
+
+        $config['upstream-environments'][$environment]['stack-deployed'] = true;
+
+        $success = $this->writeLaraSurfConfig($config);
+
+        if (!$success) {
+            return 1;
         }
 
         return 0;
@@ -254,6 +276,14 @@ class Infra extends Command
 
             $this->info('Stack deletion initiated');
             $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['upstream-environments'][$environment]['aws-region']} for stack deletion status");
+        }
+
+        $config['upstream-environments'][$environment]['stack-deployed'] = false;
+
+        $success = $this->writeLaraSurfConfig($config);
+
+        if (!$success) {
+            return 1;
         }
 
         return 0;

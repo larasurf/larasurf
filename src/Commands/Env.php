@@ -376,8 +376,12 @@ class Env extends Command
             return 1;
         }
 
+        $variables = array_map(function ($variable) use ($config, $environment) {
+            return $this->getSsmParameterPath($config, $environment, $variable);
+        }, $config['upstream-environments'][$environment]['variables']);
+
         if (!empty($config['upstream-environments'][$environment]['variables'])) {
-            $this->info(implode(PHP_EOL, $config['upstream-environments'][$environment]['variables']));
+            $this->info(implode(PHP_EOL, $variables));
         } else {
             $this->warn("Environment '$environment' has no variables in larasurf.json");
         }
@@ -417,10 +421,10 @@ class Env extends Command
         ]);
 
         $keys_values = array_map(function ($parameter) {
-            return "{$parameter['Name']}: {$parameter['Value']}";
+            return "<info>{$parameter['Name']}:</info> {$parameter['Value']}";
         }, $results['Parameters']);
 
-        $this->info(implode(PHP_EOL, $keys_values));
+        $this->getOutput()->writeln(implode(PHP_EOL, $keys_values));
 
         return 0;
     }
