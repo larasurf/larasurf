@@ -88,6 +88,9 @@ class Env extends Command
                 $existed = true;
             } else {
                 $config['upstream-environments'][$environment]['aws-region'] = $aws_region;
+                $config['upstream-environments'][$environment]['aws-certificate-arn'] = false;
+                $config['upstream-environments'][$environment]['aws-hosted-zone-id'] = false;
+                $config['upstream-environments'][$environment]['domain'] = false;
                 $config['upstream-environments'][$environment]['stack-deployed'] = false;
                 $config['upstream-environments'][$environment]['variables'] = [];
             }

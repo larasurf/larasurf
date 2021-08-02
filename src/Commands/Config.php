@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
@@ -16,6 +17,8 @@ class Config extends Command
 
     const VALID_KEYS = [
         'aws-profile',
+        'upstream-environments.stage.domain',
+        'upstream-environments.production.domain',
     ];
 
     protected $signature = 'larasurf:config {subcommand} {key} {value?}';
@@ -51,12 +54,20 @@ class Config extends Command
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
-            return;
+            return 1;
         }
 
         if ($config['schema-version'] === 1) {
-            if (isset($config[$key])) {
-                $this->info("$key: {$config[$key]}");
+            if (!$this->validateUpstreamEnvironment($config, $key)) {
+                return 1;
+            }
+
+            $value = Arr::get($config, $key);
+
+            if ($value !== null) {
+                $value = $value ?: 'false';
+
+                $this->info("$key: $value");
             } else {
                 $this->error("Key '$key' not found in larasurf.json");
 
@@ -86,9 +97,24 @@ class Config extends Command
         }
 
         if ($config['schema-version'] === 1) {
-            $config[$key] = $value;
+            if (!$this->validateUpstreamEnvironment($config, $key)) {
+                return 1;
+            }
+
+            Arr::set($config, $key, $value);
         }
 
         return $this->writeLaraSurfConfig($config) ? 0 : 1;
+    }
+
+    protected function validateUpstreamEnvironment($config, $key)
+    {
+        if (str_starts_with('upstream-environments.', $key)) {
+            $environment = explode('.', $key)[1] ?? '';
+
+            return $this->validateEnvironmentExistsInConfig($config, $environment);
+        }
+
+        return true;
     }
 }

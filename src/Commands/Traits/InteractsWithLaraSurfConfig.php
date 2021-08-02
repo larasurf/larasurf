@@ -86,6 +86,24 @@ trait InteractsWithLaraSurfConfig
                     return false;
                 }
 
+                if (!isset($json['upstream-environments'][$environment]['aws-certificate-arn'])) {
+                    $this->error("Key 'aws-certificate-arn' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!isset($json['upstream-environments'][$environment]['aws-hosted-zone-id'])) {
+                    $this->error("Key 'aws-hosted-zone-id' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!isset($json['upstream-environments'][$environment]['domain'])) {
+                    $this->error("Key 'domain' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
                 if (!isset($json['upstream-environments'][$environment]['stack-deployed'])) {
                     $this->error("Key 'stack-deployed' not found for environment '$environment' in larasurf.json");
 

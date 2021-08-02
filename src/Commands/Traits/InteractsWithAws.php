@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 use Aws\CloudFormation\CloudFormationClient;
 use Aws\Credentials\Credentials;
 use Aws\Exception\CredentialsException;
+use Aws\Route53\Route53Client;
 use Aws\Ssm\SsmClient;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\RejectedPromise;
@@ -93,6 +94,20 @@ trait InteractsWithAws
     {
         if ($config['schema-version'] === 1) {
             return "{$config['project-name']}-{$environment}";
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
+    }
+
+    protected function getRoute53Client($config, $environment) {
+        if ($config['schema-version'] === 1) {
+            return new Route53Client([
+                'version' => 'latest',
+                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+            ]);
         }
 
         $this->error('Unsupported schema version in larasurf.json');
