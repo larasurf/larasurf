@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Encryption\Encrypter;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
+use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
@@ -14,6 +15,7 @@ class Infra extends Command
 {
     use InteractsWithLaraSurfConfig;
     use InteractsWithAws;
+    use HasValidEnvironments;
     use HasEnvironmentArgument;
     use HasSubCommand;
 

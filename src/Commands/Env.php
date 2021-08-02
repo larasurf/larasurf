@@ -6,6 +6,7 @@ use Aws\Ssm\Exception\SsmException;
 use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
+use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
@@ -13,6 +14,7 @@ class Env extends Command
 {
     use InteractsWithLaraSurfConfig;
     use InteractsWithAws;
+    use HasValidEnvironments;
     use HasEnvironmentArgument;
     use HasSubCommand;
 
