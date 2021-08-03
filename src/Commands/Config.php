@@ -109,12 +109,12 @@ class Config extends Command
 
     protected function validateUpstreamEnvironment($config, $key)
     {
-        if (str_starts_with('upstream-environments.', $key)) {
+        if (str_starts_with($key, 'upstream-environments.')) {
             $environment = explode('.', $key)[1] ?? '';
 
             return $this->validateEnvironmentExistsInConfig($config, $environment);
         }
 
-        return true;
+        return false;
     }
 }
