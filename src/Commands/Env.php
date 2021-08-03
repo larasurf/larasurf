@@ -139,7 +139,7 @@ class Env extends Command
             return 1;
         }
 
-        $path = $this->getSsmParameterPath($config, $environment, $name);
+        $path = $this->getSsmParameterPath($config, $environment);
 
         if (!$path) {
             return 1;
@@ -150,7 +150,19 @@ class Env extends Command
                 'Path' => $path,
             ]);
 
-            $exists = isset($results['Parameters'][0]) && $results['Parameters']['Name'] === $path;
+            $ssm_exists = false;
+
+            if (isset($results['Parameters'])) {
+                foreach ($results['Parameters'] as $parameter) {
+                    if ($parameter['Name'] === $path . $name) {
+                        $ssm_exists = true;
+
+                        break;
+                    }
+                }
+            }
+
+            $exists = $ssm_exists;
         }
 
         if ($exists) {
@@ -244,21 +256,35 @@ class Env extends Command
             return 1;
         }
 
-        $path = $this->getSsmParameterPath($config, $environment);
+        $var_path = $this->getSsmParameterPath($config, $environment, $name);
 
-        if (!$path) {
+        if (!$var_path) {
             return 1;
         }
 
+        $results = $client->getParametersByPath([
+            'Path' => $this->getSsmParameterPath($config, $environment),
+        ]);
+
+        $exists = false;
+
+        if (isset($results['Parameters'])) {
+            foreach ($results['Parameters'] as $parameter) {
+                if ($parameter['Name'] === $var_path) {
+                    $exists = true;
+
+                    break;
+                }
+            }
+        }
+
         $args = [
-            'Name' => $path,
+            'Name' => $var_path,
             'Type' => 'SecureString',
             'Value' => $value,
         ];
 
-        $parameter_exists = in_array($name, $config['upstream-environments'][$environment]['variables']);
-
-        if ($parameter_exists) {
+        if ($exists) {
             $args['Overwrite'] = true;
         } else {
             $args['Tags'] = [
@@ -275,7 +301,7 @@ class Env extends Command
 
         $client->putParameter($args);
 
-        $this->info("Parameter Store parameter '$path' written successfully");
+        $this->info("Parameter Store parameter '$var_path' written successfully");
 
         return $this->writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name) ? 0 : 1;
     }

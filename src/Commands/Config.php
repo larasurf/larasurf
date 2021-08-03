@@ -5,11 +5,13 @@ namespace LaraSurf\LaraSurf\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
+use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
 class Config extends Command
 {
     use InteractsWithLaraSurfConfig;
+    use HasValidEnvironments;
     use HasSubCommand;
 
     const COMMAND_GET = 'get';

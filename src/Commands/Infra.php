@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Encryption\Encrypter;
+use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
@@ -142,31 +143,47 @@ class Infra extends Command
         }
 
         if (empty($config['upstream-environments'][$environment]['aws-hosted-zone-id'])) {
+            $valid = Str::contains($config['upstream-environments'][$environment]['domain'], '.') &&
+                strtolower($config['upstream-environments'][$environment]['domain']) === $config['upstream-environments'][$environment]['domain'];
+
+            if (!$valid) {
+                $this->error("Invalid domain set for environment '$environment' in larasurf.json");
+
+                return false;
+            }
+
             $client = $this->getRoute53Client($config, $environment);
 
             if (!$client) {
                 return false;
             }
 
+            $this->info('Updating Hosted Zone ID in larasurf.json');
+
             // todo: support more than 100 hosted zones
             $hosted_zones = $client->listHostedZones();
 
-            $domain = parse_url($config['upstream-environments'][$environment]['domain'], PHP_URL_HOST);
+            $suffix = Str::afterLast($config['upstream-environments'][$environment]['domain'], '.');
+            $domain_length = strlen($config['upstream-environments'][$environment]['domain']) - strlen($suffix) - 1;
+            $domain = substr($config['upstream-environments'][$environment]['domain'], 0, $domain_length);
 
-            if (!$domain) {
-                $this->error("Invalid domain set for environment '$environment' in larasurf.json");
-
-                return false;
+            if (Str::contains($domain, '.')) {
+                $domain = Str::afterLast($domain, '.');
             }
 
-            foreach ($hosted_zones['HostedZones'] as $hosted_zone) {
+            $domain .= '.' . $suffix;
 
-                if ($hosted_zone['Name'] === $domain) {
-                    $config['upstream-environments'][$environment]['aws-hosted-zone-id'] = $hosted_zone['Id'];
+            foreach ($hosted_zones['HostedZones'] as $hosted_zone) {
+                if ($hosted_zone['Name'] === $domain . '.') {
+                    $config['upstream-environments'][$environment]['aws-hosted-zone-id'] = str_replace('/hostedzone/', '', $hosted_zone['Id']);
 
                     return $this->writeLaraSurfConfig($config);
                 }
             }
+
+            $this->error("No hosted zone matching root domain '$domain' found.");
+
+            return false;
         }
 
         return true;
@@ -345,15 +362,17 @@ class Infra extends Command
             $config['upstream-environments'][$environment]['variables'][] = $key;
         }
 
-        sort($config['upstream-environments'][$environment]['variables']);
+        $variables = array_values(array_unique($config['upstream-environments'][$environment]['variables']));
+
+        sort($variables);
+
+        $config['upstream-environments'][$environment]['variables'] = $variables;
 
         $success = $this->writeLaraSurfConfig($config);
 
         if (!$success) {
             return false;
         }
-
-        $this->info('Successfully updated larasurf.json');
 
         return true;
     }
