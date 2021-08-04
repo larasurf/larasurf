@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Encryption\Encrypter;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
@@ -22,6 +23,7 @@ class Infra extends Command
 
     const COMMAND_CREATE = 'create';
     const COMMAND_DESTROY = 'destroy';
+    const COMMAND_ISSUE_CERTIFICATE = 'issue-certificate';
 
     protected $signature = 'larasurf:infra {subcommand} {environment}';
 
@@ -30,6 +32,8 @@ class Infra extends Command
     protected $commands = [
         self::COMMAND_CREATE => 'handleCreate',
         self::COMMAND_DESTROY => 'handleDestroy',
+        self::COMMAND_ISSUE_CERTIFICATE => 'handleIssueCertificate',
+
     ];
 
     public function handle()
@@ -130,6 +134,70 @@ class Infra extends Command
         if (!$success) {
             return 1;
         }
+
+        return 0;
+    }
+
+    protected function handleIssueCertificate()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if ($config['upstream-environments'][$environment]['aws-certificate-arn'] &&
+            !$this->confirm('AWS Certificate ARN exists in larasurf.json. Issue a new certificate and overwrite?', false)
+        ) {
+            return 0;
+        }
+
+        $success = $this->ensureHostedZoneIdInConfig($config, $environment);
+
+        if (!$success) {
+            return 1;
+        }
+
+        $client = $this->getAcmClient($config, $environment);
+
+        if (!$client) {
+            return 1;
+        }
+
+        $this->info("Requesting new certificate for domain '{$config['upstream-environments'][$environment]['domain']}...'");
+
+        $result = $client->requestCertificate([
+            'DomainName' => $config['upstream-environments'][$environment]['domain'],
+            'Tags' => [
+                [
+                    'Key' => 'Project',
+                    'Value' => $config['project-name'],
+                ],
+                [
+                    'Key' => 'Environment',
+                    'Value' => $environment,
+                ],
+            ],
+            'ValidationMethod' => 'DNS',
+        ]);
+
+        $arn = $result['CertificateArn'];
+
+        $certificate = $client->describeCertificate([
+            'CertificateArn' => $arn,
+        ]);
+
+        // todo: make DNS validation records
+        Log::debug(var_export($certificate, true));
+
+        // todo: write config
+        $config['upstream-environments'][$environment]['aws-certificate-arn'] = $arn;
 
         return 0;
     }

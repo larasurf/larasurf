@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\Commands\Traits;
 
+use Aws\Acm\AcmClient;
 use Aws\CloudFormation\CloudFormationClient;
 use Aws\Credentials\Credentials;
 use Aws\Exception\CredentialsException;
@@ -104,6 +105,20 @@ trait InteractsWithAws
     protected function getRoute53Client($config, $environment) {
         if ($config['schema-version'] === 1) {
             return new Route53Client([
+                'version' => 'latest',
+                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+            ]);
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
+    }
+
+    protected function getAcmClient($config, $environment) {
+        if ($config['schema-version'] === 1) {
+            return new AcmClient([
                 'version' => 'latest',
                 'region' => $config['upstream-environments'][$environment]['aws-region'],
                 'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
