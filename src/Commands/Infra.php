@@ -271,7 +271,7 @@ class Infra extends Command
                             'Name' => "_amazonses.{$config['cloud-environments'][$environment]['domain']}",
                             'ResourceRecords' => [
                                 [
-                                    'Value' => $verification_token,
+                                    'Value' => "\"$verification_token\"",
                                 ],
                             ],
                             'TTL' => 300,
@@ -299,7 +299,7 @@ class Infra extends Command
                 $finished = $status === 'INSYNC';
 
                 if (!$finished) {
-                    $this->line('DNS record change yet is not yet in sync, checking again in 10 seconds...');
+                    $this->line("DNS record change is not yet in sync (status: $status), checking again in 10 seconds...");
                 }
             } else {
                 $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
@@ -356,7 +356,7 @@ class Infra extends Command
             return false;
         }
 
-        $this->info("Email for domain '{$config['cloud-environments'][$environment]['domain']} verified successfully'");
+        $this->info("Email for domain '{$config['cloud-environments'][$environment]['domain']}' verified successfully");
 
         return 0;
     }
@@ -407,7 +407,7 @@ class Infra extends Command
             $args['ChangeBatch']['Changes'][] = [
                 'Action' => 'UPSERT',
                 'ResourceRecordSet' => [
-                    'Name' => "$token._domainkey.{$config['cloud-environments'][$environment]['domain']}.com",
+                    'Name' => "$token._domainkey.{$config['cloud-environments'][$environment]['domain']}",
                     'ResourceRecords' => [
                         [
                             'Value' => "$token.dkim.amazonses.com",
@@ -436,7 +436,7 @@ class Infra extends Command
                 $finished = $status === 'INSYNC';
 
                 if (!$finished) {
-                    $this->line('DNS record change yet is not yet in sync, checking again in 10 seconds...');
+                    $this->line('DNS record change is not yet in sync, checking again in 10 seconds...');
                 }
             } else {
                 $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
