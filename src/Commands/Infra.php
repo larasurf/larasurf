@@ -660,6 +660,7 @@ class Infra extends Command
             'DB_CONNECTION' => 'mysql',
             'LOG_CHANNEL' => 'errorlog',
             'QUEUE_CONNECTION' => 'sqs',
+            'MAIL_DRIVER' => 'ses',
         ];
 
         foreach ($default_env_vars as $key => $value) {
