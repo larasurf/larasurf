@@ -83,19 +83,17 @@ class Env extends Command
 
         $existed = false;
 
-        if ($config['schema-version'] === 1) {
-            if (isset($config['cloud-environments'][$environment])) {
-                $this->warn("Environment '$environment' already exists in larasurf.json");
+        if (isset($config['cloud-environments'][$environment])) {
+            $this->warn("Environment '$environment' already exists in larasurf.json");
 
-                $existed = true;
-            } else {
-                $config['cloud-environments'][$environment]['aws-region'] = $aws_region;
-                $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
-                $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;
-                $config['cloud-environments'][$environment]['domain'] = false;
-                $config['cloud-environments'][$environment]['stack-deployed'] = false;
-                $config['cloud-environments'][$environment]['variables'] = [];
-            }
+            $existed = true;
+        } else {
+            $config['cloud-environments'][$environment]['aws-region'] = $aws_region;
+            $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
+            $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;
+            $config['cloud-environments'][$environment]['domain'] = false;
+            $config['cloud-environments'][$environment]['stack-deployed'] = false;
+            $config['cloud-environments'][$environment]['variables'] = [];
         }
 
         if (!$existed) {
@@ -127,12 +125,6 @@ class Env extends Command
             return 1;
         }
 
-        if ($config['schema-version'] === 1) {
-            $exists = in_array($name, $config['cloud-environments'][$environment]['variables']);
-        } else {
-            $exists = false;
-        }
-
         $client = $this->getSsmClient($config, $environment);
 
         if (!$client) {
@@ -141,9 +133,7 @@ class Env extends Command
 
         $path = $this->getSsmParameterPath($config, $environment);
 
-        if (!$path) {
-            return 1;
-        }
+        $exists = in_array($name, $config['cloud-environments'][$environment]['variables']);
 
         if ($exists) {
             $results = $client->getParametersByPath([
@@ -202,10 +192,6 @@ class Env extends Command
 
         $path = $this->getSsmParameterPath($config, $environment);
 
-        if (!$path) {
-            return 1;
-        }
-
         $result = $client->getParameter([
             'Name' => $path,
             'WithDecryption' => true,
@@ -259,10 +245,6 @@ class Env extends Command
         }
 
         $var_path = $this->getSsmParameterPath($config, $environment, $name);
-
-        if (!$var_path) {
-            return 1;
-        }
 
         $results = $client->getParametersByPath([
             'Path' => $this->getSsmParameterPath($config, $environment),
@@ -359,10 +341,6 @@ class Env extends Command
 
         $path = $this->getSsmParameterPath($config, $environment);
 
-        if (!$path) {
-            return 1;
-        }
-
         $client->deleteParameter([
             'Name' => $path,
         ]);
@@ -444,10 +422,6 @@ class Env extends Command
 
         $path = $this->getSsmParameterPath($config, $environment);
 
-        if (!$path) {
-            return 1;
-        }
-
         $results = $client->getParametersByPath([
             'Path' => $path,
             'WithDecryption' => true,
@@ -485,15 +459,13 @@ class Env extends Command
 
     protected function writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name)
     {
-        if ($config['schema-version'] === 1) {
-            $config['cloud-environments'][$environment]['variables'][] = $name;
+        $config['cloud-environments'][$environment]['variables'][] = $name;
 
-            $variables = array_values(array_unique($config['cloud-environments'][$environment]['variables']));
+        $variables = array_values(array_unique($config['cloud-environments'][$environment]['variables']));
 
-            sort($variables);
+        sort($variables);
 
-            $config['cloud-environments'][$environment]['variables'] = $variables;
-        }
+        $config['cloud-environments'][$environment]['variables'] = $variables;
 
         return $this->writeLaraSurfConfig($config);
     }
@@ -502,14 +474,12 @@ class Env extends Command
     {
         $existed = false;
 
-        if ($config['schema-version'] === 1) {
-            $key = array_search($name, $config['cloud-environments'][$environment]['variables']);
+        $key = array_search($name, $config['cloud-environments'][$environment]['variables']);
 
-            if ($key !== false) {
-                unset($config['cloud-environments'][$environment]['variables'][$key]);
+        if ($key !== false) {
+            unset($config['cloud-environments'][$environment]['variables'][$key]);
 
-                $existed = true;
-            }
+            $existed = true;
         }
 
         if ($existed) {

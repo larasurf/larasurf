@@ -63,24 +63,22 @@ class Config extends Command
             return 1;
         }
 
-        if ($config['schema-version'] === 1) {
-            if (!$this->validateUpstreamEnvironment($config, $key)) {
-                return 1;
+        if (!$this->validateUpstreamEnvironment($config, $key)) {
+            return 1;
+        }
+
+        $value = Arr::get($config, $key);
+
+        if ($value !== null) {
+            if (is_bool($value)) {
+                $value = $value ? 'true' : 'false';
             }
 
-            $value = Arr::get($config, $key);
+            $this->info("$key: $value");
+        } else {
+            $this->error("Key '$key' not found in larasurf.json");
 
-            if ($value !== null) {
-                if (is_bool($value)) {
-                    $value = $value ? 'true' : 'false';
-                }
-
-                $this->info("$key: $value");
-            } else {
-                $this->error("Key '$key' not found in larasurf.json");
-
-                return 1;
-            }
+            return 1;
         }
 
         return 0;
@@ -110,13 +108,11 @@ class Config extends Command
             return 1;
         }
 
-        if ($config['schema-version'] === 1) {
-            if (!$this->validateUpstreamEnvironment($config, $key)) {
-                return 1;
-            }
-
-            Arr::set($config, $key, $value);
+        if (!$this->validateUpstreamEnvironment($config, $key)) {
+            return 1;
         }
+
+        Arr::set($config, $key, $value);
 
         return $this->writeLaraSurfConfig($config) ? 0 : 1;
     }

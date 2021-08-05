@@ -25,8 +25,8 @@ class Infra extends Command
     const COMMAND_DESTROY = 'destroy';
     const COMMAND_ISSUE_CERTIFICATE = 'issue-certificate';
     const COMMAND_CHECK_CERTIFICATE = 'check-certificate';
-    const COMMAND_EMAIL_INBOX = 'email-inbox';
-    const COMMAND_EMAIL_OUTBOX = 'email-outbox';
+    const COMMAND_VERIFY_EMAIL_DOMAIN = 'verify-email-domain';
+    const COMMAND_VERIFY_EMAIL_DOMAIN_DKIM = 'verify-email-domain-dkim';
 
     protected $signature = 'larasurf:infra {subcommand} {environment}';
 
@@ -37,8 +37,8 @@ class Infra extends Command
         self::COMMAND_DESTROY => 'handleDestroy',
         self::COMMAND_ISSUE_CERTIFICATE => 'handleIssueCertificate',
         self::COMMAND_CHECK_CERTIFICATE => 'handleCheckCertificate',
-        self::COMMAND_EMAIL_INBOX => 'handleEmailInbox',
-        self::COMMAND_EMAIL_OUTBOX => 'handleEmailOutbox',
+        self::COMMAND_VERIFY_EMAIL_DOMAIN => 'handleVerifyEmailDomain',
+        self::COMMAND_VERIFY_EMAIL_DOMAIN_DKIM => 'handleVerifyEmailDomainDkim',
     ];
 
     public function handle()
@@ -113,15 +113,7 @@ class Infra extends Command
 
         $client = $this->getCloudFormationClient($config, $environment);
 
-        if (!$client) {
-            return 1;
-        }
-
         $stack_name = $this->getCloudFormationStackName($config, $environment);
-
-        if (!$stack_name) {
-            return 1;
-        }
 
         if ($this->confirm("Are you sure you want to destroy the '$environment' environment?")) {
             $client->deleteStack([
@@ -170,10 +162,6 @@ class Infra extends Command
         }
 
         $client = $this->getAcmClient($config, $environment);
-
-        if (!$client) {
-            return 1;
-        }
 
         $this->info("Requesting new certificate for domain '{$config['cloud-environments'][$environment]['domain']}'");
 
@@ -229,10 +217,6 @@ class Infra extends Command
 
         $client = $this->getAcmClient($config, $environment);
 
-        if (!$client) {
-            return 1;
-        }
-
         $result = $client->describeCertificate([
             'CertificateArn' => $config['cloud-environments'][$environment]['aws-certificate-arn'],
         ]);
@@ -244,7 +228,7 @@ class Infra extends Command
         return 0;
     }
 
-    protected function handleEmailInbox()
+    protected function handleVerifyEmailDomain()
     {
         $config = $this->getValidLarasurfConfig();
 
@@ -258,53 +242,265 @@ class Infra extends Command
             return 1;
         }
 
-        $client = $this->getSesClient($config, $environment);
-
-        if (!$client) {
+        if (!$this->validateDomainInConfig($config, $environment)) {
             return 1;
         }
 
-        $result = $client->verifyDomainIdentity([
-            'Domain' => '<string>', // todo
+        if (!$this->ensureHostedZoneIdInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $ses_client = $this->getSesClient($config, $environment);
+
+        $result = $ses_client->verifyDomainIdentity([
+            'Domain' => $config['cloud-environments'][$environment]['domain'],
         ]);
 
-        return 0;
-    }
+        $verification_token = $result['VerificationToken'];
 
-    protected function handleEmailOutbox()
-    {
-        $config = $this->getValidLarasurfConfig();
+        $this->info("Created pending domain identity for domain '{$config['cloud-environments'][$environment]['domain']}' successfully");
 
-        if (!$config) {
-            return 1;
+        $route53_client = $this->getRoute53Client($config, $environment);
+
+        $dns_result = $route53_client->changeResourceRecordSets([
+            'ChangeBatch' => [
+                'Changes' => [
+                    [
+                        'Action' => 'UPSERT',
+                        'ResourceRecordSet' => [
+                            'Name' => "_amazonses.{$config['cloud-environments'][$environment]['domain']}",
+                            'ResourceRecords' => [
+                                [
+                                    'Value' => $verification_token,
+                                ],
+                            ],
+                            'TTL' => 300,
+                            'Type' => 'TXT',
+                        ],
+                    ],
+                ],
+                'Comment' => 'Created by LaraSurf',
+            ],
+            'HostedZoneId' => $config['cloud-environments'][$environment]['aws-hosted-zone-id'],
+        ]);
+
+        $finished = false;
+        $status = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $result = $route53_client->getChange([
+                'Id' => $dns_result['ChangeInfo']['Id'],
+            ]);
+
+            if (isset($result['ChangeInfo']['Status'])) {
+                $status = $result['ChangeInfo']['Status'];
+                $finished = $status === 'INSYNC';
+
+                if (!$finished) {
+                    $this->line('DNS record change yet is not yet in sync, checking again in 10 seconds...');
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+            }
+
+            if (!$finished) {
+                $this->sleepBar(10);
+            }
+
+            $tries++;
         }
 
-        $environment = $this->argument('environment');
-
-        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
-            return 1;
-        }
-
-        // todo
-
-        return 0;
-    }
-
-    protected function validateDomainInConfig($config, $environment)
-    {
-        if (empty($config['cloud-environments'][$environment]['domain'])) {
-            $this->error("Domain not set for environment '$environment' in larasurf.json");
+        if ($tries >= $limit) {
+            $this->error('DNS record change set failed to be in sync within 30 minutes');
 
             return false;
         }
 
-        return true;
+        $this->info('DNS record change set is now in sync');
+
+        $finished = false;
+        $status = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $result = $ses_client->getIdentityVerificationAttributes([
+                'Identities' => [
+                    $config['cloud-environments'][$environment]['domain'],
+                ],
+            ]);
+
+            if (isset($result['VerificationAttributes'][$config['cloud-environments'][$environment]['domain']])) {
+                $status = $result['VerificationAttributes'][$config['cloud-environments'][$environment]['domain']]['VerificationStatus'];
+                $finished = $status === 'Success';
+
+                if (!$finished) {
+                    $this->line('SES has not detected the DNS records yet, checking again in 10 seconds...');
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+            }
+
+            if (!$finished) {
+                $this->sleepBar(10);
+            }
+
+            $tries++;
+        }
+
+        if ($tries >= $limit) {
+            $this->error('SES has failed to detect the DNS records within 30 minutes');
+
+            return false;
+        }
+
+        $this->info("Email for domain '{$config['cloud-environments'][$environment]['domain']} verified successfully'");
+
+        return 0;
+    }
+
+    protected function handleVerifyEmailDomainDkim()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if (!$this->validateDomainInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if (!$this->ensureHostedZoneIdInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $ses_client = $this->getSesClient($config, $environment);
+
+        $result = $ses_client->verifyDomainDkim([
+            'Domain' => $config['cloud-environments'][$environment]['domain'],
+        ]);
+
+        $tokens = $result['DkimTokens'];
+
+        $this->info("Created pending DKIM verification for domain '{$config['cloud-environments'][$environment]['domain']}' successfully");
+
+        $route53_client = $this->getRoute53Client($config, $environment);
+
+        $args = [
+            'ChangeBatch' => [
+                'Changes' => [],
+                'Comment' => 'Created by LaraSurf',
+            ],
+            'HostedZoneId' => $config['cloud-environments'][$environment]['aws-hosted-zone-id'],
+        ];
+
+        foreach ($tokens as $token) {
+            $args['ChangeBatch']['Changes'][] = [
+                'Action' => 'UPSERT',
+                'ResourceRecordSet' => [
+                    'Name' => "$token._domainkey.{$config['cloud-environments'][$environment]['domain']}.com",
+                    'ResourceRecords' => [
+                        [
+                            'Value' => "$token.dkim.amazonses.com",
+                        ],
+                    ],
+                    'TTL' => 300,
+                    'Type' => 'CNAME',
+                ],
+            ];
+        }
+
+        $dns_result = $route53_client->changeResourceRecordSets($args);
+
+        $finished = false;
+        $status = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $result = $route53_client->getChange([
+                'Id' => $dns_result['ChangeInfo']['Id'],
+            ]);
+
+            if (isset($result['ChangeInfo']['Status'])) {
+                $status = $result['ChangeInfo']['Status'];
+                $finished = $status === 'INSYNC';
+
+                if (!$finished) {
+                    $this->line('DNS record change yet is not yet in sync, checking again in 10 seconds...');
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+            }
+
+            if (!$finished) {
+                $this->sleepBar(10);
+            }
+
+            $tries++;
+        }
+
+        if ($tries >= $limit) {
+            $this->error('DNS record change set failed to be in sync within 30 minutes');
+
+            return false;
+        }
+
+        $this->info('DNS record change set is now in sync');
+
+        $finished = false;
+        $status = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $result = $ses_client->getIdentityDkimAttributes([
+                'Identities' => [
+                    $config['cloud-environments'][$environment]['domain'],
+                ],
+            ]);
+
+            if (isset($result['DkimAttributes'][$config['cloud-environments'][$environment]['domain']])) {
+                $status = $result['DkimAttributes'][$config['cloud-environments'][$environment]['domain']]['DkimVerificationStatus'];
+                $finished = $status === 'Success';
+
+                if (!$finished) {
+                    $this->line('SES has not detected the DNS records yet, checking again in 10 seconds...');
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+            }
+
+            if (!$finished) {
+                $this->sleepBar(10);
+            }
+
+            $tries++;
+        }
+
+        if ($tries >= $limit) {
+            $this->error('SES has failed to detect the DNS records within 30 minutes');
+
+            return false;
+        }
+
+        $this->info("Email DKIM for domain '{$config['cloud-environments'][$environment]['domain']} verified successfully'");
+
+        return 0;
     }
 
     protected function ensureHostedZoneIdInConfig(&$config, $environment)
     {
-        if (empty($config['cloud-environments'][$environment]['domain'])) {
-            $this->error("Domain not set for environment '$environment' in larasurf.json");
+        if (!$this->validateDomainInConfig($config, $environment)) {
 
             return false;
         }
@@ -320,10 +516,6 @@ class Infra extends Command
             }
 
             $client = $this->getRoute53Client($config, $environment);
-
-            if (!$client) {
-                return false;
-            }
 
             $this->info('Updating Hosted Zone ID in larasurf.json');
 
@@ -360,15 +552,7 @@ class Infra extends Command
     {
         $client = $this->getCloudFormationClient($config, $environment);
 
-        if (!$client) {
-            return false;
-        }
-
         $stack_name = $this->getCloudFormationStackName($config, $environment);
-
-        if (!$stack_name) {
-            return false;
-        }
 
         $infrastructure_template_path = base_path('.cloudformation/infrastructure.yml');
 
@@ -431,18 +615,7 @@ class Infra extends Command
             }
 
             if (!$finished) {
-                $bar = $this->output->createProgressBar(10);
-
-                $bar->start();
-
-                for ($i = 0; $i < 10; $i++) {
-                    sleep(1);
-                    $bar->advance();
-                }
-
-                $bar->finish();
-
-                $this->newLine();
+                $this->sleepBar(10);
             }
 
             $tries++;
@@ -452,15 +625,13 @@ class Infra extends Command
             $this->error('Stack failed to be created within 30 minutes');
 
             return false;
+        } else if ($success) {
+            $this->info('Stack created successfully');
         } else {
-            if ($success) {
-                $this->info('Stack created successfully');
-            } else {
-                $this->error("Stack creation failed with status: '$status'");
-                $this->error("See https://console.aws.amazon.com/cloudformation/home?region={$config['cloud-environments'][$environment]['aws-region']} for more information");
+            $this->error("Stack creation failed with status: '$status'");
+            $this->error("See https://console.aws.amazon.com/cloudformation/home?region={$config['cloud-environments'][$environment]['aws-region']} for more information");
 
-                return false;
-            }
+            return false;
         }
 
         return true;
@@ -475,10 +646,6 @@ class Infra extends Command
         }
 
         $path = $this->getSsmParameterPath($config, $environment);
-
-        if (!$path) {
-            return false;
-        }
 
         $results = $ssm_client->getParametersByPath([
             'Path' => $path,
@@ -542,5 +709,21 @@ class Infra extends Command
         }
 
         return true;
+    }
+
+    protected function sleepBar($seconds)
+    {
+        $bar = $this->output->createProgressBar($seconds);
+
+        $bar->start();
+
+        for ($i = 0; $i < $seconds; $i++) {
+            sleep(1);
+            $bar->advance();
+        }
+
+        $bar->finish();
+
+        $this->newLine();
     }
 }

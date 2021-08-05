@@ -29,19 +29,7 @@ trait InteractsWithLaraSurfConfig
             return false;
         }
 
-        if (!isset($json['schema-version'])) {
-            $this->error('Key \'schema-version\' not found in larasurf.json');
-
-            return false;
-        }
-
-        if ($json['schema-version'] === 1) {
-            return $this->getValidLarasurfConfigVersion1($json);
-        }
-
-        $this->error('Invalid larasurf.json schema version found');
-
-        return false;
+        return $this->getValidLarasurfConfigVersion1($json);
     }
 
     protected function getValidLarasurfConfigVersion1(array $json)
@@ -160,14 +148,21 @@ trait InteractsWithLaraSurfConfig
 
     protected function validateEnvironmentExistsInConfig(array $config, string $environment)
     {
-        if ($config['schema-version'] === 1) {
-            if (isset($config['cloud-environments'][$environment])) {
-                return true;
-            }
+        if (isset($config['cloud-environments'][$environment])) {
+            return true;
         }
 
-        $this->error("Environment '$environment' does not exist in larasurf.json");
-
         return false;
+    }
+
+    protected function validateDomainInConfig($config, $environment)
+    {
+        if (empty($config['cloud-environments'][$environment]['domain'])) {
+            $this->error("Domain not set for environment '$environment' in larasurf.json");
+
+            return false;
+        }
+
+        return true;
     }
 }

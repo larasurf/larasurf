@@ -52,96 +52,54 @@ trait InteractsWithAws
 
     protected function getSsmClient($config, $environment)
     {
-        if ($config['schema-version'] === 1) {
-            return new SsmClient([
-                'version' => 'latest',
-                'region' => $config['cloud-environments'][$environment]['aws-region'],
-                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-            ]);
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
+        return new SsmClient([
+            'version' => 'latest',
+            'region' => $config['cloud-environments'][$environment]['aws-region'],
+            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+        ]);
     }
 
     protected function getSsmParameterPath($config, $environment, $parameter = null)
     {
         $parameter = $parameter ?? '';
 
-        if ($config['schema-version'] === 1) {
-            return '/' . $config['project-name'] . '/' . $environment . '/' . $parameter;
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
+        return '/' . $config['project-name'] . '/' . $environment . '/' . $parameter;
     }
 
     protected function getCloudFormationClient($config, $environment) {
-        if ($config['schema-version'] === 1) {
-            return new CloudFormationClient([
-                'version' => 'latest',
-                'region' => $config['cloud-environments'][$environment]['aws-region'],
-                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-            ]);
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
+        return new CloudFormationClient([
+            'version' => 'latest',
+            'region' => $config['cloud-environments'][$environment]['aws-region'],
+            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+        ]);
     }
 
     protected function getCloudFormationStackName($config, $environment)
     {
-        if ($config['schema-version'] === 1) {
-            return "{$config['project-name']}-{$environment}";
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
+        return "{$config['project-name']}-{$environment}";
     }
 
     protected function getRoute53Client($config, $environment) {
-        if ($config['schema-version'] === 1) {
-            return new Route53Client([
-                'version' => 'latest',
-                'region' => $config['cloud-environments'][$environment]['aws-region'],
-                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-            ]);
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
+        return new Route53Client([
+            'version' => 'latest',
+            'region' => $config['cloud-environments'][$environment]['aws-region'],
+            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+        ]);
     }
 
     protected function getAcmClient($config, $environment) {
-        if ($config['schema-version'] === 1) {
-            return new AcmClient([
-                'version' => 'latest',
-                'region' => $config['cloud-environments'][$environment]['aws-region'],
-                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-            ]);
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
+        return new AcmClient([
+            'version' => 'latest',
+            'region' => $config['cloud-environments'][$environment]['aws-region'],
+            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+        ]);
     }
 
     protected function getSesClient($config, $environment) {
-        if ($config['schema-version'] === 1) {
-            return new SesClient([
-                'version' => 'latest',
-                'region' => $config['cloud-environments'][$environment]['aws-region'],
-                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-            ]);
-        }
-
-        $this->error('Unsupported schema version in larasurf.json');
-
-        return false;
+        return new SesClient([
+            'version' => 'latest',
+            'region' => $config['cloud-environments'][$environment]['aws-region'],
+            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+        ]);
     }
 }
