@@ -25,6 +25,7 @@ class Infra extends Command
     const COMMAND_DESTROY = 'destroy';
     const COMMAND_ISSUE_CERTIFICATE = 'issue-certificate';
     const COMMAND_CHECK_CERTIFICATE = 'check-certificate';
+    const COMMAND_DELETE_CERTIFICATE = 'delete-certificate';
     const COMMAND_VERIFY_EMAIL_DOMAIN = 'verify-email-domain';
     const COMMAND_VERIFY_EMAIL_DOMAIN_DKIM = 'verify-email-domain-dkim';
 
@@ -37,6 +38,7 @@ class Infra extends Command
         self::COMMAND_DESTROY => 'handleDestroy',
         self::COMMAND_ISSUE_CERTIFICATE => 'handleIssueCertificate',
         self::COMMAND_CHECK_CERTIFICATE => 'handleCheckCertificate',
+        self::COMMAND_DELETE_CERTIFICATE => 'handleDeleteCertificate',
         self::COMMAND_VERIFY_EMAIL_DOMAIN => 'handleVerifyEmailDomain',
         self::COMMAND_VERIFY_EMAIL_DOMAIN_DKIM => 'handleVerifyEmailDomainDkim',
     ];
@@ -224,6 +226,47 @@ class Infra extends Command
         $status = $result['Certificate']['Status'] ?? 'UNKNOWN';
 
         $this->line($status);
+
+        return 0;
+    }
+
+    protected function handleDeleteCertificate()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if (empty($config['cloud-environments'][$environment]['aws-certificate-arn'])) {
+            $this->error('AWS Certificate ARN not set in larasurf.json');
+
+            return 1;
+        }
+
+        if (!$this->confirm("Are you sure you want to delete the certificate for the '$environment' environment?")) {
+            return 0;
+        }
+
+        $client = $this->getAcmClient($config, $environment);
+
+        $client->deleteCertificate([
+            'CertificateArn' => $config['cloud-environments'][$environment]['aws-certificate-arn'],
+        ]);
+
+        $this->info('Certificate deleted successfully');
+
+        $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
+
+        if (!$this->writeLaraSurfConfig($config)) {
+            return 1;
+        }
 
         return 0;
     }
