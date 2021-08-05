@@ -19,8 +19,12 @@ class Config extends Command
 
     const VALID_KEYS = [
         'aws-profile',
-        'upstream-environments.stage.domain',
-        'upstream-environments.production.domain',
+        'cloud-environments.stage.domain',
+        'cloud-environments.production.domain',
+        'cloud-environments.stage.aws-certificate-arn',
+        'cloud-environments.production.aws-certificate-arn',
+        'cloud-environments.stage.stack-deployed',
+        'cloud-environments.production.stack-deployed',
     ];
 
     protected $signature = 'larasurf:config {subcommand} {key} {value?}';
@@ -67,7 +71,9 @@ class Config extends Command
             $value = Arr::get($config, $key);
 
             if ($value !== null) {
-                $value = $value ?: 'false';
+                if (is_bool($value)) {
+                    $value = $value ? 'true' : 'false';
+                }
 
                 $this->info("$key: $value");
             } else {
@@ -88,6 +94,12 @@ class Config extends Command
             $this->error('A config value must be specified');
 
             return 1;
+        }
+
+        if (strtolower($value) === 'true') {
+            $value = true;
+        } else if (strtolower($value) === 'false') {
+            $value = false;
         }
 
         $key = $this->argument('key');
@@ -111,7 +123,7 @@ class Config extends Command
 
     protected function validateUpstreamEnvironment($config, $key)
     {
-        if (str_starts_with($key, 'upstream-environments.')) {
+        if (str_starts_with($key, 'cloud-environments.')) {
             $environment = explode('.', $key)[1] ?? '';
 
             return $this->validateEnvironmentExistsInConfig($config, $environment);

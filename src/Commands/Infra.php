@@ -24,6 +24,9 @@ class Infra extends Command
     const COMMAND_CREATE = 'create';
     const COMMAND_DESTROY = 'destroy';
     const COMMAND_ISSUE_CERTIFICATE = 'issue-certificate';
+    const COMMAND_CHECK_CERTIFICATE = 'check-certificate';
+    const COMMAND_EMAIL_INBOX = 'email-inbox';
+    const COMMAND_EMAIL_OUTBOX = 'email-outbox';
 
     protected $signature = 'larasurf:infra {subcommand} {environment}';
 
@@ -33,7 +36,9 @@ class Infra extends Command
         self::COMMAND_CREATE => 'handleCreate',
         self::COMMAND_DESTROY => 'handleDestroy',
         self::COMMAND_ISSUE_CERTIFICATE => 'handleIssueCertificate',
-
+        self::COMMAND_CHECK_CERTIFICATE => 'handleCheckCertificate',
+        self::COMMAND_EMAIL_INBOX => 'handleEmailInbox',
+        self::COMMAND_EMAIL_OUTBOX => 'handleEmailOutbox',
     ];
 
     public function handle()
@@ -75,7 +80,7 @@ class Infra extends Command
             return 1;
         }
 
-        $config['upstream-environments'][$environment]['stack-deployed'] = true;
+        $config['cloud-environments'][$environment]['stack-deployed'] = true;
 
         $success = $this->writeLaraSurfConfig($config);
 
@@ -83,7 +88,7 @@ class Infra extends Command
             return 1;
         }
 
-        $success = $this->postCreateStackUpdateParameters($config, $environment);
+        $success = $this->afterCreateStackUpdateParameters($config, $environment);
 
         if (!$success) {
             return 1;
@@ -124,10 +129,10 @@ class Infra extends Command
             ]);
 
             $this->info('Stack deletion initiated');
-            $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['upstream-environments'][$environment]['aws-region']} for stack deletion status");
+            $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['cloud-environments'][$environment]['aws-region']} for stack deletion status");
         }
 
-        $config['upstream-environments'][$environment]['stack-deployed'] = false;
+        $config['cloud-environments'][$environment]['stack-deployed'] = false;
 
         $success = $this->writeLaraSurfConfig($config);
 
@@ -152,7 +157,7 @@ class Infra extends Command
             return 1;
         }
 
-        if ($config['upstream-environments'][$environment]['aws-certificate-arn'] &&
+        if ($config['cloud-environments'][$environment]['aws-certificate-arn'] &&
             !$this->confirm('AWS Certificate ARN exists in larasurf.json. Issue a new certificate and overwrite?', false)
         ) {
             return 0;
@@ -170,10 +175,10 @@ class Infra extends Command
             return 1;
         }
 
-        $this->info("Requesting new certificate for domain '{$config['upstream-environments'][$environment]['domain']}...'");
+        $this->info("Requesting new certificate for domain '{$config['cloud-environments'][$environment]['domain']}'");
 
         $result = $client->requestCertificate([
-            'DomainName' => $config['upstream-environments'][$environment]['domain'],
+            'DomainName' => $config['cloud-environments'][$environment]['domain'],
             'Tags' => [
                 [
                     'Key' => 'Project',
@@ -187,32 +192,126 @@ class Infra extends Command
             'ValidationMethod' => 'DNS',
         ]);
 
+        $this->info('New certificate requested successfully');
+
+        $this->line("See https://console.aws.amazon.com/acm/home?region=$environment to create DNS records for verification");
+
         $arn = $result['CertificateArn'];
 
-        $certificate = $client->describeCertificate([
-            'CertificateArn' => $arn,
-        ]);
+        $config['cloud-environments'][$environment]['aws-certificate-arn'] = $arn;
 
-        // todo: make DNS validation records
-        Log::debug(var_export($certificate, true));
-
-        // todo: write config
-        $config['upstream-environments'][$environment]['aws-certificate-arn'] = $arn;
+        if (!$this->writeLaraSurfConfig($config)) {
+            return 1;
+        }
 
         return 0;
     }
 
-    protected function ensureHostedZoneIdInConfig(&$config, $environment)
+    protected function handleCheckCertificate()
     {
-        if (empty($config['upstream-environments'][$environment]['domain'])) {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if (empty($config['cloud-environments'][$environment]['aws-certificate-arn'])) {
+            $this->error('AWS Certificate ARN not set in larasurf.json');
+
+            return 1;
+        }
+
+        $client = $this->getAcmClient($config, $environment);
+
+        if (!$client) {
+            return 1;
+        }
+
+        $result = $client->describeCertificate([
+            'CertificateArn' => $config['cloud-environments'][$environment]['aws-certificate-arn'],
+        ]);
+
+        $status = $result['Certificate']['Status'] ?? 'UNKNOWN';
+
+        $this->line($status);
+
+        return 0;
+    }
+
+    protected function handleEmailInbox()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $client = $this->getSesClient($config, $environment);
+
+        if (!$client) {
+            return 1;
+        }
+
+        $result = $client->verifyDomainIdentity([
+            'Domain' => '<string>', // todo
+        ]);
+
+        return 0;
+    }
+
+    protected function handleEmailOutbox()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        // todo
+
+        return 0;
+    }
+
+    protected function validateDomainInConfig($config, $environment)
+    {
+        if (empty($config['cloud-environments'][$environment]['domain'])) {
             $this->error("Domain not set for environment '$environment' in larasurf.json");
 
             return false;
         }
 
-        if (empty($config['upstream-environments'][$environment]['aws-hosted-zone-id'])) {
-            $valid = Str::contains($config['upstream-environments'][$environment]['domain'], '.') &&
-                strtolower($config['upstream-environments'][$environment]['domain']) === $config['upstream-environments'][$environment]['domain'];
+        return true;
+    }
+
+    protected function ensureHostedZoneIdInConfig(&$config, $environment)
+    {
+        if (empty($config['cloud-environments'][$environment]['domain'])) {
+            $this->error("Domain not set for environment '$environment' in larasurf.json");
+
+            return false;
+        }
+
+        if (empty($config['cloud-environments'][$environment]['aws-hosted-zone-id'])) {
+            $valid = Str::contains($config['cloud-environments'][$environment]['domain'], '.') &&
+                strtolower($config['cloud-environments'][$environment]['domain']) === $config['cloud-environments'][$environment]['domain'];
 
             if (!$valid) {
                 $this->error("Invalid domain set for environment '$environment' in larasurf.json");
@@ -231,9 +330,9 @@ class Infra extends Command
             // todo: support more than 100 hosted zones
             $hosted_zones = $client->listHostedZones();
 
-            $suffix = Str::afterLast($config['upstream-environments'][$environment]['domain'], '.');
-            $domain_length = strlen($config['upstream-environments'][$environment]['domain']) - strlen($suffix) - 1;
-            $domain = substr($config['upstream-environments'][$environment]['domain'], 0, $domain_length);
+            $suffix = Str::afterLast($config['cloud-environments'][$environment]['domain'], '.');
+            $domain_length = strlen($config['cloud-environments'][$environment]['domain']) - strlen($suffix) - 1;
+            $domain = substr($config['cloud-environments'][$environment]['domain'], 0, $domain_length);
 
             if (Str::contains($domain, '.')) {
                 $domain = Str::afterLast($domain, '.');
@@ -243,7 +342,7 @@ class Infra extends Command
 
             foreach ($hosted_zones['HostedZones'] as $hosted_zone) {
                 if ($hosted_zone['Name'] === $domain . '.') {
-                    $config['upstream-environments'][$environment]['aws-hosted-zone-id'] = str_replace('/hostedzone/', '', $hosted_zone['Id']);
+                    $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = str_replace('/hostedzone/', '', $hosted_zone['Id']);
 
                     return $this->writeLaraSurfConfig($config);
                 }
@@ -305,7 +404,7 @@ class Infra extends Command
 
         $this->info('Stack creation initiated');
 
-        $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['upstream-environments'][$environment]['aws-region']} for more information");
+        $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['cloud-environments'][$environment]['aws-region']} for more information");
 
         $finished = false;
         $success = false;
@@ -358,7 +457,7 @@ class Infra extends Command
                 $this->info('Stack created successfully');
             } else {
                 $this->error("Stack creation failed with status: '$status'");
-                $this->error("See https://console.aws.amazon.com/cloudformation/home?region={$config['upstream-environments'][$environment]['aws-region']} for more information");
+                $this->error("See https://console.aws.amazon.com/cloudformation/home?region={$config['cloud-environments'][$environment]['aws-region']} for more information");
 
                 return false;
             }
@@ -367,7 +466,7 @@ class Infra extends Command
         return true;
     }
 
-    protected function postCreateStackUpdateParameters($config, $environment)
+    protected function afterCreateStackUpdateParameters($config, $environment)
     {
         $ssm_client = $this->getSsmClient($config, $environment);
 
@@ -427,14 +526,14 @@ class Infra extends Command
                 $this->info("Successfully set parameter '$var_path'");
             }
 
-            $config['upstream-environments'][$environment]['variables'][] = $key;
+            $config['cloud-environments'][$environment]['variables'][] = $key;
         }
 
-        $variables = array_values(array_unique($config['upstream-environments'][$environment]['variables']));
+        $variables = array_values(array_unique($config['cloud-environments'][$environment]['variables']));
 
         sort($variables);
 
-        $config['upstream-environments'][$environment]['variables'] = $variables;
+        $config['cloud-environments'][$environment]['variables'] = $variables;
 
         $success = $this->writeLaraSurfConfig($config);
 

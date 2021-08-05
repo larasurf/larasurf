@@ -7,6 +7,7 @@ use Aws\CloudFormation\CloudFormationClient;
 use Aws\Credentials\Credentials;
 use Aws\Exception\CredentialsException;
 use Aws\Route53\Route53Client;
+use Aws\Ses\SesClient;
 use Aws\Ssm\SsmClient;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\RejectedPromise;
@@ -54,7 +55,7 @@ trait InteractsWithAws
         if ($config['schema-version'] === 1) {
             return new SsmClient([
                 'version' => 'latest',
-                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'region' => $config['cloud-environments'][$environment]['aws-region'],
                 'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
             ]);
         }
@@ -81,7 +82,7 @@ trait InteractsWithAws
         if ($config['schema-version'] === 1) {
             return new CloudFormationClient([
                 'version' => 'latest',
-                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'region' => $config['cloud-environments'][$environment]['aws-region'],
                 'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
             ]);
         }
@@ -106,7 +107,7 @@ trait InteractsWithAws
         if ($config['schema-version'] === 1) {
             return new Route53Client([
                 'version' => 'latest',
-                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'region' => $config['cloud-environments'][$environment]['aws-region'],
                 'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
             ]);
         }
@@ -120,7 +121,21 @@ trait InteractsWithAws
         if ($config['schema-version'] === 1) {
             return new AcmClient([
                 'version' => 'latest',
-                'region' => $config['upstream-environments'][$environment]['aws-region'],
+                'region' => $config['cloud-environments'][$environment]['aws-region'],
+                'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+            ]);
+        }
+
+        $this->error('Unsupported schema version in larasurf.json');
+
+        return false;
+    }
+
+    protected function getSesClient($config, $environment) {
+        if ($config['schema-version'] === 1) {
+            return new SesClient([
+                'version' => 'latest',
+                'region' => $config['cloud-environments'][$environment]['aws-region'],
                 'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
             ]);
         }

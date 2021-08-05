@@ -84,17 +84,17 @@ class Env extends Command
         $existed = false;
 
         if ($config['schema-version'] === 1) {
-            if (isset($config['upstream-environments'][$environment])) {
+            if (isset($config['cloud-environments'][$environment])) {
                 $this->warn("Environment '$environment' already exists in larasurf.json");
 
                 $existed = true;
             } else {
-                $config['upstream-environments'][$environment]['aws-region'] = $aws_region;
-                $config['upstream-environments'][$environment]['aws-certificate-arn'] = false;
-                $config['upstream-environments'][$environment]['aws-hosted-zone-id'] = false;
-                $config['upstream-environments'][$environment]['domain'] = false;
-                $config['upstream-environments'][$environment]['stack-deployed'] = false;
-                $config['upstream-environments'][$environment]['variables'] = [];
+                $config['cloud-environments'][$environment]['aws-region'] = $aws_region;
+                $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
+                $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;
+                $config['cloud-environments'][$environment]['domain'] = false;
+                $config['cloud-environments'][$environment]['stack-deployed'] = false;
+                $config['cloud-environments'][$environment]['variables'] = [];
             }
         }
 
@@ -128,7 +128,7 @@ class Env extends Command
         }
 
         if ($config['schema-version'] === 1) {
-            $exists = in_array($name, $config['upstream-environments'][$environment]['variables']);
+            $exists = in_array($name, $config['cloud-environments'][$environment]['variables']);
         } else {
             $exists = false;
         }
@@ -165,10 +165,10 @@ class Env extends Command
             $exists = $ssm_exists;
         }
 
-        if ($exists) {
-            $this->info("Environment variable '$name' exists in the '$environment' environment");
-        } else {
+        if (!$exists) {
             $this->warn("Environment variable '$name' does not exist in the '$environment' environment");
+
+            return 1;
         }
 
         return 0;
@@ -213,11 +213,13 @@ class Env extends Command
 
         $value = $result['Parameter']['Value'];
 
-        if ($value !== null) {
-            $this->line($value);
-        } else {
+        if ($value === null) {
             $this->warn("Environment variable '$name' does not exist in the '$environment' environment");
+
+            return 1;
         }
+
+        $this->line($value);
 
         return 0;
     }
@@ -409,9 +411,9 @@ class Env extends Command
 
         $variables = array_map(function ($variable) use ($config, $environment) {
             return $this->getSsmParameterPath($config, $environment, $variable);
-        }, $config['upstream-environments'][$environment]['variables']);
+        }, $config['cloud-environments'][$environment]['variables']);
 
-        if (!empty($config['upstream-environments'][$environment]['variables'])) {
+        if (!empty($config['cloud-environments'][$environment]['variables'])) {
             $this->info(implode(PHP_EOL, $variables));
         } else {
             $this->warn("Environment '$environment' has no variables in larasurf.json");
@@ -484,13 +486,13 @@ class Env extends Command
     protected function writeEnvironmentVariableToLaraSurfConfig($config, $environment, $name)
     {
         if ($config['schema-version'] === 1) {
-            $config['upstream-environments'][$environment]['variables'][] = $name;
+            $config['cloud-environments'][$environment]['variables'][] = $name;
 
-            $variables = array_values(array_unique($config['upstream-environments'][$environment]['variables']));
+            $variables = array_values(array_unique($config['cloud-environments'][$environment]['variables']));
 
             sort($variables);
 
-            $config['upstream-environments'][$environment]['variables'] = $variables;
+            $config['cloud-environments'][$environment]['variables'] = $variables;
         }
 
         return $this->writeLaraSurfConfig($config);
@@ -501,10 +503,10 @@ class Env extends Command
         $existed = false;
 
         if ($config['schema-version'] === 1) {
-            $key = array_search($name, $config['upstream-environments'][$environment]['variables']);
+            $key = array_search($name, $config['cloud-environments'][$environment]['variables']);
 
             if ($key !== false) {
-                unset($config['upstream-environments'][$environment]['variables'][$key]);
+                unset($config['cloud-environments'][$environment]['variables'][$key]);
 
                 $existed = true;
             }
