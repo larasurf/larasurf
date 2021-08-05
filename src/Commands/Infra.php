@@ -28,6 +28,8 @@ class Infra extends Command
     const COMMAND_DELETE_CERTIFICATE = 'delete-certificate';
     const COMMAND_VERIFY_EMAIL_DOMAIN = 'verify-email-domain';
     const COMMAND_VERIFY_EMAIL_DOMAIN_DKIM = 'verify-email-domain-dkim';
+    const COMMAND_ENABLE_EMAIL_SENDING = 'enable-email-sending';
+    const COMMAND_CHECK_EMAIL_SENDING = 'check-email-sending';
 
     protected $signature = 'larasurf:infra {subcommand} {environment}';
 
@@ -41,6 +43,8 @@ class Infra extends Command
         self::COMMAND_DELETE_CERTIFICATE => 'handleDeleteCertificate',
         self::COMMAND_VERIFY_EMAIL_DOMAIN => 'handleVerifyEmailDomain',
         self::COMMAND_VERIFY_EMAIL_DOMAIN_DKIM => 'handleVerifyEmailDomainDkim',
+// todo:        self::COMMAND_ENABLE_EMAIL_SENDING => 'handleEnableEmailSending',
+// todo:        self::COMMAND_CHECK_EMAIL_SENDING => 'handleCheckEmailSending',
     ];
 
     public function handle()
@@ -184,13 +188,57 @@ class Infra extends Command
 
         $this->info('New certificate requested successfully');
 
-        $this->line("See https://console.aws.amazon.com/acm/home?region=$environment to create DNS records for verification");
+        $this->line("See https://console.aws.amazon.com/acm/home?region={$config['cloud-environments'][$environment]['aws-region']} to create DNS records for verification");
 
         $arn = $result['CertificateArn'];
 
         $config['cloud-environments'][$environment]['aws-certificate-arn'] = $arn;
 
         if (!$this->writeLaraSurfConfig($config)) {
+            return 1;
+        }
+
+        $finished = false;
+        $success = false;
+        $status = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $result = $client->describeCertificate([
+                'CertificateArn' => $config['cloud-environments'][$environment]['aws-certificate-arn'],
+            ]);
+
+            if (isset($result['Certificate']['Status'])) {
+                $status = $result['Certificate']['Status'];
+                $finished = $status !== 'PENDING_VALIDATION';
+
+                if ($finished) {
+                    $success = $status === 'ISSUED';
+                } else {
+                    $this->line('Certificate verification is still pending, checking again in 10 seconds...');
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+            }
+
+            if (!$finished) {
+                $this->sleepBar(10);
+            }
+
+            $tries++;
+        }
+
+        if ($tries >= $limit) {
+            $this->error('Certificate failed to verify within 30 minutes');
+
+            return 1;
+        } else if ($success) {
+            $this->info('Certificate verified successfully');
+        } else {
+            $this->error("Certificate verification failed with status: '$status'");
+            $this->error("See https://console.aws.amazon.com/acm/home?region={$config['cloud-environments'][$environment]['aws-region']} for more information");
+
             return 1;
         }
 

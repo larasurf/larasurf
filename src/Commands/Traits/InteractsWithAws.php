@@ -8,6 +8,7 @@ use Aws\Credentials\Credentials;
 use Aws\Exception\CredentialsException;
 use Aws\Route53\Route53Client;
 use Aws\Ses\SesClient;
+use Aws\SesV2\SesV2Client;
 use Aws\Ssm\SsmClient;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\RejectedPromise;
@@ -97,6 +98,14 @@ trait InteractsWithAws
 
     protected function getSesClient($config, $environment) {
         return new SesClient([
+            'version' => 'latest',
+            'region' => $config['cloud-environments'][$environment]['aws-region'],
+            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+        ]);
+    }
+
+    protected function getSesV2Client($config, $environment) {
+        return new SesV2Client([
             'version' => 'latest',
             'region' => $config['cloud-environments'][$environment]['aws-region'],
             'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
