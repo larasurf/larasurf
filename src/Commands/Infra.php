@@ -27,6 +27,7 @@ class Infra extends Command
     const COMMAND_CHECK_CERTIFICATE = 'check-certificate';
     const COMMAND_DELETE_CERTIFICATE = 'delete-certificate';
     const COMMAND_VERIFY_EMAIL_DOMAIN = 'verify-email-domain';
+    const COMMAND_DELETE_EMAIL_DOMAIN = 'delete-email-domain';
     const COMMAND_VERIFY_EMAIL_DOMAIN_DKIM = 'verify-email-domain-dkim';
     const COMMAND_ENABLE_EMAIL_SENDING = 'enable-email-sending';
     const COMMAND_CHECK_EMAIL_SENDING = 'check-email-sending';
@@ -34,7 +35,7 @@ class Infra extends Command
 
     protected $signature = 'larasurf:infra {subcommand} {environment}';
 
-    protected $description = 'Manipulate the infrastructure for an upstream environment';
+    protected $description = 'Manipulate the infrastructure for a cloud environment';
 
     protected $commands = [
         self::COMMAND_CREATE => 'handleCreate',
@@ -44,6 +45,7 @@ class Infra extends Command
         self::COMMAND_DELETE_CERTIFICATE => 'handleDeleteCertificate',
         self::COMMAND_VERIFY_EMAIL_DOMAIN => 'handleVerifyEmailDomain',
         self::COMMAND_VERIFY_EMAIL_DOMAIN_DKIM => 'handleVerifyEmailDomainDkim',
+        self::COMMAND_DELETE_EMAIL_DOMAIN => 'handleDeleteEmailDomain',
         self::COMMAND_ENABLE_EMAIL_SENDING => 'handleEnableEmailSending',
         self::COMMAND_CHECK_EMAIL_SENDING => 'handleCheckEmailSending',
     ];
@@ -687,6 +689,35 @@ class Infra extends Command
         return 0;
     }
 
+    protected function handleDeleteEmailDomain()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if (!$this->validateDomainInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $client = $this->getSesClient($config, $environment);
+
+        $client->deleteIdentity([
+            'Identity' => $config['cloud-environments'][$environment]['domain'],
+        ]);
+
+        $this->info("Email identity for domain '{$config['cloud-environments'][$environment]['domain']}' deleted successfully");
+
+        return 0;
+    }
+
     protected function handleEnableEmailSending()
     {
         $config = $this->getValidLarasurfConfig();
@@ -728,7 +759,7 @@ class Infra extends Command
             'WebsiteURL' => $config['cloud-environments'][$environment]['domain'],
         ];
 
-        if ($additional_email && $additional_email !== 'none') {
+        if ($additional_email && strtolower($additional_email) !== 'none') {
             $args['AdditionalContactEmailAddresses'] = [$additional_email];
         }
 
