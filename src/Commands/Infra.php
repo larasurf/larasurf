@@ -30,6 +30,7 @@ class Infra extends Command
     const COMMAND_VERIFY_EMAIL_DOMAIN_DKIM = 'verify-email-domain-dkim';
     const COMMAND_ENABLE_EMAIL_SENDING = 'enable-email-sending';
     const COMMAND_CHECK_EMAIL_SENDING = 'check-email-sending';
+    // todo: command to add/remove IPs from SG for stage access
 
     protected $signature = 'larasurf:infra {subcommand} {environment}';
 
@@ -43,8 +44,8 @@ class Infra extends Command
         self::COMMAND_DELETE_CERTIFICATE => 'handleDeleteCertificate',
         self::COMMAND_VERIFY_EMAIL_DOMAIN => 'handleVerifyEmailDomain',
         self::COMMAND_VERIFY_EMAIL_DOMAIN_DKIM => 'handleVerifyEmailDomainDkim',
-// todo:        self::COMMAND_ENABLE_EMAIL_SENDING => 'handleEnableEmailSending',
-// todo:        self::COMMAND_CHECK_EMAIL_SENDING => 'handleCheckEmailSending',
+        self::COMMAND_ENABLE_EMAIL_SENDING => 'handleEnableEmailSending',
+        self::COMMAND_CHECK_EMAIL_SENDING => 'handleCheckEmailSending',
     ];
 
     public function handle()
@@ -188,8 +189,6 @@ class Infra extends Command
 
         $this->info('New certificate requested successfully');
 
-        $this->line("See https://console.aws.amazon.com/acm/home?region={$config['cloud-environments'][$environment]['aws-region']} to create DNS records for verification");
-
         $arn = $result['CertificateArn'];
 
         $config['cloud-environments'][$environment]['aws-certificate-arn'] = $arn;
@@ -197,6 +196,105 @@ class Infra extends Command
         if (!$this->writeLaraSurfConfig($config)) {
             return 1;
         }
+
+        $finished = false;
+        $success = false;
+        $record_name = null;
+        $record_value = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $result = $client->describeCertificate([
+                'CertificateArn' => $config['cloud-environments'][$environment]['aws-certificate-arn'],
+            ]);
+
+            if (isset($result['Certificate']['DomainValidationOptions'])) {
+                $record_name = $result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Name'] ?? '';
+                $record_value = $result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Value'] ?? '';
+                $finished = !empty($record_name) && !empty($record_value);
+
+                if (!$finished) {
+                    $this->line('Certificate verification DNS records aren\'t avaiable yet, checking again in 10 seconds...');
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds...');
+            }
+
+            if (!$finished) {
+                $this->sleepBar(10);
+            }
+
+            $tries++;
+        }
+
+        if ($tries >= $limit) {
+            $this->error('Failed to get certificate verification DNS records within 30 minutes');
+
+            return 1;
+        }
+
+        $this->info('Creating certificate verification DNS records');
+
+        $route53_client = $this->getRoute53Client($config, $environment);
+
+        $dns_result = $route53_client->changeResourceRecordSets([
+            'ChangeBatch' => [
+                'Changes' => [
+                    [
+                        'Action' => 'UPSERT',
+                        'ResourceRecordSet' => [
+                            'Name' => $record_name,
+                            'ResourceRecords' => [
+                                [
+                                    'Value' => $record_value,
+                                ],
+                            ],
+                            'TTL' => 300,
+                            'Type' => 'CNAME',
+                        ],
+                    ],
+                ],
+                'Comment' => 'Created by LaraSurf',
+            ],
+            'HostedZoneId' => $config['cloud-environments'][$environment]['aws-hosted-zone-id'],
+        ]);
+
+        $finished = false;
+        $status = null;
+        $tries = 0;
+        $limit = 180;
+
+        while (!$finished && $tries < $limit) {
+            $result = $route53_client->getChange([
+                'Id' => $dns_result['ChangeInfo']['Id'],
+            ]);
+
+            if (isset($result['ChangeInfo']['Status'])) {
+                $status = $result['ChangeInfo']['Status'];
+                $finished = $status === 'INSYNC';
+
+                if (!$finished) {
+                    $this->line("DNS record change is not yet in sync (status: $status), checking again in 10 seconds...");
+                }
+            } else {
+                $this->warn('Unexpected response from AWS API, trying again in 10 seconds');
+            }
+
+            if (!$finished) {
+                $this->sleepBar(10);
+            }
+
+            $tries++;
+        }
+
+        if ($tries >= $limit) {
+            $this->error('DNS record change set failed to be in sync within 30 minutes');
+
+            return 1;
+        }
+
+        $this->info('DNS record change set is now in sync');
 
         $finished = false;
         $success = false;
@@ -233,14 +331,14 @@ class Infra extends Command
             $this->error('Certificate failed to verify within 30 minutes');
 
             return 1;
-        } else if ($success) {
-            $this->info('Certificate verified successfully');
-        } else {
+        } else if (!$success) {
             $this->error("Certificate verification failed with status: '$status'");
             $this->error("See https://console.aws.amazon.com/acm/home?region={$config['cloud-environments'][$environment]['aws-region']} for more information");
 
             return 1;
         }
+
+        $this->info('Certificate verified successfully');
 
         return 0;
     }
@@ -585,6 +683,95 @@ class Infra extends Command
         }
 
         $this->info("Email DKIM for domain '{$config['cloud-environments'][$environment]['domain']} verified successfully'");
+
+        return 0;
+    }
+
+    protected function handleEnableEmailSending()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if (!$this->validateDomainInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $client = $this->getSesV2Client($config, $environment);
+
+        $result = $client->getAccount();
+
+        $enabled = $result['ProductionAccessEnabled'] ?? false;
+
+        if ($enabled) {
+            $this->info('Email sending is already enabled');
+
+            return 1;
+        }
+
+        $additional_email = $this->ask('Additional email to be contacted:', 'none');
+
+        $description = $this->ask('Use Case Description:', 'Send transactional emails from a Laravel application');
+
+        $args = [
+            'MailType' => 'TRANSACTIONAL',
+            'ProductionAccessEnabled' => true,
+            'UseCaseDescription' => $description,
+            'WebsiteURL' => $config['cloud-environments'][$environment]['domain'],
+        ];
+
+        if ($additional_email && $additional_email !== 'none') {
+            $args['AdditionalContactEmailAddresses'] = [$additional_email];
+        }
+
+        $client->putAccountDetails($args);
+
+        $this->info('Requested email sending access from AWS successfully');
+
+        $this->line('Please allow up to 24 hours for a response');
+
+        return 0;
+    }
+
+    protected function handleCheckEmailSending()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        if (!$this->validateDomainInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $client = $this->getSesV2Client($config, $environment);
+
+        $result = $client->getAccount();
+
+        $enabled = $result['ProductionAccessEnabled'] ?? false;
+
+        if (!$enabled) {
+            $this->line('false');
+
+            return 1;
+        }
+
+        $this->line('true');
 
         return 0;
     }
