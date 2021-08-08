@@ -10,6 +10,35 @@ trait InteractsWithLaraSurfConfig
         'us-east-1', // todo: update
     ];
 
+    protected $valid_db_types = [
+        'db.t2.micro',
+        'db.t2.small',
+        'db.t2.medium',
+        'db.m5.large',
+        'db.m5.xlarge',
+    ];
+
+    protected $minimum_db_storage_gb = 20;
+
+    protected $maxmium_db_storage_gb = 70368; // 64 tebibytes
+
+    protected $valid_cache_types = [
+        'cache.m5.large',
+        'cache.m5.xlarge',
+        'cache.m5.2xlarge',
+        'cache.m5.4xlarge',
+        'cache.m5.12xlarge',
+        'cache.m5.24xlarge',
+        'cache.m4.large',
+        'cache.m4.xlarge',
+        'cache.m4.2xlarge',
+        'cache.m4.4xlarge',
+        'cache.m4.10xlarge',
+        'cache.t2.micro',
+        'cache.t2.small',
+        'cache.t2.medium',
+    ];
+
     protected function getValidLarasurfConfig()
     {
         if (!File::exists(base_path('larasurf.json'))) {
@@ -58,6 +87,54 @@ trait InteractsWithLaraSurfConfig
             foreach ($environments as $environment) {
                 if (!in_array($environment, $this->valid_environments)) {
                     $this->error("Invalid environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!isset($json['cloud-environments'][$environment]['db-type'])) {
+                    $this->error("Key 'db-type' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!in_array($json['cloud-environments'][$environment]['db-type'], $this->valid_db_types)) {
+                    $this->error("Invalid database type for environment '$environment'");
+
+                    return false;
+                }
+
+                if (!isset($json['cloud-environments'][$environment]['cache-type'])) {
+                    $this->error("Key 'cache-type' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!in_array($json['cloud-environments'][$environment]['cache-type'], $this->valid_cache_types)) {
+                    $this->error("Invalid cache type for environment '$environment'");
+
+                    return false;
+                }
+
+                if (!isset($json['cloud-environments'][$environment]['db-storage-gb'])) {
+                    $this->error("Key 'db-storage-gb' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!is_int($json['cloud-environments'][$environment]['db-storage-gb'])) {
+                    $this->error("Invalid value for database storage GB for environment '$environment'");
+
+                    return false;
+                }
+
+                if ($json['cloud-environments'][$environment]['db-storage-gb'] > $this->maxmium_db_storage_gb) {
+                    $this->error("Database storage GB must be less than or equal to {$this->maxmium_db_storage_gb} for environment '$environment'");
+
+                    return false;
+                }
+
+                if ($json['cloud-environments'][$environment]['db-storage-gb'] < $this->minimum_db_storage_gb) {
+                    $this->error("Database storage GB must be greater than or equal to {$this->minimum_db_storage_gb} for environment '$environment'");
 
                     return false;
                 }

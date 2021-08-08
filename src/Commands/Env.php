@@ -88,6 +88,16 @@ class Env extends Command
 
             $existed = true;
         } else {
+            if ($environment === 'production') {
+                $config['cloud-environments'][$environment]['db-type'] = 'db.t2.small';
+                $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.small';
+                $config['cloud-environments'][$environment]['db-storage-gb'] = 50;
+            } else {
+                $config['cloud-environments'][$environment]['db-type'] = 'db.t2.micro';
+                $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.micro';
+                $config['cloud-environments'][$environment]['db-storage-gb'] = 20;
+            }
+
             $config['cloud-environments'][$environment]['aws-region'] = $aws_region;
             $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
             $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;

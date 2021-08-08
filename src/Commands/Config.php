@@ -4,6 +4,9 @@ namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
@@ -17,16 +20,6 @@ class Config extends Command
     const COMMAND_GET = 'get';
     const COMMAND_SET = 'set';
 
-    const VALID_KEYS = [
-        'aws-profile',
-        'cloud-environments.stage.domain',
-        'cloud-environments.production.domain',
-        'cloud-environments.stage.aws-certificate-arn',
-        'cloud-environments.production.aws-certificate-arn',
-        'cloud-environments.stage.stack-deployed',
-        'cloud-environments.production.stack-deployed',
-    ];
-
     protected $signature = 'larasurf:config {subcommand} {key} {value?}';
 
     protected $description = 'Configure LaraSurf';
@@ -36,6 +29,8 @@ class Config extends Command
         self::COMMAND_SET => 'handleSet',
     ];
 
+    protected $rules = null;
+
     public function handle()
     {
         if (!$this->validateSubCommandArgument()) {
@@ -44,7 +39,9 @@ class Config extends Command
 
         $key = $this->argument('key');
 
-        if (!in_array($key, self::VALID_KEYS)) {
+        $this->rules = $this->getRules($key);
+
+        if (!$this->rules) {
             $this->error('Invalid config key specified');
 
             return 1;
@@ -74,7 +71,7 @@ class Config extends Command
                 $value = $value ? 'true' : 'false';
             }
 
-            $this->info("$key: $value");
+            $this->line($value);
         } else {
             $this->error("Key '$key' not found in larasurf.json");
 
@@ -94,23 +91,32 @@ class Config extends Command
             return 1;
         }
 
-        if (strtolower($value) === 'true') {
-            $value = true;
-        } else if (strtolower($value) === 'false') {
-            $value = false;
-        }
-
-        $key = $this->argument('key');
-
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
             return 1;
         }
 
+        $key = $this->argument('key');
+
         if (!$this->validateUpstreamEnvironment($config, $key)) {
             return 1;
         }
+
+        $validator = Validator::make(
+            ['data' => $value],
+            ['data' => $this->rules[$key]]
+        );
+
+        if ($validator->fails()) {
+            foreach ($validator->getMessageBag()->all() as $message) {
+                $this->error($message);
+            }
+
+            return 1;
+        }
+
+        $value = $this->castValue($key, $value);
 
         Arr::set($config, $key, $value);
 
@@ -126,5 +132,73 @@ class Config extends Command
         }
 
         return false;
+    }
+
+    protected function getRules($key)
+    {
+        switch ($key) {
+            case 'aws-profile': {
+                return [
+                    Rule::in($this->valid_aws_regions),
+                ];
+            }
+            case 'cloud-environments.stage.domain':
+            case 'cloud-environments.production.domain': {
+                return [
+                    'regex:/[a-z0-9-\.]+\.[a-z0-9]+/'
+                ];
+            }
+            case 'cloud-environments.stage.aws-certificate-arn':
+            case 'cloud-environments.production.aws-certificate-arn': {
+                return [
+                    'regex:/^arn:aws:acm:.+:certificate\/.+/'
+                ];
+            }
+            case 'cloud-environments.stage.stack-deployed':
+            case 'cloud-environments.production.stack-deployed': {
+                return [
+                    Rule::in(['true', 'false']),
+                ];
+            }
+            case 'cloud-environments.stage.db-type':
+            case 'cloud-environments.production.db-type': {
+                return [
+                    Rule::in($this->valid_db_types)
+                ];
+            }
+            case 'cloud-environments.stage.db-storage-gb':
+            case 'cloud-environments.production.db-storage-gb': {
+                return [
+                    'min:' . $this->minimum_db_storage_gb,
+                    'max:' . $this->maxmium_db_storage_gb,
+                ];
+            }
+            case 'cloud-environments.stage.cache-type':
+            case 'cloud-environments.production.cache-type': {
+                return [
+                    Rule::in($this->valid_cache_types),
+                ];
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    protected function castValue($key, $value)
+    {
+        switch ($key) {
+            case 'cloud-environments.stage.stack-deployed':
+            case 'cloud-environments.production.stack-deployed': {
+                return $value === 'true';
+            }
+            case 'cloud-environments.stage.db-storage-gb':
+            case 'cloud-environments.production.db-storage-gb': {
+                return (int) $value;
+            }
+            default: {
+                return (string) $value;
+            }
+        }
     }
 }

@@ -21,8 +21,8 @@ class Infra extends Command
     use HasEnvironmentArgument;
     use HasSubCommand;
 
-    const COMMAND_CREATE = 'create';
-    const COMMAND_DESTROY = 'destroy';
+    const COMMAND_CREATE_STACK = 'create-stack';
+    const COMMAND_DELETE_STACK = 'destroy-stack';
     const COMMAND_ISSUE_CERTIFICATE = 'issue-certificate';
     const COMMAND_CHECK_CERTIFICATE = 'check-certificate';
     const COMMAND_DELETE_CERTIFICATE = 'delete-certificate';
@@ -31,15 +31,15 @@ class Infra extends Command
     const COMMAND_VERIFY_EMAIL_DOMAIN_DKIM = 'verify-email-domain-dkim';
     const COMMAND_ENABLE_EMAIL_SENDING = 'enable-email-sending';
     const COMMAND_CHECK_EMAIL_SENDING = 'check-email-sending';
-    // todo: command to add/remove IPs from SG for stage access
+    // todo: command to add/remove IPs from SG for access to environment load balancer
 
     protected $signature = 'larasurf:infra {subcommand} {environment}';
 
     protected $description = 'Manipulate the infrastructure for a cloud environment';
 
     protected $commands = [
-        self::COMMAND_CREATE => 'handleCreate',
-        self::COMMAND_DESTROY => 'handleDestroy',
+        self::COMMAND_CREATE_STACK => 'handleCreateStack',
+        self::COMMAND_DELETE_STACK => 'handleDeleteStack',
         self::COMMAND_ISSUE_CERTIFICATE => 'handleIssueCertificate',
         self::COMMAND_CHECK_CERTIFICATE => 'handleCheckCertificate',
         self::COMMAND_DELETE_CERTIFICATE => 'handleDeleteCertificate',
@@ -63,7 +63,7 @@ class Infra extends Command
         return $this->runSubCommand();
     }
 
-    protected function handleCreate()
+    protected function handleCreateStack()
     {
         $config = $this->getValidLarasurfConfig();
 
@@ -83,9 +83,9 @@ class Infra extends Command
             return 1;
         }
 
-        $success = $this->createStack($config, $environment);
+        $output_vars = $this->createStack($config, $environment);
 
-        if (!$success) {
+        if ($output_vars === false) {
             return 1;
         }
 
@@ -97,7 +97,7 @@ class Infra extends Command
             return 1;
         }
 
-        $success = $this->afterCreateStackUpdateParameters($config, $environment);
+        $success = $this->afterCreateStackUpdateParameters($config, $environment, $output_vars);
 
         if (!$success) {
             return 1;
@@ -106,7 +106,7 @@ class Infra extends Command
         return 0;
     }
 
-    protected function handleDestroy()
+    protected function handleDeleteStack()
     {
         $config = $this->getValidLarasurfConfig();
 
@@ -903,7 +903,8 @@ class Infra extends Command
         $success = false;
         $status = null;
         $tries = 0;
-        $limit = 180;
+        $limit = 360;
+        $output_vars = [];
 
         while (!$finished && $tries < $limit) {
             $result = $client->describeStacks([
@@ -916,6 +917,8 @@ class Infra extends Command
 
                 if ($finished) {
                     $success = $result['Stacks'][0]['StackStatus'] === 'CREATE_COMPLETE';
+
+                    // todo: get stack outputs and add to parameter store, add to $output_vars
                 } else {
                     $this->line('Stack creation is not yet finished, checking again in 10 seconds...');
                 }
@@ -931,7 +934,7 @@ class Infra extends Command
         }
 
         if ($tries >= $limit) {
-            $this->error('Stack failed to be created within 30 minutes');
+            $this->error('Stack failed to be created within 60 minutes');
 
             return false;
         } else if ($success) {
@@ -943,10 +946,10 @@ class Infra extends Command
             return false;
         }
 
-        return true;
+        return $output_vars;
     }
 
-    protected function afterCreateStackUpdateParameters($config, $environment)
+    protected function afterCreateStackUpdateParameters($config, $environment, $extra_vars = [])
     {
         $ssm_client = $this->getSsmClient($config, $environment);
 
@@ -972,7 +975,9 @@ class Infra extends Command
             'MAIL_DRIVER' => 'ses',
         ];
 
-        foreach ($default_env_vars as $key => $value) {
+        $all_vars = array_merge($default_env_vars, $extra_vars);
+
+        foreach ($all_vars as $key => $value) {
             $var_path = $this->getSsmParameterPath($config, $environment, $key);
             $exists = false;
 
