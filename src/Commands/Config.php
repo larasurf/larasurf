@@ -103,6 +103,10 @@ class Config extends Command
             return 1;
         }
 
+        if (!$this->validateStackNotDeployed($config, $key)) {
+            return 1;
+        }
+
         $validator = Validator::make(
             ['data' => $value],
             ['data' => $this->rules[$key]]
@@ -128,8 +132,18 @@ class Config extends Command
         if (str_starts_with($key, 'cloud-environments.')) {
             $environment = explode('.', $key)[1] ?? '';
 
-            return $this->validateEnvironmentExistsInConfig($config, $environment) &&
-                $this->validateEnvironmentStackNotDeployed($config, $environment);
+            return $this->validateEnvironmentExistsInConfig($config, $environment);
+        }
+
+        return false;
+    }
+
+    protected function validateStackNotDeployed($config, $key)
+    {
+        if (str_starts_with($key, 'cloud-environments.')) {
+            $environment = explode('.', $key)[1] ?? '';
+
+            return $this->validateEnvironmentStackNotDeployed($config, $environment);
         }
 
         return false;
