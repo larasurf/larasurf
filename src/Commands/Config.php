@@ -128,7 +128,8 @@ class Config extends Command
         if (str_starts_with($key, 'cloud-environments.')) {
             $environment = explode('.', $key)[1] ?? '';
 
-            return $this->validateEnvironmentExistsInConfig($config, $environment);
+            return $this->validateEnvironmentExistsInConfig($config, $environment) &&
+                $this->validateEnvironmentStackNotDeployed($config, $environment);
         }
 
         return false;

@@ -229,10 +229,23 @@ trait InteractsWithLaraSurfConfig
             return true;
         }
 
+        $this->error("Environment '$environment' does not exist in larasurf.json");
+
         return false;
     }
 
-    protected function validateDomainInConfig($config, $environment)
+    protected function validateEnvironmentStackNotDeployed(array $config, string $environment)
+    {
+        if (!empty($config['cloud-environments'][$environment]['stack-deployed'])) {
+            $this->error("Environment '$environment' has been deployed already");
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function validateDomainInConfig(array $config, string $environment)
     {
         if (empty($config['cloud-environments'][$environment]['domain'])) {
             $this->error("Domain not set for environment '$environment' in larasurf.json");
