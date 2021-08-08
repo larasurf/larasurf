@@ -139,19 +139,19 @@ class Config extends Command
         switch ($key) {
             case 'aws-profile': {
                 return [
-                    Rule::in($this->valid_aws_regions),
+                    'regex:/^[a-zA-Z0-9-_]+$/',
                 ];
             }
             case 'cloud-environments.stage.domain':
             case 'cloud-environments.production.domain': {
                 return [
-                    'regex:/[a-z0-9-\.]+\.[a-z0-9]+/'
+                    'regex:/^[a-z0-9-\.]+\.[a-z0-9]+$/'
                 ];
             }
             case 'cloud-environments.stage.aws-certificate-arn':
             case 'cloud-environments.production.aws-certificate-arn': {
                 return [
-                    'regex:/^arn:aws:acm:.+:certificate\/.+/'
+                    'regex:/^arn:aws:acm:.+:certificate\/.+$/'
                 ];
             }
             case 'cloud-environments.stage.stack-deployed':
@@ -177,6 +177,12 @@ class Config extends Command
             case 'cloud-environments.production.cache-type': {
                 return [
                     Rule::in($this->valid_cache_types),
+                ];
+            }
+            case 'cloud-environments.stage.aws-region':
+            case 'cloud-environments.production.aws-region': {
+                return [
+                    Rule::in($this->valid_aws_regions),
                 ];
             }
             default: {

@@ -59,20 +59,6 @@ class Env extends Command
 
     protected function handleInit()
     {
-        $aws_region = $this->argument('arg1');
-
-        if (!$aws_region) {
-            $this->error('AWS region must be specified');
-
-            return 1;
-        }
-
-        if (!in_array($aws_region, $this->valid_aws_regions)) {
-            $this->error('Invalid AWS region specified');
-
-            return 1;
-        }
-
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
@@ -98,7 +84,7 @@ class Env extends Command
                 $config['cloud-environments'][$environment]['db-storage-gb'] = 20;
             }
 
-            $config['cloud-environments'][$environment]['aws-region'] = $aws_region;
+            $config['cloud-environments'][$environment]['aws-region'] = 'us-east-1';
             $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
             $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;
             $config['cloud-environments'][$environment]['domain'] = false;
