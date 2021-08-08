@@ -67,38 +67,30 @@ class Env extends Command
 
         $environment = $this->argument('environment');
 
-        $existed = false;
-
         if (isset($config['cloud-environments'][$environment])) {
             $this->warn("Environment '$environment' already exists in larasurf.json");
 
-            $existed = true;
-        } else {
-            if ($environment === 'production') {
-                $config['cloud-environments'][$environment]['db-type'] = 'db.t2.small';
-                $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.small';
-                $config['cloud-environments'][$environment]['db-storage-gb'] = 50;
-            } else {
-                $config['cloud-environments'][$environment]['db-type'] = 'db.t2.micro';
-                $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.micro';
-                $config['cloud-environments'][$environment]['db-storage-gb'] = 20;
-            }
-
-            $config['cloud-environments'][$environment]['aws-region'] = 'us-east-1';
-            $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
-            $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;
-            $config['cloud-environments'][$environment]['domain'] = false;
-            $config['cloud-environments'][$environment]['stack-deployed'] = false;
-            $config['cloud-environments'][$environment]['variables'] = [];
+            return 1;
         }
 
-        if (!$existed) {
-            return $this->writeLaraSurfConfig($config) ? 0 : 1;
+        if ($environment === 'production') {
+            $config['cloud-environments'][$environment]['db-type'] = 'db.t2.small';
+            $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.small';
+            $config['cloud-environments'][$environment]['db-storage-gb'] = 50;
         } else {
-            $this->warn("Environment '$environment' already exists in larasurf.json");
+            $config['cloud-environments'][$environment]['db-type'] = 'db.t2.micro';
+            $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.micro';
+            $config['cloud-environments'][$environment]['db-storage-gb'] = 20;
         }
 
-        return 0;
+        $config['cloud-environments'][$environment]['aws-region'] = 'us-east-1';
+        $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
+        $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;
+        $config['cloud-environments'][$environment]['domain'] = false;
+        $config['cloud-environments'][$environment]['stack-deployed'] = false;
+        $config['cloud-environments'][$environment]['variables'] = [];
+
+        return $this->writeLaraSurfConfig($config) ? 0 : 1;
     }
 
     protected function handleExists()

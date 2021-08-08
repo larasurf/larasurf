@@ -410,6 +410,8 @@ class Infra extends Command
 
         $this->info('Certificate deleted successfully');
 
+        $this->warn('No DNS records have been modified');
+
         $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
 
         if (!$this->writeLaraSurfConfig($config)) {

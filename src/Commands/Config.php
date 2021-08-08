@@ -5,7 +5,6 @@ namespace LaraSurf\LaraSurf\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
 use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
@@ -109,7 +108,7 @@ class Config extends Command
 
         $validator = Validator::make(
             ['data' => $value],
-            ['data' => $this->rules[$key]]
+            ['data' => $this->rules]
         );
 
         if ($validator->fails()) {
