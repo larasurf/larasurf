@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 use Aws\Acm\AcmClient;
 use Aws\CloudFormation\CloudFormationClient;
 use Aws\Credentials\Credentials;
+use Aws\Ec2\Ec2Client;
 use Aws\Exception\CredentialsException;
 use Aws\Route53\Route53Client;
 use Aws\Ses\SesClient;
@@ -106,6 +107,14 @@ trait InteractsWithAws
 
     protected function getSesV2Client($config, $environment) {
         return new SesV2Client([
+            'version' => 'latest',
+            'region' => $config['cloud-environments'][$environment]['aws-region'],
+            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
+        ]);
+    }
+
+    protected function getEc2Client($config, $environment) {
+        return new Ec2Client([
             'version' => 'latest',
             'region' => $config['cloud-environments'][$environment]['aws-region'],
             'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),

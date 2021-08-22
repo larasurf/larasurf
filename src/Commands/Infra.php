@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
+use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
 use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
@@ -20,6 +21,7 @@ class Infra extends Command
     use HasValidEnvironments;
     use HasEnvironmentArgument;
     use HasSubCommand;
+    use HasTimer;
 
     const COMMAND_CREATE_STACK = 'create-stack';
     const COMMAND_DELETE_STACK = 'destroy-stack';
@@ -31,9 +33,14 @@ class Infra extends Command
     const COMMAND_VERIFY_EMAIL_DOMAIN_DKIM = 'verify-email-domain-dkim';
     const COMMAND_ENABLE_EMAIL_SENDING = 'enable-email-sending';
     const COMMAND_CHECK_EMAIL_SENDING = 'check-email-sending';
-    // todo: command to add/remove IPs from SG for access to environment load balancer
+    const COMMAND_ALLOW_IP_APPLICATION = 'allow-ip-application'; // todo
+    const COMMAND_REVOKE_IP_APPLICATION = 'revoke-ip-application'; // todo
+    const COMMAND_LIST_IPS_APPLICATION = 'list-ips-application'; // todo
+    const COMMAND_ALLOW_IP_DATABASE = 'allow-ip-database'; // todo
+    const COMMAND_REVOKE_IP_DATABASE = 'revoke-ip-database'; // todo
+    const COMMAND_LIST_IPS_DATABASE = 'list-ips-database'; // todo
 
-    protected $signature = 'larasurf:infra {subcommand} {environment}';
+    protected $signature = 'larasurf:infra {subcommand} {environment} {arg1?}';
 
     protected $description = 'Manipulate the infrastructure for a cloud environment';
 
@@ -48,6 +55,7 @@ class Infra extends Command
         self::COMMAND_DELETE_EMAIL_DOMAIN => 'handleDeleteEmailDomain',
         self::COMMAND_ENABLE_EMAIL_SENDING => 'handleEnableEmailSending',
         self::COMMAND_CHECK_EMAIL_SENDING => 'handleCheckEmailSending',
+        self::COMMAND_ALLOW_IP_APPLICATION => 'handleAllowIpApplication',
     ];
 
     public function handle()
@@ -65,6 +73,8 @@ class Infra extends Command
 
     protected function handleCreateStack()
     {
+        $this->startTimer();
+
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
@@ -78,6 +88,14 @@ class Infra extends Command
         }
 
         $success = $this->ensureHostedZoneIdInConfig($config, $environment);
+
+        if (!$success) {
+            return 1;
+        }
+
+        // todo: ensure 'app' type prefix list ID is in config? here or part of app deployment command?
+
+        $success = $this->ensurePrefixListIdInConfig($config, $environment, 'db');
 
         if (!$success) {
             return 1;
@@ -97,17 +115,24 @@ class Infra extends Command
             return 1;
         }
 
+        // todo: create database schema?? add DB_DATABASE to $output_vars?
+
         $success = $this->afterCreateStackUpdateParameters($config, $environment, $output_vars);
 
         if (!$success) {
             return 1;
         }
 
+        $this->stopTimer();
+        $this->displayTimeElapsed();
+
         return 0;
     }
 
     protected function handleDeleteStack()
     {
+        $this->startTimer();
+
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
@@ -133,6 +158,8 @@ class Infra extends Command
             $this->line("See https://console.aws.amazon.com/cloudformation/home?region={$config['cloud-environments'][$environment]['aws-region']} for stack deletion status");
         }
 
+        $this->info('Stack deleted successfully');
+
         $config['cloud-environments'][$environment]['stack-deployed'] = false;
 
         $success = $this->writeLaraSurfConfig($config);
@@ -141,11 +168,39 @@ class Infra extends Command
             return 1;
         }
 
+        if (($config['cloud-environments'][$environment]['aws-app-prefix-list-id'] ||
+            $config['cloud-environments'][$environment]['aws-db-prefix-list-id']) &&
+            $this->confirm("Would you like to delete the associated AWS Prefix Lists?", false)) {
+
+            $ec2_client = $this->getEc2Client($config, $environment);
+
+            if ($config['cloud-environments'][$environment]['aws-app-prefix-list-id']) {
+                $ec2_client->deleteManagedPrefixList([
+                    'PrefixListId' => $config['cloud-environments'][$environment]['aws-app-prefix-list-id'],
+                ]);
+
+                $this->info('App Prefix List deleted successfully');
+            }
+
+            if ($config['cloud-environments'][$environment]['aws-db-prefix-list-id']) {
+                $ec2_client->deleteManagedPrefixList([
+                    'PrefixListId' => $config['cloud-environments'][$environment]['aws-db-prefix-list-id'],
+                ]);
+
+                $this->info('Database Prefix List deleted successfully');
+            }
+        }
+
+        $this->stopTimer();
+        $this->displayTimeElapsed();
+
         return 0;
     }
 
     protected function handleIssueCertificate()
     {
+        $this->startTimer();
+
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
@@ -200,7 +255,6 @@ class Infra extends Command
         }
 
         $finished = false;
-        $success = false;
         $record_name = null;
         $record_value = null;
         $tries = 0;
@@ -217,7 +271,7 @@ class Infra extends Command
                 $finished = !empty($record_name) && !empty($record_value);
 
                 if (!$finished) {
-                    $this->line('Certificate verification DNS records aren\'t avaiable yet, checking again in 10 seconds...');
+                    $this->line('Certificate verification DNS records aren\'t available yet, checking again in 10 seconds...');
                 }
             } else {
                 $this->warn('Unexpected response from AWS API, trying again in 10 seconds...');
@@ -342,6 +396,9 @@ class Infra extends Command
 
         $this->info('Certificate verified successfully');
 
+        $this->stopTimer();
+        $this->displayTimeElapsed();
+
         return 0;
     }
 
@@ -423,6 +480,8 @@ class Infra extends Command
 
     protected function handleVerifyEmailDomain()
     {
+        $this->startTimer();
+
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
@@ -551,11 +610,16 @@ class Infra extends Command
 
         $this->info("Email for domain '{$config['cloud-environments'][$environment]['domain']}' verified successfully");
 
+        $this->stopTimer();
+        $this->displayTimeElapsed();
+
         return 0;
     }
 
     protected function handleVerifyEmailDomainDkim()
     {
+        $this->startTimer();
+
         $config = $this->getValidLarasurfConfig();
 
         if (!$config) {
@@ -688,6 +752,9 @@ class Infra extends Command
 
         $this->info("Email DKIM for domain '{$config['cloud-environments'][$environment]['domain']} verified successfully'");
 
+        $this->stopTimer();
+        $this->displayTimeElapsed();
+
         return 0;
     }
 
@@ -809,6 +876,182 @@ class Infra extends Command
         return 0;
     }
 
+    protected function handleAllowIpApplication()
+    {
+        $this->allowIp('app');
+    }
+
+    protected function handleRevokeIpApplication()
+    {
+        $this->revokeIp('app');
+    }
+
+    protected function handleListIpsApplication()
+    {
+        $this->listIps('app');
+    }
+
+    protected function handleAllowIpDatabase()
+    {
+        $this->allowIp('db');
+    }
+
+    protected function handleRevokeIpDatabase()
+    {
+        $this->revokeIp('db');
+    }
+
+    protected function handleListIpsDatabase()
+    {
+        $this->listIps('db');
+    }
+
+    protected function allowIp($type)
+    {
+        $ip = $this->argument('arg1');
+
+        if (!$ip) {
+            $this->error('IP address must be specified');
+
+            return 1;
+        }
+
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $success = $this->ensurePrefixListIdInConfig($config, $environment, $type);
+
+        if (!$success) {
+            return 1;
+        }
+
+        $cidr_with_description = $this->getCidrWithDescriptionFromIpArgument($ip);
+
+        $client = $this->getEc2Client($config, $environment);
+
+        $client->modifyManagedPrefixList([
+            'AddEntries' => [
+                'Cidr' => $cidr_with_description['cidr'],
+                'Description' => $cidr_with_description['description'],
+            ],
+            'PrefixListId' => $config['cloud-environments'][$environment]["aws-$type-prefix-list-id"],
+        ]);
+
+        $this->info("Added CIDR '{$cidr_with_description['cidr']}' for {$cidr_with_description['description']} to " . ucwords($type) . ' Prefix List successfully');
+
+        return 0;
+    }
+
+    protected function revokeIp($type)
+    {
+        $ip = $this->argument('arg1');
+
+        if (!$ip) {
+            $this->error('IP address must be specified');
+
+            return 1;
+        }
+
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $success = $this->ensurePrefixListIdInConfig($config, $environment, $type);
+
+        if (!$success) {
+            return 1;
+        }
+
+        $cidr_with_description = $this->getCidrWithDescriptionFromIpArgument($ip);
+
+        $client = $this->getEc2Client($config, $environment);
+
+        $client->modifyManagedPrefixList([
+            'RemoveEntries' => [
+                'Cidr' => $cidr_with_description['cidr'],
+            ],
+            'PrefixListId' => $config['cloud-environments'][$environment]["aws-$type-prefix-list-id"],
+        ]);
+
+        $this->info("Removed CIDR '{$cidr_with_description['cidr']} from " . ucwords($type) ." Prefix List successfully");
+
+        return 0;
+    }
+
+    protected function listIps($type)
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $success = $this->ensurePrefixListIdInConfig($config, $environment, $type);
+
+        if (!$success) {
+            return 1;
+        }
+
+        $client = $this->getEc2Client($config, $environment);
+
+        $results = $client->getManagedPrefixListEntries([
+            'PrefixListId' => $config['cloud-environments'][$environment]["aws-$type-prefix-list-id"],
+        ]);
+
+        foreach ($results['Entries'] as $entry) {
+            $ip = $entry['Cidr'] === '0.0.0.0/0'
+                ? '(public)'
+                : str_replace('/32', '', $entry['Cidr']);
+
+            $this->getOutput()->writeln("<info>$ip</info>: {$entry['Description']}");
+        }
+
+        return 0;
+    }
+
+    protected function getCidrWithDescriptionFromIpArgument($ip)
+    {
+        if ($ip === 'me') {
+            $my_ip = trim(file_get_contents('https://checkip.amazonaws.com'));
+            $cidr = "$my_ip/32";
+            $description = 'Private Access';
+        } else if ($ip === 'public') {
+            $cidr = '0.0.0.0/0';
+            $description = 'Public Access';
+        } else {
+            $cidr = "$ip/32";
+            $description = 'Private Access';
+        }
+
+        return [
+            'cidr' => $cidr,
+            'description' => $description,
+        ];
+    }
+
     protected function ensureHostedZoneIdInConfig(&$config, $environment)
     {
         if (!$this->validateDomainInConfig($config, $environment)) {
@@ -859,6 +1102,32 @@ class Infra extends Command
         return true;
     }
 
+    protected function ensurePrefixListIdInConfig(&$config, $environment, $type)
+    {
+        if (!$this->validateDomainInConfig($config, $environment)) {
+
+            return false;
+        }
+
+        if (empty($config['cloud-environments'][$environment]["aws-$type-prefix-list-id"])) {
+            $client = $this->getEc2Client($config, $environment);
+
+            $this->info('Updating Prefix List ID in larasurf.json');
+
+            $result = $client->createManagedPrefixList([
+                'AddressFamily' => 'IPv4',
+                'MaxEntries' => 100,
+                'PrefixListName' => "{$config['project-name']}-$environment-$type-ingress",
+            ]);
+
+            $config['cloud-environments'][$environment]["aws-$type-prefix-list-id"] = $result['PrefixList']['PrefixListId'];
+
+            return $this->writeLaraSurfConfig($config);
+        }
+
+        return true;
+    }
+
     protected function createStack($config, $environment)
     {
         $client = $this->getCloudFormationClient($config, $environment);
@@ -875,6 +1144,9 @@ class Infra extends Command
 
         $template = File::get($infrastructure_template_path);
 
+        $db_username = Str::random(random_int(16, 32));
+        $db_password = Str::random(random_int(32, 64));
+
         $client->createStack([
             'Capabilities' => ['CAPABILITY_IAM'],
             'StackName' => $stack_name,
@@ -882,6 +1154,40 @@ class Infra extends Command
                 [
                     'ParameterKey' => 'VpcName',
                     'ParameterValue' => "{$config['project-name']}-$environment",
+                ],
+                [
+                    'ParameterKey' => 'EnvironmentName',
+                    'ParameterValue' => $environment,
+                ],
+                [
+                    'ParameterKey' => 'DBStorageSize',
+                    'ParameterValue' => "{$config['cloud-environments'][$environment]['db-storage-gb']}",
+                ],
+                [
+                    'ParameterKey' => 'DBInstanceClass',
+                    'ParameterValue' => "{$config['cloud-environments'][$environment]['db-type']}",
+                ],
+                [
+                    'ParameterKey' => 'DBAvailabilityZone',
+                    'ParameterValue' => $environment === 'production'
+                        ? ''
+                        : "{$config['cloud-environments'][$environment]['aws-region']}a",
+                ],
+                [
+                    'ParameterKey' => 'DBVersion',
+                    'ParameterValue' => '8.0.25',
+                ],
+                [
+                    'ParameterKey' => 'DBMasterPassword',
+                    'ParameterValue' => $db_username,
+                ],
+                [
+                    'ParameterKey' => 'DBMasterPassword',
+                    'ParameterValue' => $db_password,
+                ],
+                [
+                    'ParameterKey' => 'DBAdminAccessPrefixListId',
+                    'ParameterValue' => $config['cloud-environments'][$environment]['aws-db-prefix-list-id'],
                 ],
             ],
             'Tags' => [
@@ -921,6 +1227,27 @@ class Infra extends Command
                     $success = $result['Stacks'][0]['StackStatus'] === 'CREATE_COMPLETE';
 
                     // todo: get stack outputs and add to parameter store, add to $output_vars
+                    //  REDIS_HOST, REDIS_PORT, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_BUCKET
+
+                    if ($success) {
+                        $output_vars['DB_USERNAME'] = $db_username;
+                        $output_vars['DB_PASSWORD'] = $db_password;
+
+                        foreach ($result['Stacks'][0]['Outputs'] as $output) {
+                            switch ($output['OutputKey']) {
+                                case 'DBHost': {
+                                    $output_vars['DB_HOST'] = $output['OutputValue'];
+
+                                    break;
+                                }
+                                case 'DBPort': {
+                                    $output_vars['DB_PORT'] = $output['OutputValue'];
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 } else {
                     $this->line('Stack creation is not yet finished, checking again in 10 seconds...');
                 }
@@ -975,6 +1302,7 @@ class Infra extends Command
             'LOG_CHANNEL' => 'errorlog',
             'QUEUE_CONNECTION' => 'sqs',
             'MAIL_DRIVER' => 'ses',
+            'AWS_DEFAULT_REGION' => $config['cloud-environments'][$environment]['aws-region'],
         ];
 
         $all_vars = array_merge($default_env_vars, $extra_vars);
@@ -1019,13 +1347,7 @@ class Infra extends Command
 
         $config['cloud-environments'][$environment]['variables'] = $variables;
 
-        $success = $this->writeLaraSurfConfig($config);
-
-        if (!$success) {
-            return false;
-        }
-
-        return true;
+        return $this->writeLaraSurfConfig($config);
     }
 
     protected function sleepBar($seconds)

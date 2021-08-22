@@ -163,6 +163,18 @@ trait InteractsWithLaraSurfConfig
                     return false;
                 }
 
+                if (!isset($json['cloud-environments'][$environment]['aws-app-prefix-list-id'])) {
+                    $this->error("Key 'aws-app-prefix-list-id' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
+                if (!isset($json['cloud-environments'][$environment]['aws-db-prefix-list-id'])) {
+                    $this->error("Key 'aws-db-prefix-list-id' not found for environment '$environment' in larasurf.json");
+
+                    return false;
+                }
+
                 if (!isset($json['cloud-environments'][$environment]['domain'])) {
                     $this->error("Key 'domain' not found for environment '$environment' in larasurf.json");
 

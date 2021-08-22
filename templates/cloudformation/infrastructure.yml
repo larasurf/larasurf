@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
+  # VPC
   Vpc:
     Type: AWS::EC2::VPC
     Properties:
@@ -8,7 +9,7 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: !Ref VpcName
+          Value: !Sub '${ProjectName} VPC'
   RouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -36,7 +37,7 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub '${VpcName} Subnet 1'
+          Value: !Sub '${ProjectName} Subnet 1'
   Subnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -52,7 +53,7 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub '${VpcName} Subnet 2'
+          Value: !Sub '${ProjectName} Subnet 2'
   Subnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -68,14 +69,140 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub '${VpcName} Subnet 3'
+          Value: !Sub '${ProjectName} Subnet 3'
   Subnet3RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref RouteTable
       SubnetId: !Ref Subnet3
 
+  # Database
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: !Ref DBStorageSize
+      AvailabilityZone: !If
+        - IsProduction
+        - !Ref 'AWS::NoValue'
+        - !Ref DBAvailabilityZone
+      BackupRetentionPeriod: 7
+      CopyTagsToSnapshot: true
+      DBInstanceClass: !Ref DBInstanceClass
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      DeletionProtection: !If [ IsProduction, true, false ]
+      Engine: MySQL
+      EngineVersion: !Ref DBVersion
+      LicenseModel: general-public-license
+      MasterUsername: !Ref DBMasterUsername
+      MasterUserPassword: !Ref DBMasterPassword
+      MonitoringInterval: !If [ IsProduction, 30, 60 ]
+      MonitoringRoleArn: !GetAtt DBMonitoringRole.Arn
+      MultiAZ: !If [ IsProduction, true, false ]
+      Port: 3306
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      StorageType: gp2
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
+        - !Ref DBAdminAccessSecurityGroup
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Created by LaraSurf's infrastructure CloudFormation template.
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+  DBMonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - monitoring.rds.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: A security group that references itself to allow for database access.
+      VpcId: !Ref Vpc
+  DBSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DBSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref DBSecurityGroup
+  DBAdminAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: A security to allow admins database access.
+      VpcId: !Ref Vpc
+  DBAdminAccessSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DBAdminAccessSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourcePrefixListId: !Ref DBAdminAccessPrefixListId
+
 Parameters:
-  VpcName:
+  ProjectName:
     Type: String
-    Description: The VPC name.
+    Description: The project name.
+  EnvironmentName:
+    Type: String
+    Description: The environment name for the infrastructure.
+    AllowedValues:
+      - stage
+      - production
+  DBStorageSize:
+    Type: Number
+    Description: The storage size for the database in GB.
+    MinValue: 20
+    ConstraintDescription: A value of 20 or greater must be specified.
+  DBInstanceClass:
+    Type: String
+    Description: The database instance class type.
+    AllowedValues:
+      - db.t2.micro
+      - db.t2.small
+      - db.t2.medium
+      - db.m5.large
+      - db.m5.xlarge
+    ConstraintDescription: A database instance class type from the list must be selected.
+  DBAvailabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: If not in production, the availability zone to launch the database in.
+  DBVersion:
+    Type: String
+    Description: The MySQL database version to launch.
+  DBMasterUsername:
+    Type: String
+    Description: The database master username.
+  DBMasterPassword:
+    Type: String
+    Description: The database master password.
+    NoEcho: true
+  DBAdminAccessPrefixListId:
+    Type: String
+    Description: The ID of the Prefix List for administrator access to the database.
+
+Conditions:
+  IsProduction: !Equals [!Ref EnvironmentName, production]
+
+Outputs:
+  DBHost:
+    Description: The database host.
+    Value: !GetAtt DBInstance.Endpoint.Address
+  DBPort:
+    Description: The database port.
+    Value: !GetAtt DBInstance.Endpoint.Port

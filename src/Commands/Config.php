@@ -199,6 +199,14 @@ class Config extends Command
                     Rule::in($this->valid_aws_regions),
                 ];
             }
+            case 'cloud-environments.stage.aws-app-prefix-list-id':
+            case 'cloud-environments.production.aws-app-prefix-list-id':
+            case 'cloud-environments.stage.aws-db-prefix-list-id':
+            case 'cloud-environments.production.aws-db-prefix-list-id': {
+                return [
+                    'regex:/^pl-[a-f0-9]+$/'
+                ];
+            }
             default: {
                 return false;
             }

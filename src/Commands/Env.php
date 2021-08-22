@@ -86,6 +86,8 @@ class Env extends Command
         $config['cloud-environments'][$environment]['aws-region'] = 'us-east-1';
         $config['cloud-environments'][$environment]['aws-certificate-arn'] = false;
         $config['cloud-environments'][$environment]['aws-hosted-zone-id'] = false;
+        $config['cloud-environments'][$environment]['aws-app-prefix-list-id'] = false;
+        $config['cloud-environments'][$environment]['aws-db-prefix-list-id'] = false;
         $config['cloud-environments'][$environment]['domain'] = false;
         $config['cloud-environments'][$environment]['stack-deployed'] = false;
         $config['cloud-environments'][$environment]['variables'] = [];
