@@ -121,6 +121,8 @@ class Infra extends Command
             return 1;
         }
 
+        $this->allowIp($config, $environment, 'me', 'db');
+
         $database_name = $this->createDatabaseSchema(
             $config,
             $environment,
@@ -133,6 +135,8 @@ class Infra extends Command
         if (!$database_name) {
             return 1;
         };
+
+        $this->revokeIp($config, $environment, 'me', 'db');
 
         $output_vars['DB_DATABASE'] = $database_name;
 
@@ -1068,8 +1072,6 @@ class Infra extends Command
 
     protected function createDatabaseSchema($config, $environment, $db_host, $db_port, $db_username, $db_password)
     {
-        $this->info('Creating application schema');
-
         $pdo = new PDO(sprintf('mysql:host=%s;port=%d;', $db_host, $db_port), $db_username, $db_password);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -1088,6 +1090,8 @@ class Infra extends Command
             return false;
         }
 
+        $this->info("Created database schema '$database_name' successfully");
+
         return $database_name;
     }
 
@@ -1105,7 +1109,7 @@ class Infra extends Command
 
         $version = $result['PrefixLists'][0]['Version'];
 
-        $client->modifyManagedPrefixList([
+        $result = $client->modifyManagedPrefixList([
             'AddEntries' => [
                 [
                     'Cidr' => $cidr_with_description['cidr'],
@@ -1116,7 +1120,25 @@ class Infra extends Command
             'PrefixListId' => $config['cloud-environments'][$environment]["aws-$type-prefix-list-id"],
         ]);
 
-        $this->info("Added CIDR '{$cidr_with_description['cidr']}' for {$cidr_with_description['description']} to " . ucwords($type) . ' Prefix List successfully');
+        $status = $result['PrefixList']['State'];
+
+        while (Str::endsWith($status, 'in-progress')) {
+            $this->getOutput()->writeln('Prefix List modification is still in progress, checking again in 3 seconds...');
+
+            $this->sleepBar(3);
+
+            $result = $client->describeManagedPrefixLists([
+                'PrefixListIds' => [
+                    $config['cloud-environments'][$environment]["aws-$type-prefix-list-id"],
+                ]
+            ]);
+
+            $status = $result['PrefixLists'][0]['State'];
+        }
+
+        $word = $type === 'db' ? 'Database' : 'Application';
+
+        $this->info("Added CIDR '{$cidr_with_description['cidr']}' for {$cidr_with_description['description']} to $word Prefix List successfully");
 
         return true;
     }
