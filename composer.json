@@ -12,6 +12,8 @@
     "minimum-stability": "stable",
     "require": {
         "php": "^8.0",
+        "ext-json": "*",
+        "ext-pdo": "*",
         "laravel/framework": "^8.0",
         "aws/aws-sdk-php": "^3.20.0"
     },

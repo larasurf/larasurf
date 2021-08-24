@@ -11,7 +11,6 @@ trait InteractsWithLaraSurfConfig
     ];
 
     protected $valid_db_types = [
-        'db.t2.micro',
         'db.t2.small',
         'db.t2.medium',
         'db.m5.large',

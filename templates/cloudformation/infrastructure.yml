@@ -47,7 +47,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select
-        - 0
+        - 1
         - Fn::GetAZs: !Ref 'AWS::Region'
       CidrBlock: !Select [1, !Cidr [!GetAtt Vpc.CidrBlock, 3, 8]]
       VpcId: !Ref Vpc
@@ -63,7 +63,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select
-        - 0
+        - 2
         - Fn::GetAZs: !Ref 'AWS::Region'
       CidrBlock: !Select [2, !Cidr [!GetAtt Vpc.CidrBlock, 3, 8]]
       VpcId: !Ref Vpc
@@ -99,7 +99,7 @@ Resources:
       MonitoringRoleArn: !GetAtt DBMonitoringRole.Arn
       MultiAZ: !If [ IsProduction, true, false ]
       Port: 3306
-      PubliclyAccessible: false
+      PubliclyAccessible: true
       StorageEncrypted: true
       StorageType: gp2
       VPCSecurityGroups:
@@ -173,7 +173,6 @@ Parameters:
     Type: String
     Description: The database instance class type.
     AllowedValues:
-      - db.t2.micro
       - db.t2.small
       - db.t2.medium
       - db.m5.large

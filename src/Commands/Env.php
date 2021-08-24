@@ -2,7 +2,6 @@
 
 namespace LaraSurf\LaraSurf\Commands;
 
-use Aws\Ssm\Exception\SsmException;
 use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentArgument;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
@@ -25,6 +24,8 @@ class Env extends Command
     const COMMAND_PUT_LOCAL = 'put-local';
     const COMMAND_DELETE = 'delete';
     const COMMAND_DELETE_LOCAL = 'delete-local';
+    const COMMAND_PURGE = 'purge';
+    const COMMAND_PURGE_LOCAL = 'purge-local';
     const COMMAND_LIST = 'list';
     const COMMAND_LIST_VALUES = 'list-values';
 
@@ -40,6 +41,8 @@ class Env extends Command
         self::COMMAND_PUT_LOCAL => 'handlePutLocal',
         self::COMMAND_DELETE => 'handleDelete',
         self::COMMAND_DELETE_LOCAL => 'handleDeleteLocal',
+        self::COMMAND_PURGE => 'handlePurge',
+        self::COMMAND_PURGE_LOCAL => 'handlePurgeLocal',
         self::COMMAND_LIST => 'handleList',
         self::COMMAND_LIST_VALUES => 'handleListValues',
     ];
@@ -78,7 +81,7 @@ class Env extends Command
             $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.small';
             $config['cloud-environments'][$environment]['db-storage-gb'] = 50;
         } else {
-            $config['cloud-environments'][$environment]['db-type'] = 'db.t2.micro';
+            $config['cloud-environments'][$environment]['db-type'] = 'db.t2.small';
             $config['cloud-environments'][$environment]['cache-type'] = 'cache.t2.micro';
             $config['cloud-environments'][$environment]['db-storage-gb'] = 20;
         }
@@ -363,6 +366,114 @@ class Env extends Command
         return $this->deleteEnvironmentVariableFromLaraSurfConfig($config, $environment, $name) ? 0 : 1;
     }
 
+    protected function handlePurge()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $client = $this->getSsmClient($config, $environment);
+
+        if (!$client) {
+            return 1;
+        }
+
+        $path = $this->getSsmParameterPath($config, $environment);
+
+        $keys = [];
+        $next_token = null;
+
+        do {
+            $results = $client->getParametersByPath([
+                'Path' => $path,
+                'NextToken' => $next_token,
+            ]);
+
+            $keys = array_merge($keys, array_column($results['Parameters'], 'Name'));
+
+            $next_token = $results['NextToken'] ?? false;
+
+            $done = !$next_token || !$results['Parameters'];
+        } while (!$done);
+
+        if (!$keys) {
+            $this->warn("No cloud parameters exist for environment '$environment'");
+
+            return 0;
+        }
+
+        sort($keys);
+
+        $this->info('Existing cloud parameters:');
+
+        foreach ($keys as $key) {
+            $this->getOutput()->writeln($key);
+        }
+
+        if (!$this->confirm('Are you sure you\'d like to delete all of the above parameters?', false)) {
+            return 0;
+        }
+
+        do {
+            $to_delete = [];
+
+            for ($i = 0; $i < 10 && $keys; $i++) {
+                $to_delete[] = array_shift($keys);
+            }
+
+            if ($to_delete) {
+                $client->deleteParameters([
+                    'Names' => $to_delete,
+                ]);
+            }
+        } while ($to_delete);
+
+        $this->info('Cloud parameters deleted successfully');
+
+        $config['cloud-environments'][$environment]['variables'] = [];
+
+        return $this->writeLaraSurfConfig($config);
+    }
+
+    protected function handlePurgeLocal()
+    {
+        $config = $this->getValidLarasurfConfig();
+
+        if (!$config) {
+            return 1;
+        }
+
+        $environment = $this->argument('environment');
+
+        if (!$this->validateEnvironmentExistsInConfig($config, $environment)) {
+            return 1;
+        }
+
+        $variables = array_map(function ($variable) use ($config, $environment) {
+            return $this->getSsmParameterPath($config, $environment, $variable);
+        }, $config['cloud-environments'][$environment]['variables']);
+
+        $this->info('Existing local parameters:');
+
+        $this->getOutput()->writeln(implode(PHP_EOL, $variables));
+
+        if (!$this->confirm('Are you sure you\'d like to delete all of the above parameters from larasurf.json?', false)) {
+            return 0;
+        }
+
+        $config['cloud-environments'][$environment]['variables'] = [];
+
+        return $this->writeLaraSurfConfig($config);
+    }
+
     protected function handleList()
     {
         $config = $this->getValidLarasurfConfig();
@@ -412,16 +523,33 @@ class Env extends Command
 
         $path = $this->getSsmParameterPath($config, $environment);
 
-        $results = $client->getParametersByPath([
-            'Path' => $path,
-            'WithDecryption' => true,
-        ]);
+        $done = false;
+        $keys_values = [];
+        $next_token = null;
 
-        $keys_values = array_map(function ($parameter) {
-            return "<info>{$parameter['Name']}:</info> {$parameter['Value']}";
-        }, $results['Parameters']);
+        do {
+            $results = $client->getParametersByPath([
+                'Path' => $path,
+                'WithDecryption' => true,
+                'NextToken' => $next_token,
+            ]);
 
-        $this->getOutput()->writeln(implode(PHP_EOL, $keys_values));
+            $keys_values = array_merge($keys_values, array_map(function ($parameter) {
+                return "<info>{$parameter['Name']}:</info> {$parameter['Value']}";
+            }, $results['Parameters']));
+
+            $next_token = $results['NextToken'] ?? false;
+
+            $done = !$next_token || !$results['Parameters'];
+        } while (!$done);
+
+        if ($keys_values) {
+            sort($keys_values);
+
+            $this->getOutput()->writeln(implode(PHP_EOL, $keys_values));
+        } else {
+            $this->warn("Environment '$environment' has no cloud variables");
+        }
 
         return 0;
     }

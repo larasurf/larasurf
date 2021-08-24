@@ -197,6 +197,6 @@ class Publish extends Command
             }
         }
 
-        // todo: publish app template file
+        // todo: publish app template file?
     }
 }
