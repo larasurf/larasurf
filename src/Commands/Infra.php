@@ -1463,7 +1463,7 @@ class Infra extends Command
             'DB_CONNECTION' => 'mysql',
             'LOG_CHANNEL' => 'errorlog',
             'QUEUE_CONNECTION' => 'sqs',
-            'MAIL_DRIVER' => 'ses',
+            'MAIL_DRIVER' => $environment === 'production' ? 'ses' : 'smtp', // MailTrap
             'AWS_DEFAULT_REGION' => $config['cloud-environments'][$environment]['aws-region'],
         ];
 

@@ -156,55 +156,10 @@ class Config extends Command
                     'regex:/^[a-zA-Z0-9-_]+$/',
                 ];
             }
-            case 'cloud-environments.stage.domain':
-            case 'cloud-environments.production.domain': {
-                return [
-                    'regex:/^[a-z0-9-\.]+\.[a-z0-9]+$/'
-                ];
-            }
-            case 'cloud-environments.stage.aws-certificate-arn':
-            case 'cloud-environments.production.aws-certificate-arn': {
-                return [
-                    'regex:/^arn:aws:acm:.+:certificate\/.+$/'
-                ];
-            }
-            case 'cloud-environments.stage.stack-deployed':
-            case 'cloud-environments.production.stack-deployed': {
-                return [
-                    Rule::in(['true', 'false']),
-                ];
-            }
-            case 'cloud-environments.stage.db-type':
-            case 'cloud-environments.production.db-type': {
-                return [
-                    Rule::in($this->valid_db_types)
-                ];
-            }
-            case 'cloud-environments.stage.db-storage-gb':
-            case 'cloud-environments.production.db-storage-gb': {
-                return [
-                    'min:' . $this->minimum_db_storage_gb,
-                    'max:' . $this->maxmium_db_storage_gb,
-                ];
-            }
-            case 'cloud-environments.stage.cache-type':
-            case 'cloud-environments.production.cache-type': {
-                return [
-                    Rule::in($this->valid_cache_types),
-                ];
-            }
             case 'cloud-environments.stage.aws-region':
             case 'cloud-environments.production.aws-region': {
                 return [
                     Rule::in($this->valid_aws_regions),
-                ];
-            }
-            case 'cloud-environments.stage.aws-app-prefix-list-id':
-            case 'cloud-environments.production.aws-app-prefix-list-id':
-            case 'cloud-environments.stage.aws-db-prefix-list-id':
-            case 'cloud-environments.production.aws-db-prefix-list-id': {
-                return [
-                    'regex:/^pl-[a-f0-9]+$/'
                 ];
             }
             default: {
