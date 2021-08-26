@@ -17,4 +17,32 @@ class Cloud
         self::ENVIRONMENT_STAGE,
         self::ENVIRONMENT_PRODUCTION,
     ];
+
+    const DB_INSTANCE_TYPES = [
+        'db.t2.small',
+        'db.t2.medium',
+        'db.m5.large',
+        'db.m5.xlarge',
+    ];
+
+    const DB_STORAGE_MIN_GB = 20;
+
+    const DB_STORAGE_MAX_GB = 70368; // 64 tebibytes;
+
+    const CACHE_INSTANCE_TYPES = [
+        'cache.m5.large',
+        'cache.m5.xlarge',
+        'cache.m5.2xlarge',
+        'cache.m5.4xlarge',
+        'cache.m5.12xlarge',
+        'cache.m5.24xlarge',
+        'cache.m4.large',
+        'cache.m4.xlarge',
+        'cache.m4.2xlarge',
+        'cache.m4.4xlarge',
+        'cache.m4.10xlarge',
+        'cache.t2.micro',
+        'cache.t2.small',
+        'cache.t2.medium',
+    ];
 }

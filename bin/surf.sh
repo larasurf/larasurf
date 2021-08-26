@@ -49,21 +49,36 @@ elif [[ "$1" == 'publish' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:publish "${@:2}"
-elif [[ "$1" == 'infra' ]]; then
-  exit_if_containers_not_running
-
-  cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:infra "${@:2}"
 elif [[ "$1" == 'config' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:config "${@:2}"
-elif [[ "$1" == 'env' ]]; then
+elif [[ "$1" == 'cloud-vars' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:env "${@:2}"
+  docker-compose exec laravel php artisan larasurf:cloud-vars "${@:2}"
+elif [[ "$1" == 'cloud-stacks' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-stacks "${@:2}"
+elif [[ "$1" == 'cloud-emails' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-emails "${@:2}"
+elif [[ "$1" == 'cloud-ingress' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-ingress "${@:2}"
+elif [[ "$1" == 'cloud-users' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
 elif [[ "$1" == 'test' ]]; then
   exit_if_containers_not_running
 

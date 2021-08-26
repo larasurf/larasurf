@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
+
 Resources:
   # VPC
   Vpc:
@@ -9,7 +10,11 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: !Sub '${ProjectName} VPC'
+          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-vpc'
+        - Key: Project
+          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+        - Key: Environment
+          Value: !Ref EnvironmentName
   RouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -37,7 +42,11 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub '${ProjectName} Subnet 1'
+          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet-1'
+        - Key: Project
+          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+        - Key: Environment
+          Value: !Ref EnvironmentName
   Subnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -53,7 +62,11 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub '${ProjectName} Subnet 2'
+          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet-2'
+        - Key: Project
+          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+        - Key: Environment
+          Value: !Ref EnvironmentName
   Subnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -69,7 +82,11 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub '${ProjectName} Subnet 3'
+          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet-3'
+        - Key: Project
+          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+        - Key: Environment
+          Value: !Ref EnvironmentName
   Subnet3RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -105,6 +122,13 @@ Resources:
       VPCSecurityGroups:
         - !Ref DBSecurityGroup
         - !Ref DBAdminAccessSecurityGroup
+      Tags:
+        - Key: LaraSurfID
+          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-database'
+        - Key: Project
+          Value: !Join [ '-', [ !Ref ProjectName, !Ref ProjectId ] ]
+        - Key: Environment
+          Value: !Ref EnvironmentName
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -152,18 +176,40 @@ Resources:
       IpProtocol: tcp
       FromPort: 3306
       ToPort: 3306
-      SourcePrefixListId: !Ref DBAdminAccessPrefixListId
+      SourcePrefixListId: !Ref DBAdminAccessPrefixList
+  DBAdminAccessPrefixList:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      AddressFamily: IPv4
+      MaxEntries: 50
+      PrefixListName: !Join ['-', [!Ref ProjectName, !Ref ProjectId, !Ref EnvironmentName, 'prefix-list-database']]
+      Tags:
+        - Key: LaraSurfId
+          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId, !Ref EnvironmentName, 'prefix-list-database']]
+        - Key: Project
+          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+        - Key: Environment
+          Value: !Ref EnvironmentName
 
 Parameters:
   ProjectName:
     Type: String
     Description: The project name.
+  ProjectId:
+    Type: String
+    Description: The project id.
   EnvironmentName:
     Type: String
     Description: The environment name for the infrastructure.
     AllowedValues:
       - stage
       - production
+  DomainName:
+    Type: String
+    Description: The fully qualified environment domain name.
+  CertificateArn:
+    Type: String
+    Description: The ACM certificate ARN to use.
   DBStorageSize:
     Type: Number
     Description: The storage size for the database in GB.
@@ -191,17 +237,24 @@ Parameters:
     Type: String
     Description: The database master password.
     NoEcho: true
-  DBAdminAccessPrefixListId:
-    Type: String
-    Description: The ID of the Prefix List for administrator access to the database.
+  # todo: parameter store params for laravel app?
 
 Conditions:
   IsProduction: !Equals [!Ref EnvironmentName, production]
 
 Outputs:
+  CertificateArn:
+    Description: The ARN of the ACM certificate.
+    Value: !Ref CertificateArn
+  DomainName:
+    Description: The fully qualified environment domain name.
+    Value: !Ref DomainName
   DBHost:
     Description: The database host.
     Value: !GetAtt DBInstance.Endpoint.Address
   DBPort:
     Description: The database port.
     Value: !GetAtt DBInstance.Endpoint.Port
+  DBAdminAccessPrefixListId:
+    Description: The Prefix List ID for database admin access.
+    Value: !Ref DBAdminAccessPrefixList

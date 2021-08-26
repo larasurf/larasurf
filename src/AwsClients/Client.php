@@ -10,9 +10,7 @@ use GuzzleHttp\Promise\RejectedPromise;
 use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\EnvironmentNotSetException;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException;
-use Symfony\Component\Console\Formatter\OutputFormatter;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Output\ConsoleOutput;
 
 abstract class Client
 {
@@ -106,7 +104,7 @@ abstract class Client
         }
     }
 
-    protected function waitForFinish(int $limit, int $wait_seconds, callable $operation, ConsoleOutput $output = null, string $wait_message = ''): bool
+    protected function waitForFinish(int $limit, int $wait_seconds, callable $operation, \Illuminate\Console\OutputStyle $output = null, string $wait_message = ''): bool
     {
         $finished = false;
         $tries = 0;

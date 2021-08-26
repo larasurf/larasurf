@@ -14,7 +14,7 @@ class SsmClient extends Client
         return in_array($path, $parameters);
     }
 
-    public function getParameter($name): ?string
+    public function getParameter($name): string|false
     {
         $result = $this->client->getParameter([
             'Name' => $this->parameterPath($name),
@@ -22,7 +22,7 @@ class SsmClient extends Client
         ]);
 
         if (empty($result['Parameter']['Value'])) {
-            return null;
+            return false;
         }
 
         return $result['Parameter']['Value'];

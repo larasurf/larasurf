@@ -3,21 +3,20 @@
 namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\AwsClient;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\Constants\Cloud;
 use League\Flysystem\FileNotFoundException;
-use Symfony\Component\Console\Output\ConsoleOutput;
 
 class CloudFormationClient extends Client
 {
     public function createStack(
+        string $domain,
+        string $certificate_arn,
         int $db_storage_size,
         string $db_instance_class,
         string $db_username,
-        string $db_password,
-        string $db_admin_prefix_list_id,
-        ConsoleOutput $output = null,
-        string $wait_message = ''
+        string $db_password
     )
     {
         $this->validateEnvironmentIsSet();
@@ -35,6 +34,14 @@ class CloudFormationClient extends Client
                 [
                     'ParameterKey' => 'EnvironmentName',
                     'ParameterValue' => $this->environment,
+                ],
+                [
+                    'ParameterKey' => 'DomainName',
+                    'ParameterValue' => $domain,
+                ],
+                [
+                    'ParameterKey' => 'CertificateArn',
+                    'ParameterValue' => $certificate_arn,
                 ],
                 [
                     'ParameterKey' => 'DBStorageSize',
@@ -62,18 +69,21 @@ class CloudFormationClient extends Client
                     'ParameterKey' => 'DBMasterPassword',
                     'ParameterValue' => $db_password,
                 ],
-                [
-                    'ParameterKey' => 'DBAdminAccessPrefixListId',
-                    'ParameterValue' => $db_admin_prefix_list_id,
-                ],
             ],
             'Tags' => $this->resourceTags('cloudformation-stack'),
             'TemplateBody' => $this->template(),
         ]);
+    }
+
+    public function waitForStackUpdate(OutputStyle $output = null, string $wait_message = ''): array
+    {
+        $stack_name = $this->stackName();
 
         $client = $this->client;
 
-        $this->waitForFinish(120, 30, function (&$success) use ($stack_name, $client) {
+        $status = null;
+
+        $success = $this->waitForFinish(120, 30, function (&$success) use ($stack_name, $client, &$status) {
             $result = $client->describeStacks([
                 'StackName' => $stack_name,
             ]);
@@ -91,6 +101,11 @@ class CloudFormationClient extends Client
 
             return false;
         }, $output, $wait_message);
+
+        return [
+            'success' => $success,
+            'status' => $status,
+        ];
     }
 
     public function deleteStack()
@@ -98,6 +113,40 @@ class CloudFormationClient extends Client
         $this->client->deleteStack([
             'StackName' => $this->stackName(),
         ]);
+    }
+
+    public function stackStatus(): string|false
+    {
+        $result = $this->client->describeStacks([
+            'StackName' => $this->stackName(),
+        ]);
+
+        if (empty($result['Stacks'][0])) {
+            return false;
+        }
+
+        return $result['Stacks'][0]['StackStatus'];
+    }
+
+    public function stackOutput(array|string $keys): array|string|false
+    {
+        $array_keys = (array) $keys;
+
+        $result = $this->client->describeStacks([
+            'StackName' => $this->stackName(),
+        ]);
+
+        $keyed_values = [];
+
+        if (isset($result['Stacks'][0]['Outputs'])) {
+            foreach ($result['Stacks'][0]['Outputs'] as $output) {
+                if (in_array($output['OutputKey'], $array_keys)) {
+                    $keyed_values[$output['OutputKey']] = $output['OutputValue'];
+                }
+            }
+        }
+
+        return is_array($keys) ? $keyed_values : ($keyed_values[$keys] ?? false);
     }
 
     protected function makeClient(array $args): AwsClient

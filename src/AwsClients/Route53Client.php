@@ -3,14 +3,14 @@
 namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\AwsClient;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException;
-use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Route53Client extends Client
 {
-    public function hostedZoneIdFromDomain(string $domain): ?string
+    public function hostedZoneIdFromDomain(string $domain): string|false
     {
         // todo: support more than 100 hosted zones
         $hosted_zones = $this->client->listHostedZones();
@@ -31,10 +31,10 @@ class Route53Client extends Client
             }
         }
 
-        return null;
+        return false;
     }
 
-    public function upsertDnsRecords(string $hosted_zone_id, array $records, ConsoleOutput $output = null, string $wait_message = '')
+    public function upsertDnsRecords(string $hosted_zone_id, array $records): string
     {
         $changes = [];
 
@@ -57,13 +57,16 @@ class Route53Client extends Client
             'HostedZoneId' => $hosted_zone_id,
         ]);
 
-        $id = $result['ChangeInfo']['Id'];
+        return $result['ChangeInfo']['Id'];
+    }
 
+    public function waitForChange(string $change_id, OutputStyle $output = null, string $wait_message = '')
+    {
         $client = $this->client;
 
-        $this->waitForFinish(180, 10, function (&$success) use ($client, $id) {
+        $this->waitForFinish(180, 10, function (&$success) use ($client, $change_id) {
             $result = $client->getChange([
-                'Id' => $id,
+                'Id' => $change_id,
             ]);
 
             if (isset($result['ChangeInfo']['Status'])) {
@@ -79,6 +82,21 @@ class Route53Client extends Client
 
             return false;
         }, $output, $wait_message);
+    }
+
+    public function createHostedZone(string $domain): string
+    {
+        $result = $this->client->createHostedZone([
+            'CallerReference' => Str::random(32),
+            'Name' => $domain,
+        ]);
+
+        return $result['HostedZone']['Id'];
+    }
+
+    public function hostedZoneNameServers(string $hosted_zone_id): array
+    {
+
     }
 
     protected function makeClient(array $args): AwsClient

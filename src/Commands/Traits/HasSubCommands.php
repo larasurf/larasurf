@@ -2,7 +2,7 @@
 
 namespace LaraSurf\LaraSurf\Commands\Traits;
 
-trait HasSubCommand
+trait HasSubCommands
 {
     protected function validateSubCommandArgument()
     {

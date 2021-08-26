@@ -3,9 +3,9 @@
 namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\AwsClient;
+use Illuminate\Console\OutputStyle;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\InvalidArgumentException;
-use Symfony\Component\Console\Output\ConsoleOutput;
 
 class AcmClient extends Client
 {
@@ -15,7 +15,7 @@ class AcmClient extends Client
         self::VALIDATION_METHOD_DNS,
     ];
 
-    public function requestCertificate(string $domain, string $validation_method = self::VALIDATION_METHOD_DNS, ConsoleOutput $output = null, string $wait_message = ''): DnsRecord
+    public function requestCertificate(&$output_arn, string $domain, string $validation_method = self::VALIDATION_METHOD_DNS, OutputStyle $output = null, string $wait_message = ''): DnsRecord
     {
         $this->validateValidationMethod($validation_method);
 
@@ -26,13 +26,13 @@ class AcmClient extends Client
         ]);
 
         $client = $this->client;
-        $arn = $result['CertificateArn'];
+        $output_arn = $result['CertificateArn'];;
 
         $result = null;
 
-        $this->waitForFinish(180, 10, function (&$success) use ($client, $arn, &$result) {
+        $this->waitForFinish(180, 10, function (&$success) use ($client, $output_arn, &$result) {
             $result = $client->describeCertificate([
-                'CertificateArn' => $arn,
+                'CertificateArn' => $output_arn,
             ]);
 
             if (isset($result['Certificate']['DomainValidationOptions'])) {
@@ -54,6 +54,27 @@ class AcmClient extends Client
             ->setName($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Name'])
             ->setValue($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Value'])
             ->setType(DnsRecord::TYPE_CNAME);
+    }
+
+    public function waitForPendingValidation(string $arn, OutputStyle $output, string $wait_message = '')
+    {
+        $client = $this->client;
+
+        $this->waitForFinish(180, 10, function (&$success) use ($client, $arn) {
+            $result = $client->describeCertificate([
+                'CertificateArn' => $arn,
+            ]);
+
+            $finished = ($result['Certificate']['Status'] ?? 'PENDING_VALIDATION') !== 'PENDING_VALIDATION';
+
+            if ($finished) {
+                $success = true;
+
+                return true;
+            }
+
+            return false;
+        }, $output, $wait_message);
     }
 
     public function deleteCertificate(string $arn)

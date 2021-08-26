@@ -3,18 +3,17 @@
 namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\AwsClient;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\PrefixListEntry;
-use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Ec2Client extends Client
 {
-    public function allowIpPrefixList(string $id, string $ip)
+    public function allowIpPrefixList(string $prefix_list_id, string $ip)
     {
         $result = $this->client->describeManagedPrefixLists([
             'PrefixListIds' => [
-                $id,
+                $prefix_list_id,
             ],
         ]);
 
@@ -28,15 +27,15 @@ class Ec2Client extends Client
                 ],
             ],
             'CurrentVersion' => $result['PrefixLists'][0]['Version'],
-            'PrefixListId' => $id,
+            'PrefixListId' => $prefix_list_id,
         ]);
     }
 
-    public function revokeIpPrefixList(string $id, string $ip)
+    public function revokeIpPrefixList(string $prefix_list_id, string $ip)
     {
         $result = $this->client->describeManagedPrefixLists([
             'PrefixListIds' => [
-                $id,
+                $prefix_list_id,
             ],
         ]);
 
@@ -49,14 +48,14 @@ class Ec2Client extends Client
                 ],
             ],
             'CurrentVersion' => $result['PrefixLists'][0]['Version'],
-            'PrefixListId' => $id,
+            'PrefixListId' => $prefix_list_id,
         ]);
     }
 
-    public function listIpsPrefixList(string $id)
+    public function listIpsPrefixList(string $prefix_list_id)
     {
         $results = $this->client->getManagedPrefixListEntries([
-            'PrefixListId' => $id,
+            'PrefixListId' => $prefix_list_id,
         ]);
 
         return array_map(function ($entry) {
@@ -64,14 +63,14 @@ class Ec2Client extends Client
         }, $results['Entries']);
     }
 
-    public function waitForPrefixListUpdate(string $id, ConsoleOutput $output = null, string $wait_message = '')
+    public function waitForPrefixListUpdate(string $prefix_list_id, OutputStyle $output = null, string $wait_message = '')
     {
         $client = $this->client;
 
-        $this->waitForFinish(10, 3, function (&$success) use ($client, $id) {
+        $this->waitForFinish(10, 3, function (&$success) use ($client, $prefix_list_id) {
             $result = $client->describeManagedPrefixLists([
                 'PrefixListIds' => [
-                    $id,
+                    $prefix_list_id,
                 ]
             ]);
 

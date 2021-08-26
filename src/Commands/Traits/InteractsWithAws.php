@@ -2,122 +2,73 @@
 
 namespace LaraSurf\LaraSurf\Commands\Traits;
 
-use Aws\Acm\AcmClient;
-use Aws\CloudFormation\CloudFormationClient;
-use Aws\Credentials\Credentials;
-use Aws\Ec2\Ec2Client;
-use Aws\Exception\CredentialsException;
-use Aws\Route53\Route53Client;
-use Aws\Ses\SesClient;
-use Aws\SesV2\SesV2Client;
-use Aws\Ssm\SsmClient;
-use GuzzleHttp\Promise\Create;
-use GuzzleHttp\Promise\RejectedPromise;
-use Illuminate\Support\Facades\File;
+use LaraSurf\LaraSurf\AwsClients\AcmClient;
+use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
+use LaraSurf\LaraSurf\AwsClients\Ec2Client;
+use LaraSurf\LaraSurf\AwsClients\Route53Client;
+use LaraSurf\LaraSurf\AwsClients\SesClient;
+use LaraSurf\LaraSurf\AwsClients\SsmClient;
+use LaraSurf\LaraSurf\Constants\Cloud;
 
 trait InteractsWithAws
 {
-    protected static function laraSurfAwsProfileCredentialsProvider($profile_name): callable
+    use InteractsWithConfig;
+
+    protected static function awsAcm(string $environment = null)
     {
-        return function() use ($profile_name) {
-            $credentials_file_path = static::getAwsCredentialsFilePath();
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
 
-            if (!File::exists($credentials_file_path)) {
-                return new RejectedPromise(new CredentialsException("File does not exist: $credentials_file_path"));
-            }
-
-            $credentials = parse_ini_file($credentials_file_path, true);
-
-            if (!isset($credentials[$profile_name])) {
-                return new RejectedPromise(new CredentialsException("Profile '$profile_name' does not exist in $credentials_file_path"));
-            }
-
-            if (empty($credentials[$profile_name]['aws_access_key_id'])) {
-                return new RejectedPromise(new CredentialsException("Profile '$profile_name' does not contain 'aws_access_key_id'"));
-            }
-
-            if (empty($credentials[$profile_name]['aws_secret_access_key'])) {
-                return new RejectedPromise(new CredentialsException("Profile '$profile_name' does not contain 'aws_secret_access_key'"));
-            }
-
-            return Create::promiseFor(
-                new Credentials($credentials[$profile_name]['aws_access_key_id'], $credentials[$profile_name]['aws_secret_access_key'])
-            );
-        };
+        return new AcmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function getAwsCredentialsFilePath()
+    protected static function awsCloudFormation(string $environment = null)
     {
-        return '/larasurf/aws/credentials';
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
+
+        return new CloudFormationClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-
-    protected function getSsmClient($config, $environment)
+    protected static function awsEc2(string $environment = null)
     {
-        return new SsmClient([
-            'version' => 'latest',
-            'region' => $config['cloud-environments'][$environment]['aws-region'],
-            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-        ]);
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
+
+        return new Ec2Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function getSsmParameterPath($config, $environment, $parameter = null)
+    protected static function awsRoute53()
     {
-        $parameter = $parameter ?? '';
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments();
 
-        return '/' . $config['project-name'] . '/' . $environment . '/' . $parameter;
+        return new Route53Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function getCloudFormationClient($config, $environment) {
-        return new CloudFormationClient([
-            'version' => 'latest',
-            'region' => $config['cloud-environments'][$environment]['aws-region'],
-            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-        ]);
-    }
-
-    protected function getCloudFormationStackName($config, $environment)
+    protected static function awsSes()
     {
-        return "{$config['project-name']}-{$environment}";
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments();
+
+        return new SesClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function getRoute53Client($config, $environment) {
-        return new Route53Client([
-            'version' => 'latest',
-            'region' => $config['cloud-environments'][$environment]['aws-region'],
-            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-        ]);
+    protected static function awsSsm(string $environment = null)
+    {
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
+
+        return new SsmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function getAcmClient($config, $environment) {
-        return new AcmClient([
-            'version' => 'latest',
-            'region' => $config['cloud-environments'][$environment]['aws-region'],
-            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-        ]);
-    }
+    protected static function clientArguments(string $environment = null): array
+    {
+        $project_name = static::config()->get('project-name');
+        $project_id = static::config()->get('project-id');
+        $aws_profile = static::config()->get('aws-profile');
+        $aws_region = static::config()->get("environments.$environment.aws-region") ?: Cloud::AWS_REGION_US_EAST_1;
 
-    protected function getSesClient($config, $environment) {
-        return new SesClient([
-            'version' => 'latest',
-            'region' => $config['cloud-environments'][$environment]['aws-region'],
-            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-        ]);
-    }
-
-    protected function getSesV2Client($config, $environment) {
-        return new SesV2Client([
-            'version' => 'latest',
-            'region' => $config['cloud-environments'][$environment]['aws-region'],
-            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-        ]);
-    }
-
-    protected function getEc2Client($config, $environment) {
-        return new Ec2Client([
-            'version' => 'latest',
-            'region' => $config['cloud-environments'][$environment]['aws-region'],
-            'credentials' => self::laraSurfAwsProfileCredentialsProvider($config['aws-profile']),
-        ]);
+        return [
+            $project_name,
+            $project_id,
+            $aws_profile,
+            $aws_region,
+            $environment,
+        ];
     }
 }

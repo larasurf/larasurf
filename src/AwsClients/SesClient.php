@@ -4,8 +4,8 @@ namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\AwsClient;
 use Aws\SesV2\SesV2Client;
-use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
-use Symfony\Component\Console\Output\ConsoleOutput;
+use Illuminate\Console\OutputStyle;
+use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;;
 
 class SesClient extends Client
 {
@@ -37,7 +37,7 @@ class SesClient extends Client
         }, $result['DkimTokens']);
     }
 
-    public function waitForDomainVerification(string $domain, ConsoleOutput $output = null, $wait_message = '')
+    public function waitForDomainVerification(string $domain, OutputStyle $output = null, $wait_message = '')
     {
         $client = $this->client;
 
@@ -63,7 +63,18 @@ class SesClient extends Client
         }, $output, $wait_message);
     }
 
-    public function waitForDomainDkimVerification(string $domain, ConsoleOutput $output = null, $wait_message = '')
+    public function checkDomainVerification(string $domain): bool
+    {
+        $result = $this->client->getIdentityVerificationAttributes([
+            'Identities' => [
+                $domain,
+            ],
+        ]);
+
+        return ($result['VerificationAttributes'][$domain]['VerificationStatus'] ?? false) === 'Success';
+    }
+
+    public function waitForDomainDkimVerification(string $domain, OutputStyle $output = null, $wait_message = '')
     {
         $client = $this->client;
 
@@ -89,6 +100,17 @@ class SesClient extends Client
         }, $output, $wait_message);
     }
 
+    public function checkDomainDkimVerification(string $domain): bool
+    {
+        $result = $this->client->getIdentityDkimAttributes([
+            'Identities' => [
+                $domain,
+            ],
+        ]);
+
+        return ($result['DkimAttributes'][$domain]['DkimVerificationStatus'] ?? false) === 'Success';
+    }
+
     public function deleteDomain(string $domain)
     {
         $this->client->deleteIdentity([
@@ -96,21 +118,21 @@ class SesClient extends Client
         ]);
     }
 
-    public function enableEmailSending(string $domain, string $description)
+    public function enableEmailSending(string $website, string $description)
     {
         $this->makeV2Client()->putAccountDetails([
             'MailType' => 'TRANSACTIONAL',
             'ProductionAccessEnabled' => true,
             'UseCaseDescription' => $description,
-            'WebsiteURL' => "https://$domain",
+            'WebsiteURL' => $website,
         ]);
     }
 
-    public function checkEmailSending()
+    public function checkEmailSending(): bool
     {
         $result = $this->makeV2Client()->getAccount();
 
-        return $result['ProductionAccessEnabled'] ?? false;
+        return (bool) $result['ProductionAccessEnabled'] ?? false;
     }
 
     protected function makeClient(array $args): AwsClient

@@ -3,34 +3,28 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
-use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
+use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
+use LaraSurf\LaraSurf\Commands\Traits\InteractsWithConfig;
 
 class Config extends Command
 {
-    use HasSubCommand;
+    use HasSubCommands;
+    use InteractsWithConfig;
 
     const COMMAND_GET = 'get';
     const COMMAND_SET = 'set';
 
-    protected $signature = 'larasurf:config {subcommand} {key} {value?}';
+    protected $signature = 'larasurf:config
+                            {subcommand : The subcommand to run: \'get\' or \'set\'}
+                            {key : The config key, supports dot notation}
+                            {value? : The config value, required with \'set\'}';
 
-    protected $description = 'Configure LaraSurf';
+    protected $description = 'Read and update the LaraSurf configuration file';
 
     protected array $commands = [
         self::COMMAND_GET => 'handleGet',
         self::COMMAND_SET => 'handleSet',
     ];
-
-    protected string $config_file = 'larasurf.json';
-
-    protected \LaraSurf\LaraSurf\Config $config;
-
-    public function __construct()
-    {
-        $this->config = new \LaraSurf\LaraSurf\Config($this->config_file);
-
-        parent::__construct();
-    }
 
     public function handle()
     {
@@ -45,7 +39,7 @@ class Config extends Command
     {
         $key = $this->argument('key');
 
-        $value = $this->config->get($key);
+        $value = static::config()->get($key);
 
         if ($value !== null) {
             if (is_bool($value)) {
@@ -54,7 +48,7 @@ class Config extends Command
 
             $this->line($value);
         } else {
-            $this->error("Key '$key' not found in larasurf.json");
+            $this->error("Key '$key' not found in '" . static::configFileName() . "'");
 
             return 1;
         }
@@ -74,15 +68,15 @@ class Config extends Command
 
         $key = $this->argument('key');
 
-        $this->config->set($key, $value);
+        static::config()->set($key, $value);
 
-        if (!$this->config->write()) {
-            $this->error("Failed to write to file '{$this->config_file}'");
+        if (!static::config()->write()) {
+            $this->error("Failed to write to file '" . static::configFileName() . "'");
 
             return 1;
         }
 
-        $this->info("File '{$this->config_file}' updated successfully");
+        $this->info("File '" . static::configFileName() ."' updated successfully");
 
         return 0;
     }
