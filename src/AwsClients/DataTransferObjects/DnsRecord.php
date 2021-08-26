@@ -48,7 +48,7 @@ class DnsRecord extends DataTransferObject
         return $this->name;
     }
 
-    public function setName(string $name)
+    public function setName(string $name): static
     {
         $this->name = $name;
 
@@ -60,7 +60,7 @@ class DnsRecord extends DataTransferObject
         return $this->value;
     }
 
-    public function setValue(string $value)
+    public function setValue(string $value): static
     {
         $this->value = $value;
 
@@ -72,7 +72,7 @@ class DnsRecord extends DataTransferObject
         return $this->type;
     }
 
-    public function setType(string $type)
+    public function setType(string $type): static
     {
         $this->validateType($type);
 
@@ -86,7 +86,7 @@ class DnsRecord extends DataTransferObject
         return $this->ttl;
     }
 
-    public function setTtl(int $ttl)
+    public function setTtl(int $ttl): static
     {
         $this->ttl = $ttl;
 

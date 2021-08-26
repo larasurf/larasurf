@@ -16,9 +16,9 @@ class Config
 {
     protected array $config;
 
-    public function __construct($filename = 'larasurf.json')
+    public function __construct(protected $filename = 'larasurf.json')
     {
-        $path = base_path('larasurf.json');
+        $path = base_path($filename);
 
         if (!File::exists($path)) {
             throw new FileNotFoundException($path);
@@ -53,7 +53,7 @@ class Config
         $validator = Validator::make([
             $key => $value,
         ], [
-            $key => $this->getValidationRules()[$key],
+            $key => $this->validationRules()[$key],
         ]);
 
         if ($validator->fails()) {
@@ -63,7 +63,14 @@ class Config
         Arr::set($this->config, $key, $value);
     }
 
-    protected function getValidationRules(): array
+    public function write(): bool
+    {
+        $json = json_encode($this->config, JSON_PRETTY_PRINT);
+
+        return File::put(base_path($this->filename), $json . PHP_EOL);
+    }
+
+    protected function validationRules(): array
     {
         return [
             'project-name' => 'required|regex:/^[a-z0-9-]+$/',
@@ -79,7 +86,7 @@ class Config
 
     protected function validateConfig(array $config)
     {
-        $validator = Validator::make($config, $this->getValidationRules());
+        $validator = Validator::make($config, $this->validationRules());
 
         if ($validator->fails()) {
             throw new InvalidConfigException($config, $validator->getMessageBag()->toArray());

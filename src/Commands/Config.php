@@ -3,17 +3,10 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommand;
-use LaraSurf\LaraSurf\Commands\Traits\HasValidEnvironments;
-use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
 class Config extends Command
 {
-    use InteractsWithLaraSurfConfig;
-    use HasValidEnvironments;
     use HasSubCommand;
 
     const COMMAND_GET = 'get';
@@ -23,26 +16,25 @@ class Config extends Command
 
     protected $description = 'Configure LaraSurf';
 
-    protected $commands = [
+    protected array $commands = [
         self::COMMAND_GET => 'handleGet',
         self::COMMAND_SET => 'handleSet',
     ];
 
-    protected $rules = null;
+    protected string $config_file = 'larasurf.json';
+
+    protected \LaraSurf\LaraSurf\Config $config;
+
+    public function __construct()
+    {
+        $this->config = new \LaraSurf\LaraSurf\Config($this->config_file);
+
+        parent::__construct();
+    }
 
     public function handle()
     {
         if (!$this->validateSubCommandArgument()) {
-            return 1;
-        }
-
-        $key = $this->argument('key');
-
-        $this->rules = $this->getRules($key);
-
-        if (!$this->rules) {
-            $this->error('Invalid config key specified');
-
             return 1;
         }
 
@@ -53,17 +45,7 @@ class Config extends Command
     {
         $key = $this->argument('key');
 
-        $config = $this->getValidLarasurfConfig();
-
-        if (!$config) {
-            return 1;
-        }
-
-        if (!$this->validateUpstreamEnvironment($config, $key)) {
-            return 1;
-        }
-
-        $value = Arr::get($config, $key);
+        $value = $this->config->get($key);
 
         if ($value !== null) {
             if (is_bool($value)) {
@@ -90,98 +72,18 @@ class Config extends Command
             return 1;
         }
 
-        $config = $this->getValidLarasurfConfig();
-
-        if (!$config) {
-            return 1;
-        }
-
         $key = $this->argument('key');
 
-        if (!$this->validateUpstreamEnvironment($config, $key)) {
-            return 1;
-        }
+        $this->config->set($key, $value);
 
-        if (!$this->validateStackNotDeployed($config, $key)) {
-            return 1;
-        }
-
-        $validator = Validator::make(
-            ['data' => $value],
-            ['data' => $this->rules]
-        );
-
-        if ($validator->fails()) {
-            foreach ($validator->getMessageBag()->all() as $message) {
-                $this->error($message);
-            }
+        if (!$this->config->write()) {
+            $this->error("Failed to write to file '{$this->config_file}'");
 
             return 1;
         }
 
-        $value = $this->castValue($key, $value);
+        $this->info("File '{$this->config_file}' updated successfully");
 
-        Arr::set($config, $key, $value);
-
-        return $this->writeLaraSurfConfig($config) ? 0 : 1;
-    }
-
-    protected function validateUpstreamEnvironment($config, $key)
-    {
-        if (str_starts_with($key, 'cloud-environments.')) {
-            $environment = explode('.', $key)[1] ?? '';
-
-            return $this->validateEnvironmentExistsInConfig($config, $environment);
-        }
-
-        return false;
-    }
-
-    protected function validateStackNotDeployed($config, $key)
-    {
-        if (str_starts_with($key, 'cloud-environments.')) {
-            $environment = explode('.', $key)[1] ?? '';
-
-            return $this->validateEnvironmentStackNotDeployed($config, $environment);
-        }
-
-        return false;
-    }
-
-    protected function getRules($key)
-    {
-        switch ($key) {
-            case 'aws-profile': {
-                return [
-                    'regex:/^[a-zA-Z0-9-_]+$/',
-                ];
-            }
-            case 'cloud-environments.stage.aws-region':
-            case 'cloud-environments.production.aws-region': {
-                return [
-                    Rule::in($this->valid_aws_regions),
-                ];
-            }
-            default: {
-                return false;
-            }
-        }
-    }
-
-    protected function castValue($key, $value)
-    {
-        switch ($key) {
-            case 'cloud-environments.stage.stack-deployed':
-            case 'cloud-environments.production.stack-deployed': {
-                return $value === 'true';
-            }
-            case 'cloud-environments.stage.db-storage-gb':
-            case 'cloud-environments.production.db-storage-gb': {
-                return (int) $value;
-            }
-            default: {
-                return (string) $value;
-            }
-        }
+        return 0;
     }
 }
