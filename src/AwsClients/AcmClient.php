@@ -3,7 +3,7 @@
 namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\AwsClient;
-use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\Output\CertificateVerificationRecord;
+use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\InvalidArgumentException;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
@@ -15,7 +15,7 @@ class AcmClient extends Client
         self::VALIDATION_METHOD_DNS,
     ];
 
-    public function requestCertificate(string $domain, string $validation_method = self::VALIDATION_METHOD_DNS, ConsoleOutput $output = null): CertificateVerificationRecord
+    public function requestCertificate(string $domain, string $validation_method = self::VALIDATION_METHOD_DNS, ConsoleOutput $output = null, string $wait_message = ''): DnsRecord
     {
         $this->validateValidationMethod($validation_method);
 
@@ -48,9 +48,12 @@ class AcmClient extends Client
             }
 
             return false;
-        }, $output);
+        }, $output, $wait_message);
 
-        return new CertificateVerificationRecord($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']);
+        return (new DnsRecord())
+            ->setName($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Name'])
+            ->setValue($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Value'])
+            ->setType(DnsRecord::TYPE_CNAME);
     }
 
     public function deleteCertificate(string $arn)

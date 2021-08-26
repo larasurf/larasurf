@@ -60,7 +60,7 @@ class Config
             throw new InvalidConfigValueException($key, $validator->getMessageBag()->toArray());
         }
 
-        Arr::set($this->config, $key);
+        Arr::set($this->config, $key, $value);
     }
 
     protected function getValidationRules(): array

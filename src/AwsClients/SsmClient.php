@@ -14,7 +14,7 @@ class SsmClient extends Client
         return in_array($path, $parameters);
     }
 
-    public function getParameter($name): string|null
+    public function getParameter($name): ?string
     {
         $result = $this->client->getParameter([
             'Name' => $this->parameterPath($name),

@@ -4,12 +4,13 @@ namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\AwsClient;
 use Illuminate\Support\Str;
-use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\Output\Input\DnsRecord;
+use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
 class Route53Client extends Client
 {
-    public function hostedZoneIdFromDomain(string $domain): string|null
+    public function hostedZoneIdFromDomain(string $domain): ?string
     {
         // todo: support more than 100 hosted zones
         $hosted_zones = $this->client->listHostedZones();
@@ -33,7 +34,7 @@ class Route53Client extends Client
         return null;
     }
 
-    public function upsertDnsRecords(string $hosted_zone_id, array $records)
+    public function upsertDnsRecords(string $hosted_zone_id, array $records, ConsoleOutput $output = null, string $wait_message = '')
     {
         $changes = [];
 
@@ -77,7 +78,7 @@ class Route53Client extends Client
             }
 
             return false;
-        });
+        }, $output, $wait_message);
     }
 
     protected function makeClient(array $args): AwsClient

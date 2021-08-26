@@ -22,17 +22,11 @@ abstract class Client
 
     public function __construct(protected string $project_name,
                                 protected string $project_id,
-                                string $aws_profile,
+                                protected string $aws_profile,
                                 protected string $aws_region,
-                                protected string|null $environment = null)
+                                protected ?string $environment = null)
     {
-        $credentials = static::credentialsProvider($aws_profile);
-
-        $this->client = $this->makeClient([
-            'version' => 'latest',
-            'region' => $this->aws_region,
-            'credentials' => $credentials,
-        ]);
+        $this->client = $this->makeClient($this->clientArguments());
     }
 
     protected static function credentialsProvider($profile): callable
@@ -69,6 +63,17 @@ abstract class Client
         return '/larasurf/aws/credentials';
     }
 
+    protected function clientArguments(): array
+    {
+        $credentials = static::credentialsProvider($this->aws_profile);
+
+        return [
+            'version' => 'latest',
+            'region' => $this->aws_region,
+            'credentials' => $credentials,
+        ];
+    }
+
     protected function resourceTags(string $unique_resource = null): array
     {
         $this->validateEnvironmentIsSet();
@@ -101,7 +106,7 @@ abstract class Client
         }
     }
 
-    protected function waitForFinish(int $limit, int $wait_seconds, callable $operation, ConsoleOutput $output = null): bool
+    protected function waitForFinish(int $limit, int $wait_seconds, callable $operation, ConsoleOutput $output = null, string $wait_message = ''): bool
     {
         $finished = false;
         $tries = 0;
@@ -111,6 +116,8 @@ abstract class Client
             $finished = $operation($success);
 
             if (!$finished && $output) {
+                $output->writeln($wait_message);
+
                 $bar = new ProgressBar($output, $wait_seconds);
                 $bar->setBarCharacter('=');
                 $bar->setProgressCharacter('=');

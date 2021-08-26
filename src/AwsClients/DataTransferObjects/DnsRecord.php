@@ -1,22 +1,25 @@
 <?php
 
-namespace LaraSurf\LaraSurf\AwsClients\DataTransferObjects\Output\Input;
+namespace LaraSurf\LaraSurf\AwsClients\DataTransferObjects;
 
-use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\Output\DataTransferObject;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\InvalidArgumentException;
 
 class DnsRecord extends DataTransferObject
 {
     const TYPE_CNAME = 'CNAME';
+    const TYPE_TXT = 'TXT';
 
     const TYPES = [
         self::TYPE_CNAME,
+        self::TYPE_TXT,
     ];
+
+    const TTL_DEFAULT = 300;
 
     protected ?string $name;
     protected ?string $value;
-    protected ?int $ttl;
     protected ?string $type;
+    protected int $ttl = self::TTL_DEFAULT;
 
     public function toArray()
     {
@@ -36,8 +39,13 @@ class DnsRecord extends DataTransferObject
     {
         $this->name = $data['Name'] ?? null;
         $this->value = $data['ResourceRecords'][0]['Value'] ?? null;
-        $this->ttl = $data['TTL'] ?? null;
+        $this->ttl = $data['TTL'] ?? self::TTL_DEFAULT;
         $this->type = $data['Type'] ?? null;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
     }
 
     public function setName(string $name)
@@ -47,6 +55,11 @@ class DnsRecord extends DataTransferObject
         return $this;
     }
 
+    public function getValue(): ?string
+    {
+        return $this->value;
+    }
+
     public function setValue(string $value)
     {
         $this->value = $value;
@@ -54,11 +67,9 @@ class DnsRecord extends DataTransferObject
         return $this;
     }
 
-    public function setTtl(int $ttl)
+    public function getType(): ?string
     {
-        $this->ttl = $ttl;
-
-        return $this;
+        return $this->type;
     }
 
     public function setType(string $type)
@@ -66,6 +77,18 @@ class DnsRecord extends DataTransferObject
         $this->validateType($type);
 
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getTtl(): int
+    {
+        return $this->ttl;
+    }
+
+    public function setTtl(int $ttl)
+    {
+        $this->ttl = $ttl;
 
         return $this;
     }

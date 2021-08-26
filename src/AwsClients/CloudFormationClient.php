@@ -16,7 +16,8 @@ class CloudFormationClient extends Client
         string $db_username,
         string $db_password,
         string $db_admin_prefix_list_id,
-        ConsoleOutput $output = null
+        ConsoleOutput $output = null,
+        string $wait_message = ''
     )
     {
         $this->validateEnvironmentIsSet();
@@ -89,7 +90,7 @@ class CloudFormationClient extends Client
             }
 
             return false;
-        }, $output);
+        }, $output, $wait_message);
     }
 
     public function deleteStack()
