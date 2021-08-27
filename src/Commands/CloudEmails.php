@@ -22,7 +22,7 @@ class CloudEmails extends Command
     const COMMAND_CHECK_SENDING = 'check-sending';
 
     protected $signature = 'larasurf:cloud-emails
-                            {--env=null : The environment: \'stage\' or \'production\'}
+                            {--environment=null : The environment: \'stage\' or \'production\'}
                             {subcommand : The subcommand to run: \'verify-domain\', \'check-verification\', \'enable-sending\', or \'check-sending\'}';
 
     protected $description = 'Manage email sending capabilities in cloud environments';
@@ -45,7 +45,7 @@ class CloudEmails extends Command
 
     protected function handleVerifyDomain()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -115,7 +115,7 @@ class CloudEmails extends Command
 
     protected function handleCheckVerification()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;

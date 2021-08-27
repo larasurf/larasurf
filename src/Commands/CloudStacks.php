@@ -23,8 +23,8 @@ class CloudStacks extends Command
     const COMMAND_UPDATE = 'update';
     const COMMAND_DELETE = 'delete';
 
-    protected $signature = 'larasurf:cloud-vars
-                            {--env=null : The environment: \'stage\' or \'production\'}
+    protected $signature = 'larasurf:cloud-stacks
+                            {--environment=null : The environment: \'stage\' or \'production\'}
                             {subcommand : The subcommand to run: \'status\', \'create\', \'update\', or \'delete\'}';
 
     protected $description = 'Manage application environment variables in cloud environments';
@@ -47,7 +47,7 @@ class CloudStacks extends Command
 
     public function handleStatus()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -66,7 +66,7 @@ class CloudStacks extends Command
 
     public function handleCreate()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -133,7 +133,7 @@ class CloudStacks extends Command
 
     public function updateStack()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -225,7 +225,7 @@ class CloudStacks extends Command
 
     public function handleDelete()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;

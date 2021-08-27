@@ -8,18 +8,18 @@ trait HasEnvOption
 {
     use InteractsWithConfig;
 
-    protected function envOption(): string|false
+    protected function environmentOption(): string|false
     {
-        $env = $this->option('env');
+        $env = $this->option('environment');
 
         if (!$env || $env === 'null') {
-            $this->error('The --env option is required for this subcommand');
+            $this->error('The --environment option is required for this subcommand');
 
             return false;
         }
 
         if (!in_array($env, Cloud::ENVIRONMENTS)) {
-            $this->error('Invalid --env option given');
+            $this->error('Invalid --environment option given');
 
             return false;
         }

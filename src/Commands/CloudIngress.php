@@ -18,7 +18,7 @@ class CloudIngress extends Command
     const COMMAND_LIST = 'list';
 
     protected $signature = 'larasurf:cloud-ingress
-                            {--env=null : The environment: \'stage\' or \'production\'}
+                            {--environment=null : The environment: \'stage\' or \'production\'}
                             {--type=null : The resource type for ingress: \'application\' or \'database\'}
                             {--source=null : The source to allow ingress from: \'me\', \'public\', or an IP (X.X.X.X)}
                             {subcommand : The subcommand to run: \'allow\', \'revoke\', or \'list\'}';
@@ -42,7 +42,7 @@ class CloudIngress extends Command
 
     protected function handleAllow()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -81,7 +81,7 @@ class CloudIngress extends Command
 
     protected function handleRevoke()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -120,7 +120,7 @@ class CloudIngress extends Command
 
     public function handleList()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;

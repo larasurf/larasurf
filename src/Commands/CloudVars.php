@@ -20,7 +20,7 @@ class CloudVars extends Command
     const COMMAND_LIST = 'list';
 
     protected $signature = 'larasurf:cloud-vars
-                            {--env=null : The environment: \'stage\' or \'production\'}
+                            {--environment=null : The environment: \'stage\' or \'production\'}
                             {--key=null : The variable key, required for \'exists\', \'get\', \'put\', and \'delete\'}
                             {--value=null : The variable value, required for\'put\'}
                             {--values : Specifies the value of the variables should be output when using the \'list\' subcommand}
@@ -47,7 +47,7 @@ class CloudVars extends Command
 
     public function handleExists()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -70,7 +70,7 @@ class CloudVars extends Command
 
     public function handleGet()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -95,7 +95,7 @@ class CloudVars extends Command
 
     public function handlePut()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -122,7 +122,7 @@ class CloudVars extends Command
 
     public function handleDelete()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
@@ -141,7 +141,7 @@ class CloudVars extends Command
 
     public function handleList()
     {
-        $env = $this->envOption();
+        $env = $this->environmentOption();
 
         if (!$env) {
             return 1;
