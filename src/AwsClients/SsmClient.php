@@ -70,7 +70,7 @@ class SsmClient extends Client
 
             if ($decrypt) {
                 foreach ($results['Parameters'] as $parameter) {
-                    $parameter[$parameter['Name']] = $parameter['Value'];
+                    $parameters[$parameter['Name']] = $parameter['Value'];
                 }
             } else {
                 $parameters = array_merge(

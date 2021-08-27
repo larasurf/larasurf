@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
-use LaraSurf\LaraSurf\AwsClients\Client;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
 use LaraSurf\LaraSurf\AwsClients\Route53Client;
 use LaraSurf\LaraSurf\AwsClients\SesClient;
+use LaraSurf\LaraSurf\AwsClients\SsmClient;
 use LaraSurf\LaraSurf\Constants\Cloud;
 use Mockery;
 
@@ -29,6 +29,10 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected string $config_path;
     protected string $cloudformation_template_path;
     protected string $cloudformation_directory_path;
+    protected string $project_name;
+    protected string $project_id;
+    protected string $aws_profile;
+    protected string $aws_region;
 
     public function setUp(): void
     {
@@ -37,34 +41,18 @@ class TestCase extends \Orchestra\Testbench\TestCase
         $this->config_path = base_path('larasurf.json');
         $this->cloudformation_template_path = base_path('.cloudformation/infrastructure.yml');
         $this->cloudformation_directory_path = base_path('.cloudformation');
-    }
-
-    protected function projectName(): string
-    {
-        return implode('-', $this->faker->words());
-    }
-
-    protected function projectId(): string
-    {
-        return Str::random(16);
-    }
-
-    protected function awsProfile(): string
-    {
-        return $this->faker->word;
-    }
-
-    protected function awsRegion(): string
-    {
-        return  Arr::random(Cloud::AWS_REGIONS);
+        $this->project_name = implode('-', $this->faker->words());
+        $this->project_id = Str::random();
+        $this->aws_profile = $this->faker->word;
+        $this->aws_region = Arr::random(Cloud::AWS_REGIONS);
     }
 
     protected function createValidLaraSurfConfig(string $environments)
     {
         $json = [
-            'project-name' => $this->projectName(),
-            'project-id' => $this->projectId(),
-            'aws-profile' => $this->awsProfile(),
+            'project-name' => $this->project_name,
+            'project-id' => $this->project_id,
+            'aws-profile' => $this->aws_profile,
         ];
 
         switch ($environments) {
@@ -76,7 +64,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
             case 'local-production': {
                 $json['environments'] = [
                     'production' => [
-                        'aws-region' => $this->awsRegion(),
+                        'aws-region' => $this->aws_region,
                     ],
                 ];
 
@@ -85,10 +73,10 @@ class TestCase extends \Orchestra\Testbench\TestCase
             case 'local-stage-production': {
                 $json['environments'] = [
                     'stage' => [
-                        'aws-region' => $this->awsRegion(),
+                        'aws-region' => $this->aws_region,
                     ],
                     'production' => [
-                        'aws-region' => $this->awsRegion(),
+                        'aws-region' => $this->aws_region,
                     ],
                 ];
 
@@ -111,10 +99,10 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function awsClient(string $type, string $environment = Cloud::ENVIRONMENT_PRODUCTION)
     {
         return new $type(
-            $this->projectName(),
-            $this->projectId(),
-            $this->awsProfile(),
-            $this->awsRegion(),
+            $this->project_name,
+            $this->project_id,
+            $this->aws_profile,
+            $this->aws_region,
             $environment
         );
     }
@@ -172,5 +160,15 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function mockAwsSesV2Client(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . \Aws\SesV2\SesV2Client::class);
+    }
+
+    protected function ssmClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): SsmClient
+    {
+        return $this->awsClient(SsmClient::class, $environment);
+    }
+
+    protected function mockAwsSsmClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\Ssm\SsmClient::class);
     }
 }

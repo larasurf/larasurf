@@ -50,10 +50,10 @@ class CloudFormationClientTest extends TestCase
         $this->mockAwsCloudFormationClient();
 
         $cloudformation = new CloudFormationClient(
-            $this->projectName(),
-            $this->projectId(),
-            $this->awsProfile(),
-            $this->awsRegion()
+            $this->project_name,
+            $this->project_id,
+            $this->aws_profile,
+            $this->aws_region
         );
 
         $cloudformation->createStack(
