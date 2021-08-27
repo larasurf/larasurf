@@ -26,7 +26,11 @@ class CloudFormationClient extends Client
             'Parameters' => [
                 [
                     'ParameterKey' => 'ProjectName',
-                    'ParameterValue' => $this->project_name . '-' . $this->project_id,
+                    'ParameterValue' => $this->project_name,
+                ],
+                [
+                    'ParameterKey' => 'ProjectId',
+                    'ParameterValue' => $this->project_id,
                 ],
                 [
                     'ParameterKey' => 'EnvironmentName',
@@ -106,6 +110,10 @@ class CloudFormationClient extends Client
             'Parameters' => [
                 [
                     'ParameterKey' => 'ProjectName',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'ProjectId',
                     'UsePreviousValue' => true,
                 ],
                 [

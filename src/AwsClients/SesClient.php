@@ -40,7 +40,7 @@ class SesClient extends Client
     {
         $client = $this->client;
 
-        $this->waitForFinish(180, 10, function (&$success) use ($client, $domain) {
+        $this->waitForFinish(60, 30, function (&$success) use ($client, $domain) {
             $result = $client->getIdentityVerificationAttributes([
                 'Identities' => [
                     $domain,
@@ -77,7 +77,7 @@ class SesClient extends Client
     {
         $client = $this->client;
 
-        $this->waitForFinish(180, 10, function (&$success) use ($client, $domain) {
+        $this->waitForFinish(60, 30, function (&$success) use ($client, $domain) {
             $result = $client->getIdentityDkimAttributes([
                 'Identities' => [
                     $domain,

@@ -25,7 +25,7 @@ trait HasEnvOption
         }
 
         if (!static::config()->exists("environments.$env")) {
-            $this->error("The '$env' environment is not configured for this environment");
+            $this->error("The '$env' environment is not configured for this project");
 
             return false;
         }

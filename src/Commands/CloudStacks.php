@@ -86,6 +86,8 @@ class CloudStacks extends Command
 
         $route53 = static::awsRoute53();
 
+        $this->info('Finding hosted zone from domain');
+
         $hosted_zone_id = $route53->hostedZoneIdFromDomain($domain);
 
         if (!$hosted_zone_id) {
@@ -237,6 +239,8 @@ class CloudStacks extends Command
 
         static::awsCloudFormation($env)->deleteStack();
 
+        $this->info('Stack deletion initiated');
+
         return 0;
     }
 
@@ -273,7 +277,7 @@ class CloudStacks extends Command
     {
         do {
             $db_storage = (int) $this->ask('Database storage (GB)?', Cloud::DB_STORAGE_MIN_GB);
-            $valid = $db_storage < Cloud::DB_STORAGE_MAX_GB && $db_storage > Cloud::DB_STORAGE_MIN_GB;
+            $valid = $db_storage <= Cloud::DB_STORAGE_MAX_GB && $db_storage >= Cloud::DB_STORAGE_MIN_GB;
 
             if (!$valid) {
                 $this->error('Invalid database storage size');
@@ -297,7 +301,8 @@ class CloudStacks extends Command
                 $acm_arn,
                 $domain,
                 AcmClient::VALIDATION_METHOD_DNS,
-                $this->getOutput()
+                $this->getOutput(),
+                'Certificate is still being created, checking again soon...'
             );
 
             $this->info('Verifying ACM certificate via DNS record');
@@ -317,6 +322,8 @@ class CloudStacks extends Command
                 $this->getOutput(),
                 'ACM certificate validation is still pending, checking again soon...'
             );
+
+            $this->info("Verified ACM certificate for domain '$domain' successfully");
         }
 
         return $acm_arn;

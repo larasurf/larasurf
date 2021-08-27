@@ -63,7 +63,7 @@ class Route53Client extends Client
     {
         $client = $this->client;
 
-        $this->waitForFinish(180, 10, function (&$success) use ($client, $change_id) {
+        $this->waitForFinish(60, 30, function (&$success) use ($client, $change_id) {
             $result = $client->getChange([
                 'Id' => $change_id,
             ]);

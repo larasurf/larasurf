@@ -2,7 +2,6 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
-use Aws\AwsClient;
 use Aws\Credentials\Credentials;
 use Aws\Exception\CredentialsException;
 use GuzzleHttp\Promise\Create;
@@ -128,6 +127,8 @@ abstract class Client
                 }
 
                 $bar->finish();
+
+                $output->write(PHP_EOL);
             } else if (!$finished) {
                 sleep($wait_seconds);
             }

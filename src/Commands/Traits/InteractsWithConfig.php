@@ -6,14 +6,14 @@ use LaraSurf\LaraSurf\Config;
 
 trait InteractsWithConfig
 {
-    protected static Config $config;
+    protected static ?Config $config = null;
 
     protected static function configFileName()
     {
         return 'larasurf.json';
     }
 
-    protected static function config()
+    protected static function config(): Config
     {
         if (!static::$config) {
             static::$config = new Config(static::configFileName());

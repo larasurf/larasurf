@@ -29,7 +29,7 @@ class AcmClient extends Client
 
         $result = null;
 
-        $this->waitForFinish(180, 10, function (&$success) use ($client, $output_arn, &$result) {
+        $this->waitForFinish(60, 30, function (&$success) use ($client, $output_arn, &$result) {
             $result = $client->describeCertificate([
                 'CertificateArn' => $output_arn,
             ]);
