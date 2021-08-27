@@ -221,7 +221,7 @@ class CloudFormationClient extends Client
         return is_array($keys) ? $keyed_values : ($keyed_values[$keys] ?? false);
     }
 
-    public function waitForStackInfoPanel(string $success_status, OutputStyle $output = null): array
+    public function waitForStackInfoPanel(string $success_status, OutputStyle $output = null, $word = 'created'): array
     {
         $finished = false;
         $tries = 0;
@@ -285,7 +285,7 @@ class CloudFormationClient extends Client
                         "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
-                        "║                 <info>Your CloudFormation stack is being created!</info>                  ║" . PHP_EOL .
+                        "║                 <info>Your CloudFormation stack is being $word!</info>                  ║" . PHP_EOL .
                         "║                  <info>This can typically take up to</info> 20 minutes<info>.</info>                   ║" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
                         "║           <info>You can view the progress of your stack's creation here:</info>           ║" . PHP_EOL .

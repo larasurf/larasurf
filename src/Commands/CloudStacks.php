@@ -206,7 +206,7 @@ class CloudStacks extends Command
 
         $cloudformation->updateStack($new_domain, $new_certificate_arn, $new_db_storage, $new_db_instance_type);
 
-        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput());
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
 
         if (!$result['success']) {
             $this->error("Stack update failed with status '{$result['status']}'");
