@@ -22,11 +22,19 @@
             "LaraSurf\\LaraSurf\\": "src"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "LaraSurf\\LaraSurf\\Tests\\": "tests"
+        }
+    },
     "extra": {
         "laravel": {
             "providers": [
                 "LaraSurf\\LaraSurf\\LaraSurfServiceProvider"
             ]
         }
+    },
+    "require-dev": {
+        "orchestra/testbench": "^6.20"
     }
 }

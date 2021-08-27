@@ -51,9 +51,9 @@ class Config
         }
 
         $validator = Validator::make([
-            $key => $value,
+            'data' => $value,
         ], [
-            $key => $this->validationRules()[$key],
+            'data' => $this->validationRules()[$key],
         ]);
 
         if ($validator->fails()) {
@@ -77,7 +77,7 @@ class Config
             throw new InvalidConfigKeyException($key);
         }
 
-        return Arr::exists($this->config, $key);
+        return Arr::get($this->config, $key, false) !== false;
     }
 
     public function write(): bool
@@ -94,9 +94,9 @@ class Config
             'project-id' => 'required|regex:/^[a-zA-Z0-9]{16}$/',
             'aws-profile' => 'required|regex:/^[a-zA-Z0-9-_]+$/',
             'environments' => 'array|nullable',
-            'environments.stage' => 'present|nullable',
+            'environments.stage' => 'nullable',
             'environments.stage.aws-region' => [Rule::in(Cloud::AWS_REGIONS)],
-            'environments.production' => 'present|nullable',
+            'environments.production' => 'nullable',
             'environments.production.aws-region' => [Rule::in(Cloud::AWS_REGIONS)],
         ];
     }
