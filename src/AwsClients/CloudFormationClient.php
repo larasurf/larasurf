@@ -278,6 +278,9 @@ class CloudFormationClient extends Client
                     $bars = str_repeat('=', $i);
                     $empty = str_repeat('-', $wait_seconds - $i);
 
+                    $seconds = $wait_seconds - $i;
+                    $padding = $seconds < 10 ? ' ' : '';
+
                     $message =
                         "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
@@ -291,7 +294,7 @@ class CloudFormationClient extends Client
                         "║                                                                              ║" . PHP_EOL .
                         "╠══════════════════════════════════════════════════════════════════════════════╣" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
-                        "║                 Checking for status updates in 60 seconds...                 ║" . PHP_EOL .
+                        "║                 Checking for status updates in $seconds seconds...$padding                 ║" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
                         "║        <info>[$bars</info>$empty<info>]</info>        ║" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
