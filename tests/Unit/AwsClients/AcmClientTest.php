@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Tests\Unit\AwsClients;
 
 use Illuminate\Support\Str;
+use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\InvalidArgumentException;
 use LaraSurf\LaraSurf\Tests\TestCase;
 
@@ -37,6 +38,7 @@ class AcmClientTest extends TestCase
 
         $this->assertEquals($dns_name, $dns_record->getName());
         $this->assertEquals($dns_value, $dns_record->getValue());
+        $this->assertEquals(DnsRecord::TYPE_CNAME, $dns_record->getType());
         $this->assertEquals($arn, $output_arn);
     }
 

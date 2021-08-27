@@ -12,6 +12,7 @@ use LaraSurf\LaraSurf\AwsClients\Client;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
 use LaraSurf\LaraSurf\AwsClients\Route53Client;
+use LaraSurf\LaraSurf\AwsClients\SesClient;
 use LaraSurf\LaraSurf\Constants\Cloud;
 use Mockery;
 
@@ -156,5 +157,20 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function mockAwsRoute53Client(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . \Aws\Route53\Route53Client::class);
+    }
+
+    protected function sesClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): SesClient
+    {
+        return $this->awsClient(SesClient::class, $environment);
+    }
+
+    protected function mockAwsSesClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\Ses\SesClient::class);
+    }
+
+    protected function mockAwsSesV2Client(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\SesV2\SesV2Client::class);
     }
 }

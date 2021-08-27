@@ -10,7 +10,6 @@ use LaraSurf\LaraSurf\Constants\Cloud;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\EnvironmentNotSetException;
 use LaraSurf\LaraSurf\Tests\TestCase;
 use League\Flysystem\FileNotFoundException;
-use Mockery;
 
 class CloudFormationClientTest extends TestCase
 {
@@ -190,9 +189,9 @@ class CloudFormationClientTest extends TestCase
 
     public function testStackOutputMultiple()
     {
-        $key1 = $this->faker->word;
+        $key1 = Str::random();
         $value1 = Str::random();
-        $key2 = $this->faker->word;
+        $key2 = Str::random();
         $value2 = Str::random();
 
         $this->mockAwsCloudFormationClient()

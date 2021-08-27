@@ -4,9 +4,7 @@ namespace LaraSurf\LaraSurf\Tests\Unit\AwsClients;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\PrefixListEntry;
 use LaraSurf\LaraSurf\Tests\TestCase;
-
 
 class Ec2ClientTest extends TestCase
 {

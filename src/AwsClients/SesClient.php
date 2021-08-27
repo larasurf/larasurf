@@ -8,7 +8,7 @@ use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;;
 
 class SesClient extends Client
 {
-    protected static ?SesV2Client $v2_client;
+    protected static ?SesV2Client $v2_client = null;
 
     public function verifyDomain(string $domain): DnsRecord
     {
