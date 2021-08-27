@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\AwsClients;
 
 use Illuminate\Console\OutputStyle;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\PrefixListEntry;
 
@@ -62,11 +63,11 @@ class Ec2Client extends Client
         }, $results['Entries']);
     }
 
-    public function waitForPrefixListUpdate(string $prefix_list_id, OutputStyle $output = null, string $wait_message = '')
+    public function waitForPrefixListUpdate(string $prefix_list_id, OutputStyle $output = null, string $wait_message = ''): bool
     {
         $client = $this->client;
 
-        $this->waitForFinish(10, 3, function (&$success) use ($client, $prefix_list_id) {
+        return $this->waitForFinish(10, 3, function (&$success) use ($client, $prefix_list_id) {
             $result = $client->describeManagedPrefixLists([
                 'PrefixListIds' => [
                     $prefix_list_id,
@@ -83,6 +84,9 @@ class Ec2Client extends Client
 
                     return true;
                 }
+            } else if (count($result['PrefixLists']) === 0) {
+                $success = false; // prefix list doesn't exist
+                return true;
             }
 
             return false;
@@ -97,7 +101,7 @@ class Ec2Client extends Client
     protected function cidrWithDescriptionFromIpArgument($ip): array
     {
         if ($ip === 'me') {
-            $my_ip = trim(file_get_contents('https://checkip.amazonaws.com'));
+            $my_ip = trim(Http::get('https://checkip.amazonaws.com')->body());
             $cidr = "$my_ip/32";
             $description = 'Private Access';
         } else if ($ip === 'public') {

@@ -10,7 +10,9 @@ use InvalidArgumentException;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\Client;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
+use LaraSurf\LaraSurf\AwsClients\Ec2Client;
 use LaraSurf\LaraSurf\Constants\Cloud;
+use Mockery;
 
 class TestCase extends \Orchestra\Testbench\TestCase
 {
@@ -115,13 +117,33 @@ class TestCase extends \Orchestra\Testbench\TestCase
         );
     }
 
-    protected function acmClient(string $environment = Cloud::ENVIRONMENT_PRODUCTION): AcmClient
+    protected function acmClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): AcmClient
     {
         return $this->awsClient(AcmClient::class, $environment);
     }
 
-    protected function cloudFormationClient(string $environment = Cloud::ENVIRONMENT_PRODUCTION): CloudFormationClient
+    protected function mockAwsAcmClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
+    }
+
+    protected function cloudFormationClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): CloudFormationClient
     {
         return $this->awsClient(CloudFormationClient::class, $environment);
+    }
+
+    protected function mockAwsCloudFormationClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class);
+    }
+
+    protected function ec2Client(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): Ec2Client
+    {
+        return $this->awsClient(Ec2Client::class, $environment);
+    }
+
+    protected function mockAwsEc2Client(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\Ec2\Ec2Client::class);
     }
 }

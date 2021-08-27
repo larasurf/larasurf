@@ -5,7 +5,6 @@ namespace LaraSurf\LaraSurf\Tests\Unit\AwsClients;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\InvalidArgumentException;
 use LaraSurf\LaraSurf\Tests\TestCase;
-use Mockery;
 
 class AcmClientTest extends TestCase
 {
@@ -15,7 +14,7 @@ class AcmClientTest extends TestCase
         $dns_name = $this->faker->word;
         $dns_value = $this->faker->word;
 
-        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+        $this->mockAwsAcmClient()
             ->shouldReceive('requestCertificate')
             ->andReturn([
                 'CertificateArn' => $arn,
@@ -45,7 +44,7 @@ class AcmClientTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
+        $this->mockAwsAcmClient();
 
         $this->acmClient()->requestCertificate($output_arn, $this->faker->domainName, $this->faker->word);
     }
@@ -54,7 +53,7 @@ class AcmClientTest extends TestCase
     {
         $arn = Str::random();
 
-        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+        $this->mockAwsAcmClient()
             ->shouldReceive('describeCertificate')
             ->andReturn([
                 'Certificate' => [
@@ -67,7 +66,7 @@ class AcmClientTest extends TestCase
 
     public function testDeleteCertificate()
     {
-        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+        $this->mockAwsAcmClient()
             ->shouldReceive('deleteCertificate');
 
         $this->acmClient()->deleteCertificate(Str::random());
@@ -77,7 +76,7 @@ class AcmClientTest extends TestCase
     {
         $status = $this->faker->word;
 
-        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+        $this->mockAwsAcmClient()
             ->shouldReceive('describeCertificate')
             ->andReturn([
                 'Certificate' => [
@@ -90,7 +89,7 @@ class AcmClientTest extends TestCase
 
     public function testCertificateStatusUnknown()
     {
-        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+        $this->mockAwsAcmClient()
             ->shouldReceive('describeCertificate')
             ->andReturn([]);
 

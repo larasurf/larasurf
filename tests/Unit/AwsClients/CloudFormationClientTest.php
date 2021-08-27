@@ -29,7 +29,7 @@ class CloudFormationClientTest extends TestCase
 
     public function testCreateStack()
     {
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('createStack');
 
         $this->createMockCloudformationTemplate();
@@ -48,7 +48,7 @@ class CloudFormationClientTest extends TestCase
     {
         $this->expectException(EnvironmentNotSetException::class);
 
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class);
+        $this->mockAwsCloudFormationClient();
 
         $cloudformation = new CloudFormationClient(
             $this->projectName(),
@@ -71,7 +71,7 @@ class CloudFormationClientTest extends TestCase
     {
         $this->expectException(FileNotFoundException::class);
 
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('createStack');
 
         $this->cloudFormationClient()->createStack(
@@ -86,7 +86,7 @@ class CloudFormationClientTest extends TestCase
 
     public function testUpdateStack()
     {
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('updateStack');
 
         $this->createMockCloudformationTemplate();
@@ -101,7 +101,7 @@ class CloudFormationClientTest extends TestCase
 
     public function testWaitForStackUpdateSuccess()
     {
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [
@@ -121,7 +121,7 @@ class CloudFormationClientTest extends TestCase
     {
         $status = $this->faker->word;
 
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [
@@ -141,7 +141,7 @@ class CloudFormationClientTest extends TestCase
     {
         $status = $this->faker->word;
 
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [
@@ -156,7 +156,7 @@ class CloudFormationClientTest extends TestCase
 
     public function testStackStatusDoesntExist()
     {
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [],
@@ -170,7 +170,7 @@ class CloudFormationClientTest extends TestCase
         $key = $this->faker->word;
         $value = Str::random();
 
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [
@@ -195,7 +195,7 @@ class CloudFormationClientTest extends TestCase
         $key2 = $this->faker->word;
         $value2 = Str::random();
 
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [
@@ -222,7 +222,7 @@ class CloudFormationClientTest extends TestCase
 
     public function testStackOutputDoesntExistSingle()
     {
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [
@@ -242,7 +242,7 @@ class CloudFormationClientTest extends TestCase
 
     public function testStackOutputDoesntExistMultiple()
     {
-        Mockery::mock('overload:' . \Aws\CloudFormation\CloudFormationClient::class)
+        $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
             ->andReturn([
                 'Stacks' => [
