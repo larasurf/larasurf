@@ -5,10 +5,15 @@ namespace LaraSurf\LaraSurf\AwsClients;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\Constants\Cloud;
+use LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException;
 use League\Flysystem\FileNotFoundException;
+use Symfony\Component\Console\Cursor;
 
 class CloudFormationClient extends Client
 {
+    const STACK_STATUS_CREATE_COMPLETE = 'CREATE_COMPLETE';
+    const STACK_STATUS_UPDATE_COMPLETE = 'UPDATE_COMPLETE';
+
     public function createStack(
         string $domain,
         string $certificate_arn,
@@ -160,7 +165,7 @@ class CloudFormationClient extends Client
                 $finished = !str_ends_with($status, '_IN_PROGRESS');
 
                 if ($finished) {
-                    $success = $status === 'CREATE_COMPLETE';
+                    $success = $status === 'UPDATE_COMPLETE';
 
                     return true;
                 }
@@ -214,6 +219,106 @@ class CloudFormationClient extends Client
         }
 
         return is_array($keys) ? $keyed_values : ($keyed_values[$keys] ?? false);
+    }
+
+    public function waitForStackInfoPanel(string $success_status, OutputStyle $output = null): array
+    {
+        $finished = false;
+        $tries = 0;
+        $success = false;
+        $limit = 60;
+        $wait_seconds = 60;
+        $status = null;
+
+        while (!$finished && $tries < $limit) {
+            $result = $this->client->describeStacks([
+                'StackName' => $this->stackName(),
+            ]);
+
+            if (isset($result['Stacks'][0]['StackStatus'])) {
+                $status = $result['Stacks'][0]['StackStatus'];
+                $finished = !str_ends_with($status, '_IN_PROGRESS');
+
+                if ($finished) {
+                    $success = $status === $success_status;
+                }
+            }
+
+            if (!$finished && $output) {
+                $cursor = new Cursor($output);
+                $cursor->clearScreen();
+
+                for ($i = 1; $i <= $wait_seconds; $i++) {
+                    /*
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                                                                              ║
+║                 Your CloudFormation stack is being created!                  ║
+║                  This can typically take up to 20 minutes.                   ║
+║                                                                              ║
+║           You can view the progress of your stack's creation here:           ║
+║      https://console.aws.amazon.com/cloudformation/home?region=us-east-1     ║
+║                                                                              ║
+║                                                                              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║                 Checking for status updates in 60 seconds...                 ║
+║                                                                              ║
+║             [=============-------------------------------------]             ║
+║                                                                              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║                       This would also be a great time                        ║
+║                        to review the documentation!                          ║
+║                          https://larasurf.com/docs                           ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                     */
+
+                    $bars = str_repeat('=', $i);
+                    $empty = str_repeat('-', $wait_seconds - $i);
+
+                    $message =
+                        "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "║                 <info>Your CloudFormation stack is being created!</info>                  ║" . PHP_EOL .
+                        "║                  <info>This can typically take up to</info> 20 minutes<info>.</info>                   ║" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "║           <info>You can view the progress of your stack's creation here:</info>           ║" . PHP_EOL .
+                        "║      <warn>https://console.aws.amazon.com/cloudformation/home?region={$this->aws_region}</warn>     ║" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "╠══════════════════════════════════════════════════════════════════════════════╣" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "║                 Checking for status updates in 60 seconds...                 ║" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "║        <info>[$bars</info>$empty<info>]</info>        ║" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "╠══════════════════════════════════════════════════════════════════════════════╣" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
+                        "║                       <info>This would also be a great time</info>                        ║" . PHP_EOL .
+                        "║                        <info>to review the documentation!</info>                          ║" . PHP_EOL .
+                        "║                          <warn>https://larasurf.com/docs</warn>                           ║" . PHP_EOL .
+                        "╚══════════════════════════════════════════════════════════════════════════════╝";
+
+                        $output->writeln($message);
+                }
+            } else if (!$finished) {
+                sleep($wait_seconds);
+            }
+
+            $tries++;
+        }
+
+        if ($tries >= $limit) {
+            throw new TimeoutExceededException($tries * $limit);
+        }
+
+        return [
+            'success' => $success,
+            'status' => $status,
+        ];
     }
 
     protected function makeClient(array $args): \Aws\CloudFormation\CloudFormationClient

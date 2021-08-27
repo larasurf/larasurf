@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
+use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
@@ -116,10 +117,7 @@ class CloudStacks extends Command
             $db_password
         );
 
-        $result = $cloudformation->waitForStackUpdate(
-            $this->getOutput(),
-            'CloudFormation stack is still being created, checking again soon...'
-        );
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput());
 
         if (!$result['success']) {
             $this->error("Stack creation failed with status '{$result['status']}'");
@@ -208,15 +206,12 @@ class CloudStacks extends Command
 
         $cloudformation->updateStack($new_domain, $new_certificate_arn, $new_db_storage, $new_db_instance_type);
 
-        $result = $cloudformation->waitForStackUpdate(
-            $this->getOutput(),
-            'CloudFormation stack is still being created, checking again soon...'
-        );
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput());
 
         if (!$result['success']) {
-            $this->error("Stack creation failed with status '{$result['status']}'");
+            $this->error("Stack update failed with status '{$result['status']}'");
         } else {
-            $this->info("Stack creation completed successfully");
+            $this->info("Stack update completed successfully");
         }
 
         $this->stopTimer();
