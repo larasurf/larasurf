@@ -21,11 +21,9 @@ class CloudFormationClient extends Client
     {
         $this->validateEnvironmentIsSet();
 
-        $stack_name = $this->stackName();
-
         $this->client->createStack([
             'Capabilities' => ['CAPABILITY_IAM'],
-            'StackName' => $stack_name,
+            'StackName' => $this->stackName(),
             'Parameters' => [
                 [
                     'ParameterKey' => 'ProjectName',
@@ -70,11 +68,73 @@ class CloudFormationClient extends Client
                     'ParameterValue' => $db_password,
                 ],
             ],
-            'Tags' => $this->resourceTags('cloudformation-stack'),
+            'Tags' => $this->resourceTags(),
             'TemplateBody' => $this->template(),
         ]);
     }
 
+    public function updateStack(
+        ?string $domain,
+        ?string $certificate_arn,
+        ?int $db_storage_size,
+        ?string $db_instance_class
+    )
+    {
+        $update_params = [];
+
+        foreach ([
+            'DomainName' => $domain,
+            'CertificateArn' => $certificate_arn,
+            'DBStorageSize' => $db_storage_size,
+            'DBInstanceClass' => $db_instance_class,
+                 ] as $key => $value) {
+            if ($value) {
+                $update_params[] = [
+                    'ParameterKey' => $key,
+                    'ParameterValue' => $value,
+                ];
+            } else {
+                $update_params[] = [
+                    'ParameterKey' => $key,
+                    'UsePreviousValue' => true,
+                ];
+            }
+        }
+
+        $this->client->updateStack([
+            'Capabilities' => ['CAPABILITY_IAM'],
+            'StackName' => $this->stackName(),
+            'Parameters' => [
+                [
+                    'ParameterKey' => 'ProjectName',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'EnvironmentName',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'DBAvailabilityZone',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'DBVersion',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'DBMasterUsername',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'DBMasterPassword',
+                    'UsePreviousValue' => true,
+                ],
+                ...$update_params,
+            ],
+            'TemplateBody' => $this->template(),
+        ]);
+    }
+    
     public function waitForStackUpdate(OutputStyle $output = null, string $wait_message = ''): array
     {
         $stack_name = $this->stackName();

@@ -8,10 +8,12 @@ class DnsRecord extends DataTransferObject
 {
     const TYPE_CNAME = 'CNAME';
     const TYPE_TXT = 'TXT';
+    const TYPE_NS = 'NS';
 
     const TYPES = [
         self::TYPE_CNAME,
         self::TYPE_TXT,
+        self::TYPE_NS,
     ];
 
     const TTL_DEFAULT = 300;

@@ -6,13 +6,11 @@ use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
-use LaraSurf\LaraSurf\Commands\Traits\InteractsWithConfig;
 
 class CloudVars extends Command
 {
     use HasSubCommands;
     use HasEnvOption;
-    use InteractsWithConfig;
     use InteractsWithAws;
 
     const COMMAND_EXISTS = 'exists';

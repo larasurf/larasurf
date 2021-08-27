@@ -63,6 +63,23 @@ class Config
         Arr::set($this->config, $key, $value);
     }
 
+    public function exists(string $key)
+    {
+        if (!in_array($key, [
+            'project-name',
+            'project-id',
+            'aws-profile',
+            'environments.stage',
+            'environments.stage.aws-region',
+            'environments.production',
+            'environments.production.aws-region',
+        ])) {
+            throw new InvalidConfigKeyException($key);
+        }
+
+        return Arr::exists($this->config, $key);
+    }
+
     public function write(): bool
     {
         $json = json_encode($this->config, JSON_PRETTY_PRINT);

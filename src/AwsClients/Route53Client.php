@@ -96,7 +96,18 @@ class Route53Client extends Client
 
     public function hostedZoneNameServers(string $hosted_zone_id): array
     {
+        $result = $this->client->listResourceRecordSets([
+            'HostedZoneId' => $hosted_zone_id,
+            'StartRecordType' => DnsRecord::TYPE_NS,
+        ]);
 
+        $results = [];
+
+        foreach ($result['ResourceRecordSets']['ResourceRecords'] as $record) {
+            $results[] = $record['Value'];
+        }
+
+        return $results;
     }
 
     protected function makeClient(array $args): AwsClient

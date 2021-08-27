@@ -79,6 +79,11 @@ elif [[ "$1" == 'cloud-users' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
+elif [[ "$1" == 'cloud-domains' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-domains "${@:2}"
 elif [[ "$1" == 'test' ]]; then
   exit_if_containers_not_running
 

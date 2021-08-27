@@ -3,12 +3,10 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
-use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
-use LaraSurf\LaraSurf\Commands\Traits\InteractsWithConfig;
 use LaraSurf\LaraSurf\Constants\Cloud;
 
 class CloudEmails extends Command
@@ -16,7 +14,6 @@ class CloudEmails extends Command
     use HasSubCommands;
     use HasEnvOption;
     use HasTimer;
-    use InteractsWithConfig;
     use InteractsWithAws;
 
     const COMMAND_VERIFY_DOMAIN = 'verify-domain';
