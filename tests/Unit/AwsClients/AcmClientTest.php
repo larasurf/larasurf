@@ -15,22 +15,24 @@ class AcmClientTest extends TestCase
         $dns_name = $this->faker->word;
         $dns_value = $this->faker->word;
 
-        $mock = Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
-        $mock->shouldReceive('requestCertificate')->andReturn([
-            'CertificateArn' => $arn,
-        ]);
-        $mock->shouldReceive('describeCertificate')->andReturn([
-            'Certificate' => [
-                'DomainValidationOptions' => [
-                    [
-                        'ResourceRecord' => [
-                            'Name' => $dns_name,
-                            'Value' => $dns_value,
+        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+            ->shouldReceive('requestCertificate')
+            ->andReturn([
+                'CertificateArn' => $arn,
+            ])
+            ->shouldReceive('describeCertificate')
+            ->andReturn([
+                'Certificate' => [
+                    'DomainValidationOptions' => [
+                        [
+                            'ResourceRecord' => [
+                                'Name' => $dns_name,
+                                'Value' => $dns_value,
+                            ],
                         ],
                     ],
                 ],
-            ],
-        ]);
+            ]);
 
         $dns_record = $this->acmClient()->requestCertificate($output_arn, $this->faker->domainName);
 
@@ -43,7 +45,7 @@ class AcmClientTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        $mock = Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
+        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
 
         $this->acmClient()->requestCertificate($output_arn, $this->faker->domainName, $this->faker->word);
     }
@@ -52,20 +54,21 @@ class AcmClientTest extends TestCase
     {
         $arn = Str::random();
 
-        $mock = Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
-        $mock->shouldReceive('describeCertificate')->andReturn([
-            'Certificate' => [
-                'Status' => 'ISSUED',
-            ]
-        ]);
+        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+            ->shouldReceive('describeCertificate')
+            ->andReturn([
+                'Certificate' => [
+                    'Status' => 'ISSUED',
+                ]
+            ]);
 
         $this->acmClient()->waitForPendingValidation($arn);
     }
 
     public function testDeleteCertificate()
     {
-        $mock = Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
-        $mock->shouldReceive('deleteCertificate');
+        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+            ->shouldReceive('deleteCertificate');
 
         $this->acmClient()->deleteCertificate(Str::random());
     }
@@ -74,20 +77,22 @@ class AcmClientTest extends TestCase
     {
         $status = $this->faker->word;
 
-        $mock = Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
-        $mock->shouldReceive('describeCertificate')->andReturn([
-            'Certificate' => [
-                'Status' => $status,
-            ]
-        ]);
+        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+            ->shouldReceive('describeCertificate')
+            ->andReturn([
+                'Certificate' => [
+                    'Status' => $status,
+                ]
+            ]);
 
         $this->assertEquals($status, $this->acmClient()->certificateStatus(Str::random()));
     }
 
     public function testCertificateStatusUnknown()
     {
-        $mock = Mockery::mock('overload:' . \Aws\Acm\AcmClient::class);
-        $mock->shouldReceive('describeCertificate')->andReturn([]);
+        Mockery::mock('overload:' . \Aws\Acm\AcmClient::class)
+            ->shouldReceive('describeCertificate')
+            ->andReturn([]);
 
         $this->assertEquals('UNKNOWN', $this->acmClient()->certificateStatus(Str::random()));
     }

@@ -2,7 +2,6 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
-use Aws\AwsClient;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;

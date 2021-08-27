@@ -2,8 +2,6 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
-use Aws\AwsClient;
-
 class SsmClient extends Client
 {
     public function parameterExists($name): bool

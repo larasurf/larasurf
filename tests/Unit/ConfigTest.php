@@ -13,6 +13,8 @@ class ConfigTest extends TestCase
 {
     protected function tearDown(): void
     {
+        parent::tearDown();
+
         if (File::exists($this->config_path)) {
             File::delete($this->config_path);
         }

@@ -2,7 +2,6 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
-use Aws\AwsClient;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\Constants\Cloud;
