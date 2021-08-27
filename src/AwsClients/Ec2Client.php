@@ -90,7 +90,7 @@ class Ec2Client extends Client
         }, $output, $wait_message);
     }
 
-    protected function makeClient(array $args): AwsClient
+    protected function makeClient(array $args): \Aws\Ec2\Ec2Client
     {
         return new \Aws\Ec2\Ec2Client($args);
     }

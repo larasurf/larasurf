@@ -7,6 +7,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use LaraSurf\LaraSurf\AwsClients\AcmClient;
+use LaraSurf\LaraSurf\AwsClients\Client;
 use LaraSurf\LaraSurf\Constants\Cloud;
 
 class TestCase extends \Orchestra\Testbench\TestCase
@@ -28,12 +30,32 @@ class TestCase extends \Orchestra\Testbench\TestCase
         $this->config_path = base_path('larasurf.json');
     }
 
+    protected function projectName(): string
+    {
+        return implode('-', $this->faker->words());
+    }
+
+    protected function projectId(): string
+    {
+        return Str::random(16);
+    }
+
+    protected function awsProfile(): string
+    {
+        return $this->faker->word;
+    }
+
+    protected function awsRegion(): string
+    {
+        return  Arr::random(Cloud::AWS_REGIONS);
+    }
+
     protected function createValidLaraSurfConfig(string $environments)
     {
         $json = [
-            'project-name' => implode('-', $this->faker->words()),
-            'project-id' => Str::random(),
-            'aws-profile' => $this->faker->word,
+            'project-name' => $this->projectName(),
+            'project-id' => $this->projectId(),
+            'aws-profile' => $this->awsProfile(),
         ];
 
         switch ($environments) {
@@ -45,7 +67,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
             case 'local-production': {
                 $json['environments'] = [
                     'production' => [
-                        'aws-region' => Arr::random(Cloud::AWS_REGIONS),
+                        'aws-region' => $this->awsRegion(),
                     ],
                 ];
 
@@ -54,10 +76,10 @@ class TestCase extends \Orchestra\Testbench\TestCase
             case 'local-stage-production': {
                 $json['environments'] = [
                     'stage' => [
-                        'aws-region' => Arr::random(Cloud::AWS_REGIONS),
+                        'aws-region' => $this->awsRegion(),
                     ],
                     'production' => [
-                        'aws-region' => Arr::random(Cloud::AWS_REGIONS),
+                        'aws-region' => $this->awsRegion(),
                     ],
                 ];
 
@@ -69,5 +91,21 @@ class TestCase extends \Orchestra\Testbench\TestCase
         }
 
         File::put($this->config_path, json_encode($json, JSON_PRETTY_PRINT) . PHP_EOL);
+    }
+
+    protected function awsClient(string $type, string $environment = Cloud::ENVIRONMENT_PRODUCTION): Client
+    {
+        return new $type(
+            $this->projectName(),
+            $this->projectId(),
+            $this->awsProfile(),
+            $this->awsRegion(),
+            $environment
+        );
+    }
+
+    protected function acmClient(string $environment = Cloud::ENVIRONMENT_PRODUCTION): AcmClient
+    {
+        return $this->awsClient(AcmClient::class, $environment);
     }
 }

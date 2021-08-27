@@ -88,7 +88,7 @@ class SsmClient extends Client
         return $parameters;
     }
 
-    protected function makeClient(array $args): AwsClient
+    protected function makeClient(array $args): \Aws\Ssm\SsmClient
     {
         return new \Aws\Ssm\SsmClient($args);
     }

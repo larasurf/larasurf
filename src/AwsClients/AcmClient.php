@@ -2,7 +2,6 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
-use Aws\AwsClient;
 use Illuminate\Console\OutputStyle;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\InvalidArgumentException;
@@ -56,7 +55,7 @@ class AcmClient extends Client
             ->setType(DnsRecord::TYPE_CNAME);
     }
 
-    public function waitForPendingValidation(string $arn, OutputStyle $output, string $wait_message = '')
+    public function waitForPendingValidation(string $arn, OutputStyle $output = null, string $wait_message = '')
     {
         $client = $this->client;
 
@@ -93,7 +92,7 @@ class AcmClient extends Client
         return $result['Certificate']['Status'] ?? 'UNKNOWN';
     }
 
-    protected function makeClient(array $args): AwsClient
+    protected function makeClient(array $args): \Aws\Acm\AcmClient
     {
         return new \Aws\Acm\AcmClient($args);
     }

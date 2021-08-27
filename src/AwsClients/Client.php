@@ -14,9 +14,9 @@ use Symfony\Component\Console\Helper\ProgressBar;
 
 abstract class Client
 {
-    abstract protected function makeClient(array $args): AwsClient;
+    abstract protected function makeClient(array $args);
 
-    protected AwsClient $client;
+    protected $client;
 
     public function __construct(protected string $project_name,
                                 protected string $project_id,

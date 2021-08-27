@@ -135,12 +135,12 @@ class SesClient extends Client
         return (bool) $result['ProductionAccessEnabled'] ?? false;
     }
 
-    protected function makeClient(array $args): AwsClient
+    protected function makeClient(array $args): \Aws\Ses\SesClient
     {
         return new \Aws\Ses\SesClient($args);
     }
 
-    protected function makeV2Client()
+    protected function makeV2Client(): SesV2Client
     {
         if (!static::$v2_client) {
             static::$v2_client = new SesV2Client($this->clientArguments());

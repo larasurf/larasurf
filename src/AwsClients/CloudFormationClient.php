@@ -209,7 +209,7 @@ class CloudFormationClient extends Client
         return is_array($keys) ? $keyed_values : ($keyed_values[$keys] ?? false);
     }
 
-    protected function makeClient(array $args): AwsClient
+    protected function makeClient(array $args): \Aws\CloudFormation\CloudFormationClient
     {
         return new \Aws\CloudFormation\CloudFormationClient($args);
     }

@@ -110,7 +110,7 @@ class Route53Client extends Client
         return $results;
     }
 
-    protected function makeClient(array $args): AwsClient
+    protected function makeClient(array $args): \Aws\Route53\Route53Client
     {
         return new \Aws\Route53\Route53Client($args);
     }
