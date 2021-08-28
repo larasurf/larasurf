@@ -4,5 +4,7 @@ ARG WEB_ROOT=/var/www
 
 COPY ./ $WEB_ROOT
 
+RUN ls $WEB_ROOT
+
 RUN composer install --no-progress -d $WEB_ROOT && \
     composer clear-cache
