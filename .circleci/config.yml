@@ -17,12 +17,7 @@ jobs:
       - run:
           name: Run Tests
           command: |
-            docker run --rm --entrypoint bash larasurf_ci -c "
-            set -e
-            ls
-            cp .env.example .env
-            ./vendor/bin/phpunit
-            "
+            docker run --rm --entrypoint bash larasurf_ci -c ./vendor/bin/phpunit
 
 workflows:
   version: 2
