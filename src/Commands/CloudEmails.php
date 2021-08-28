@@ -54,9 +54,9 @@ class CloudEmails extends Command
         $cloudformation = static::awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
-            $this->warn("Stack does not exist for the '$env' environment");
+            $this->error("Stack does not exist for the '$env' environment");
 
-            return 0;
+            return 1;
         }
 
         $this->startTimer();
@@ -78,7 +78,7 @@ class CloudEmails extends Command
         $route53 = static::awsRoute53();
 
         $change_id = $route53->upsertDnsRecords($hosted_zone_id, [
-           $dns_record,
+            $dns_record,
         ]);
 
         $route53->waitForChange(
@@ -132,9 +132,9 @@ class CloudEmails extends Command
         $cloudformation = static::awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
-            $this->warn("Stack does not exist for the '$env' environment");
+            $this->error("Stack does not exist for the '$env' environment");
 
-            return 0;
+            return 1;
         }
 
         $domain = $this->domain($env);
@@ -169,7 +169,15 @@ class CloudEmails extends Command
         $cloudformation = static::awsCloudFormation(Cloud::ENVIRONMENT_PRODUCTION);
 
         if (!$cloudformation->stackStatus()) {
-            $this->warn("Stack does not exist for the '" . Cloud::ENVIRONMENT_PRODUCTION . "' environment");
+            $this->error("Stack does not exist for the '" . Cloud::ENVIRONMENT_PRODUCTION . "' environment");
+
+            return 1;
+        }
+
+        $ses = static::awsSes();
+
+        if ($ses->checkEmailSending()) {
+            $this->warn('Live email sending is already enabled');
 
             return 0;
         }
@@ -183,7 +191,7 @@ class CloudEmails extends Command
         $description = $this->ask('Use Case Description', 'Send transactional emails from a Laravel application');
         $website = $this->ask('Website URL', "https://$domain");
 
-        static::awsSes()->enableEmailSending($website, $description);
+        $ses->enableEmailSending($website, $description);
 
         $this->info('Requested live email sending successfully.');
         $this->warn('Response from AWS may take up to 24 hours');

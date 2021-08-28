@@ -97,13 +97,16 @@ class Route53Client extends Client
     {
         $result = $this->client->listResourceRecordSets([
             'HostedZoneId' => $hosted_zone_id,
-            'StartRecordType' => DnsRecord::TYPE_NS,
         ]);
 
         $results = [];
 
-        foreach ($result['ResourceRecordSets']['ResourceRecords'] as $record) {
-            $results[] = $record['Value'];
+        foreach ($result['ResourceRecordSets'] as $record_set) {
+            if ($record_set['Type'] === DnsRecord::TYPE_NS) {
+                foreach ($record_set['ResourceRecords'] as $record) {
+                    $results[] = $record['Value'];
+                }
+            }
         }
 
         return $results;

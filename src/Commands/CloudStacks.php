@@ -144,9 +144,9 @@ class CloudStacks extends Command
         $cloudformation = static::awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
-            $this->warn("Stack does not exist for the '$env' environment");
+            $this->error("Stack does not exist for the '$env' environment");
 
-            return 0;
+            return 1;
         }
 
         $updates = $name = $this->choice(
@@ -243,9 +243,9 @@ class CloudStacks extends Command
         $cloudformation = static::awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
-            $this->warn("Stack does not exist for the '$env' environment");
+            $this->error("Stack does not exist for the '$env' environment");
 
-            return 0;
+            return 1;
         }
 
         $cloudformation->deleteStack();

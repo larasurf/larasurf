@@ -64,13 +64,15 @@ class CloudDomains extends Command
     {
         $domain = $this->domainOption();
 
-        $id = static::awsRoute53()->hostedZoneIdFromDomain($domain);
+        $route53 = static::awsRoute53();
+
+        $id = $route53->hostedZoneIdFromDomain($domain);
 
         if (!$id) {
             $this->error("Hosted zone not found for domain '$domain'");
         }
 
-        $nameservers = static::awsRoute53()->hostedZoneNameServers($id);
+        $nameservers = $route53->hostedZoneNameServers($id);
 
         $this->info(implode(PHP_EOL, $nameservers));
     }
