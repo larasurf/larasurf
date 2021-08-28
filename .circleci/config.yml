@@ -19,6 +19,7 @@ jobs:
           command: |
             docker run --rm --entrypoint bash larasurf_ci -c "
             set -e
+            ls
             cp .env.example .env
             ./vendor/bin/phpunit
             "
