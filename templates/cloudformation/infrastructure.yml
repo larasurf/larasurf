@@ -237,6 +237,9 @@ Parameters:
     Type: String
     Description: The database master password.
     NoEcho: true
+  HostedZoneId:
+    Type: String
+    Description: The hosted zone ID for the domain.
   # todo: parameter store params for laravel app?
 
 Conditions:
@@ -258,3 +261,7 @@ Outputs:
   DBAdminAccessPrefixListId:
     Description: The Prefix List ID for database admin access.
     Value: !Ref DBAdminAccessPrefixList
+  HostedZoneId:
+    Description: The hosted zone ID for the domain.
+    Value: !Ref HostedZoneId
+

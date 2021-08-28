@@ -124,6 +124,7 @@ class CloudStacks extends Command
 
         $cloudformation->createStack(
             $domain,
+            $hosted_zone_id,
             $acm_arn,
             $db_storage,
             $db_instance_type,
@@ -184,6 +185,7 @@ class CloudStacks extends Command
         );
 
         $new_domain = null;
+        $new_hosted_zone_id = null;
         $new_certificate_arn = null;
         $new_db_instance_type = null;
         $new_db_storage = null;
@@ -232,7 +234,7 @@ class CloudStacks extends Command
 
         $this->startTimer();
 
-        $cloudformation->updateStack($new_domain, $new_certificate_arn, $new_db_storage, $new_db_instance_type);
+        $cloudformation->updateStack($new_domain, $new_hosted_zone_id, $new_certificate_arn, $new_db_storage, $new_db_instance_type);
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
 
@@ -272,12 +274,15 @@ class CloudStacks extends Command
 
         $this->info('Stack deletion initiated');
 
+        static::config()->set("environments.$env", null);
+        static::config()->write();
+
         return 0;
     }
 
     public function handleWait()
     {
-        $env = $this->environmentOption();
+        $env = $this->option('environment');
 
         if (!$env) {
             return 1;
@@ -294,7 +299,7 @@ class CloudStacks extends Command
     {
         do {
             $acm_arn = $this->ask('ACM certificate ARN?');
-            $valid = preg_match('/^arn:aws:acm:.+:certificate/.+$/', $acm_arn);
+            $valid = preg_match('/^arn:aws:acm:.+:certificate\/.+$/', $acm_arn);
 
             if (!$valid) {
                 $this->error('Invalid ACM certificate ARN');

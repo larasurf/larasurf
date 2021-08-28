@@ -36,6 +36,7 @@ class CloudFormationClientTest extends TestCase
         $this->cloudFormationClient()->createStack(
             $this->faker->domainName,
             Str::random(),
+            Str::random(),
             random_int(20, 100),
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
@@ -59,6 +60,7 @@ class CloudFormationClientTest extends TestCase
         $cloudformation->createStack(
             $this->faker->domainName,
             Str::random(),
+            Str::random(),
             random_int(20, 100),
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
@@ -76,6 +78,7 @@ class CloudFormationClientTest extends TestCase
         $this->cloudFormationClient()->createStack(
             $this->faker->domainName,
             Str::random(),
+            Str::random(),
             random_int(20, 100),
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
@@ -92,6 +95,7 @@ class CloudFormationClientTest extends TestCase
 
         $this->cloudFormationClient()->updateStack(
             $this->faker->domainName,
+            Str::random(),
             Str::random(),
             random_int(20, 100),
             Arr::random(Cloud::DB_INSTANCE_TYPES)

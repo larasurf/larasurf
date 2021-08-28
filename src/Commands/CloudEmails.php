@@ -75,6 +75,10 @@ class CloudEmails extends Command
 
         $hosted_zone_id = $this->hostedZoneId($env);
 
+        if (!$hosted_zone_id) {
+            return 1;
+        }
+
         $route53 = static::awsRoute53();
 
         $change_id = $route53->upsertDnsRecords($hosted_zone_id, [

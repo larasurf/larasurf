@@ -5,7 +5,6 @@ namespace LaraSurf\LaraSurf\AwsClients;
 use Aws\Exception\AwsException;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\File;
-use LaraSurf\LaraSurf\Constants\Cloud;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException;
 use League\Flysystem\FileNotFoundException;
 use Symfony\Component\Console\Cursor;
@@ -17,6 +16,7 @@ class CloudFormationClient extends Client
 
     public function createStack(
         string $domain,
+        string $hosted_zone_id,
         string $certificate_arn,
         int $db_storage_size,
         string $db_instance_class,
@@ -47,6 +47,10 @@ class CloudFormationClient extends Client
                     'ParameterValue' => $domain,
                 ],
                 [
+                    'ParameterKey' => 'HostedZoneId',
+                    'ParameterValue' => $hosted_zone_id,
+                ],
+                [
                     'ParameterKey' => 'CertificateArn',
                     'ParameterValue' => $certificate_arn,
                 ],
@@ -60,9 +64,7 @@ class CloudFormationClient extends Client
                 ],
                 [
                     'ParameterKey' => 'DBAvailabilityZone',
-                    'ParameterValue' => $this->environment === Cloud::ENVIRONMENT_PRODUCTION
-                        ? ''
-                        : "{$this->aws_region}a",
+                    'ParameterValue' => "{$this->aws_region}a",
                 ],
                 [
                     'ParameterKey' => 'DBVersion',
@@ -84,6 +86,7 @@ class CloudFormationClient extends Client
 
     public function updateStack(
         ?string $domain,
+        ?string $hosted_zone_id,
         ?string $certificate_arn,
         ?int $db_storage_size,
         ?string $db_instance_class
@@ -93,6 +96,7 @@ class CloudFormationClient extends Client
 
         foreach ([
                      'DomainName' => $domain,
+                     'HosedZoneId' => $hosted_zone_id,
                      'CertificateArn' => $certificate_arn,
                      'DBStorageSize' => $db_storage_size,
                      'DBInstanceClass' => $db_instance_class,
@@ -164,7 +168,6 @@ class CloudFormationClient extends Client
         } catch (AwsException $e) {
             //
         }
-
 
         if (empty($result['Stacks'][0])) {
             return false;

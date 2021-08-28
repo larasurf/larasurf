@@ -104,10 +104,13 @@ class Route53ClientTest extends TestCase
             ->shouldReceive('listResourceRecordSets')
             ->andReturn([
                 'ResourceRecordSets' => [
-                    'ResourceRecords' => [
-                        [
-                            'Value' => $value,
+                    [
+                        'ResourceRecords' => [
+                            [
+                                'Value' => $value,
+                            ],
                         ],
+                        'Type' => DnsRecord::TYPE_NS,
                     ],
                 ],
             ]);
