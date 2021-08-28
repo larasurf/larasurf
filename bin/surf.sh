@@ -138,9 +138,22 @@ elif [[ "$1" == 'fresh' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel $REFRESH_COMMAND
-elif [[ "$1" == '--help' ]] || [[ "$1" == 'help' ]]; then
-  echo 'See: https://larasurf.com/docs'
-else
+elif [[ "$1" == 'up' ]] ]]; then
   cd $(pwd)
-  docker-compose "$@"
+
+  if [[ "$2" == '--attach' ]]; then
+    docker-compose up
+  else
+    docker-compose up -d
+  fi
+elif [[ "$1" == 'down' ]] ]]; then
+  cd $(pwd)
+
+  if [[ "$2" == '--preserve' ]]; then
+    docker-compose down
+  else
+    docker-compose down --volumes
+  fi
+else
+  echo 'See: https://larasurf.com/docs'
 fi
