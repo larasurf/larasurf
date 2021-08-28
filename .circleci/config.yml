@@ -9,6 +9,9 @@ jobs:
       - setup_remote_docker:
           version: 20.10.6
       - run:
+          name: Build Image
+          command: docker-compose build larasurf
+      - run:
           name: Install Dependencies
           command: docker-compose run --rm larasurf composer install
       - run:
