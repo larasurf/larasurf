@@ -60,6 +60,12 @@ class CloudIngress extends Command
             return 1;
         }
 
+        if (!static::awsCloudFormation($env)->stackStatus()) {
+            $this->error("Stack does not exist for the '$env' environment");
+
+            return 1;
+        }
+
         $prefix_list_id = $this->prefixListId($env, $type);
 
         if (!$prefix_list_id) {
@@ -99,6 +105,12 @@ class CloudIngress extends Command
             return 1;
         }
 
+        if (!static::awsCloudFormation($env)->stackStatus()) {
+            $this->error("Stack does not exist for the '$env' environment");
+
+            return 1;
+        }
+
         $prefix_list_id = $this->prefixListId($env, $type);
 
         if (!$prefix_list_id) {
@@ -129,6 +141,12 @@ class CloudIngress extends Command
         $type = $this->typeOption();
 
         if (!$type) {
+            return 1;
+        }
+
+        if (!static::awsCloudFormation($env)->stackStatus()) {
+            $this->error("Stack does not exist for the '$env' environment");
+
             return 1;
         }
 

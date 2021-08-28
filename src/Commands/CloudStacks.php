@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
@@ -75,8 +76,21 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $this->info('Valid database instance types:');
-        $this->getOutput()->writeln(implode(PHP_EOL, Cloud::DB_INSTANCE_TYPES));
+        $path = CloudFormationClient::templatePath();
+
+        if (!File::exists($path)) {
+            $this->error("CloudFormation template does not exist at path '$path'");
+
+            return 1;
+        }
+
+        $cloudformation = static::awsCloudFormation($env);
+
+        if ($cloudformation->stackStatus()) {
+            $this->error("Stack already exists for '$env' environment");
+
+            return 1;
+        }
 
         $db_instance_type = $this->askDatabaseInstanceType();
 
@@ -108,8 +122,6 @@ class CloudStacks extends Command
         $db_username = Str::random(random_int(16, 32));
         $db_password = Str::random(random_int(32, 40));
 
-        $cloudformation = static::awsCloudFormation($env);
-
         $cloudformation->createStack(
             $domain,
             $acm_arn,
@@ -138,6 +150,14 @@ class CloudStacks extends Command
         $env = $this->environmentOption();
 
         if (!$env) {
+            return 1;
+        }
+
+        $path = CloudFormationClient::templatePath();
+
+        if (!File::exists($path)) {
+            $this->error("CloudFormation template does not exist at path '$path'");
+
             return 1;
         }
 
@@ -286,17 +306,7 @@ class CloudStacks extends Command
 
     protected function askDatabaseInstanceType(): string
     {
-        do {
-            $db_instance_type = $this->ask('Database instance type?', 'db.t2.small');
-
-            $valid = in_array($db_instance_type, Cloud::DB_INSTANCE_TYPES);
-
-            if (!$valid) {
-                $this->error('Invalid database instance type');
-            }
-        } while (!$valid);
-
-        return $db_instance_type;
+        return $this->choice('Database instance type?', Cloud::DB_INSTANCE_TYPES, 0);
     }
 
     protected function askDatabaseStorage(): string

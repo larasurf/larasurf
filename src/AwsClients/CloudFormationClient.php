@@ -284,6 +284,11 @@ class CloudFormationClient extends Client
         ];
     }
 
+    public static function templatePath(): string
+    {
+        return base_path('.cloudformation/infrastructure.yml');
+    }
+
     protected function makeClient(array $args): \Aws\CloudFormation\CloudFormationClient
     {
         return new \Aws\CloudFormation\CloudFormationClient($args);
@@ -305,10 +310,5 @@ class CloudFormationClient extends Client
         }
 
         return File::get($path);
-    }
-
-    protected static function templatePath(): string
-    {
-        return base_path('.cloudformation/infrastructure.yml');
     }
 }

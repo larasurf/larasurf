@@ -6,25 +6,25 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Commands\Traits\DerivesAppUrl;
+use LaraSurf\LaraSurf\Commands\Traits\InteractsWithConfig;
 
 class Publish extends Command
 {
     use DerivesAppUrl;
+    use InteractsWithConfig;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci-local} {--circleci-local-production}  {--circleci-local-stage-production} {--cloudformation}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
     public function handle()
     {
         foreach ([
-            'cs-fixer' => [$this, 'publishCsFixerConfig'],
-            'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
-            'env-changes' => [$this, 'publishEnvChanges'],
-            'circleci-local' => [$this, 'publishCircleCiLocal'],
-            'circleci-local-production' => [$this, 'publishCircleCiLocalProduction'],
-            'circleci-local-stage-production' => [$this, 'publishCircleCiLocalStageProduction'],
-            'cloudformation' => [$this, 'publishCloudFormation'],
+                     'cs-fixer' => [$this, 'publishCsFixerConfig'],
+                     'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
+                     'env-changes' => [$this, 'publishEnvChanges'],
+                     'circleci' => [$this, 'publishCircleCiConfig'],
+                     'cloudformation' => [$this, 'publishCloudFormation'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -111,19 +111,18 @@ class Publish extends Command
         }
     }
 
-    protected function publishCircleCiLocal()
+    protected function publishCircleCiConfig()
     {
-        $this->publishCircleCi('config.local.yml');
-    }
+        $production = static::config()->exists('environments.production');
+        $stage = static::config()->exists('environments.stage');
 
-    protected function publishCircleCiLocalProduction()
-    {
-        $this->publishCircleCi('config.local-production.yml');
-    }
-
-    protected function publishCircleCiLocalStageProduction()
-    {
-        $this->publishCircleCi('config.local-stage-production.yml');
+        if ($production && $stage) {
+            $this->publishCircleCi('config.local-stage-production.yml');
+        } else if ($production) {
+            $this->publishCircleCi('config.local-production.yml');
+        } else {
+            $this->publishCircleCi('config.local.yml');
+        }
     }
 
     protected function publishCircleCi($filename)
