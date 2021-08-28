@@ -9,9 +9,16 @@ jobs:
       - setup_remote_docker:
           version: 20.10.6
       - run:
+          name: Install Dependencies
+          command: docker-compose run --rm larasurf composer install
+      - run:
           name: Run Tests
           command: |
-            docker-compose run --rm --entrypoint bash larasurf -c "./vendor/bin/phpunit"
+            docker-compose run --rm --entrypoint bash larasurf -c "
+            set -e
+            cp .env.example .env
+            ./vendor/bin/phpunit
+            "
 
 workflows:
   version: 2
