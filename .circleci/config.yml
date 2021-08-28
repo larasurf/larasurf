@@ -13,11 +13,11 @@ jobs:
           command: docker build -t larasurf_base .
       - run:
           name: Build Test Image
-          command: docker build -t larasurf_test .circleci/
+          command: docker build -t larasurf_ci .circleci/
       - run:
           name: Run Tests
           command: |
-            docker run --rm --entrypoint bash larasurf_test -c "
+            docker run --rm --entrypoint bash larasurf_ci -c "
             set -e
             cp .env.example .env
             ./vendor/bin/phpunit
