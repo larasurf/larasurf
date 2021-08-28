@@ -13,7 +13,7 @@ jobs:
           command: docker build -t larasurf_base .
       - run:
           name: Build Test Image
-          command: docker build -t larasurf_ci Dockerfile.ci
+          command: docker build -t larasurf_ci -f .circleci/Dockerfile .
       - run:
           name: Run Tests
           command: |
