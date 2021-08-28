@@ -23,10 +23,11 @@ class CloudStacks extends Command
     const COMMAND_CREATE = 'create';
     const COMMAND_UPDATE = 'update';
     const COMMAND_DELETE = 'delete';
+    const COMMAND_WAIT = 'wait';
 
     protected $signature = 'larasurf:cloud-stacks
                             {--environment=null : The environment: \'stage\' or \'production\'}
-                            {subcommand : The subcommand to run: \'status\', \'create\', \'update\', or \'delete\'}';
+                            {subcommand : The subcommand to run: \'status\', \'create\', \'update\', \'delete\', or \'wait\'}';
 
     protected $description = 'Manage application environment variables in cloud environments';
 
@@ -35,6 +36,7 @@ class CloudStacks extends Command
         self::COMMAND_CREATE => 'handleCreate',
         self::COMMAND_UPDATE => 'handleUpdate',
         self::COMMAND_DELETE => 'handleDelete',
+        self::COMMAND_WAIT => 'handleWait',
     ];
 
     public function handle()
@@ -239,6 +241,21 @@ class CloudStacks extends Command
         return 0;
     }
 
+    public function handleWait()
+    {
+        $env = $this->environmentOption();
+
+        if (!$env) {
+            return 1;
+        }
+
+        $result = static::awsCloudFormation($env)->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'changed');
+
+        $this->getOutput()->writeln("<info>Stack operation finished with status:</info> {$result['status']}");
+
+        return 0;
+    }
+
     protected function askAcmCertificateArn(): string
     {
         do {
@@ -300,6 +317,7 @@ class CloudStacks extends Command
                 'Certificate is still being created, checking again soon...'
             );
 
+            $this->getOutput()->writeln('');
             $this->info('Verifying ACM certificate via DNS record');
 
             $route53 = static::awsRoute53();
