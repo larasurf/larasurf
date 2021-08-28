@@ -1,0 +1,19 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/base:2021.04
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Run Tests
+          command: |
+            docker-compose run --rm --entrypoint bash larasurf -c "./vendor/bin/phpunit"
+
+workflows:
+  version: 2
+  test-workflow:
+    jobs:
+      - test

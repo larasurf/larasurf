@@ -110,7 +110,7 @@ class CloudFormationClientTest extends TestCase
                 ],
             ]);
 
-        $result = $this->cloudFormationClient()->waitForStackUpdate();
+        $result = $this->cloudFormationClient()->waitForStackInfoPanel('CREATE_COMPLETE');
 
         $this->assertTrue($result['success']);
         $this->assertEquals('CREATE_COMPLETE', $result['status']);
@@ -130,7 +130,7 @@ class CloudFormationClientTest extends TestCase
                 ],
             ]);
 
-        $result = $this->cloudFormationClient()->waitForStackUpdate();
+        $result = $this->cloudFormationClient()->waitForStackInfoPanel(Str::random());
 
         $this->assertFalse($result['success']);
         $this->assertEquals($status, $result['status']);

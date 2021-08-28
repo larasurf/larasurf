@@ -141,6 +141,14 @@ class CloudStacks extends Command
             return 1;
         }
 
+        $cloudformation = static::awsCloudFormation($env);
+
+        if (!$cloudformation->stackStatus()) {
+            $this->warn("Stack does not exist for the '$env' environment");
+
+            return 0;
+        }
+
         $updates = $name = $this->choice(
             'Which options would you like to change?',
             [
@@ -204,8 +212,6 @@ class CloudStacks extends Command
 
         $this->startTimer();
 
-        $cloudformation = static::awsCloudFormation($env);
-
         $cloudformation->updateStack($new_domain, $new_certificate_arn, $new_db_storage, $new_db_instance_type);
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
@@ -234,7 +240,15 @@ class CloudStacks extends Command
             return 0;
         }
 
-        static::awsCloudFormation($env)->deleteStack();
+        $cloudformation = static::awsCloudFormation($env);
+
+        if (!$cloudformation->stackStatus()) {
+            $this->warn("Stack does not exist for the '$env' environment");
+
+            return 0;
+        }
+
+        $cloudformation->deleteStack();
 
         $this->info('Stack deletion initiated');
 

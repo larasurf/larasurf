@@ -148,39 +148,6 @@ class CloudFormationClient extends Client
         ]);
     }
 
-    public function waitForStackUpdate(OutputStyle $output = null, string $wait_message = ''): array
-    {
-        $stack_name = $this->stackName();
-
-        $client = $this->client;
-
-        $status = null;
-
-        $success = $this->waitForFinish(120, 30, function (&$success) use ($stack_name, $client, &$status) {
-            $result = $client->describeStacks([
-                'StackName' => $stack_name,
-            ]);
-
-            if (isset($result['Stacks'][0]['StackStatus'])) {
-                $status = $result['Stacks'][0]['StackStatus'];
-                $finished = !str_ends_with($status, '_IN_PROGRESS');
-
-                if ($finished) {
-                    $success = $status === 'UPDATE_COMPLETE';
-
-                    return true;
-                }
-            }
-
-            return false;
-        }, $output, $wait_message);
-
-        return [
-            'success' => $success,
-            'status' => $status,
-        ];
-    }
-
     public function deleteStack()
     {
         $this->client->deleteStack([
@@ -260,48 +227,21 @@ class CloudFormationClient extends Client
                 for ($i = 1; $i <= $wait_seconds; $i++) {
                     $cursor = new Cursor($output);
                     $cursor->clearScreen();
-                    /*
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                                                                              ║
-║                                                                              ║
-║                 Your CloudFormation stack is being created!                  ║
-║                  This can typically take up to 20 minutes.                   ║
-║                                                                              ║
-║           You can view the progress of your stack's creation here:           ║
-║      https://console.aws.amazon.com/cloudformation/home?region=us-east-1     ║
-║                                                                              ║
-║                                                                              ║
-╠══════════════════════════════════════════════════════════════════════════════╣
-║                                                                              ║
-║                 Checking for status updates in 60 seconds...                 ║
-║                                                                              ║
-║             [=============-------------------------------------]             ║
-║                                                                              ║
-╠══════════════════════════════════════════════════════════════════════════════╣
-║                                                                              ║
-║                       This would also be a great time                        ║
-║                        to review the documentation!                          ║
-║                          https://larasurf.com/docs                           ║
-║                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-                     */
-
                     $bars = str_repeat('=', $i);
                     $empty = str_repeat('-', $wait_seconds - $i);
 
                     $seconds = $wait_seconds - $i;
                     $padding = $seconds < 10 ? ' ' : '';
 
+                    $word_padding = str_repeat(' ', strlen($word) - 7);
+
                     $message =
                         "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
+                        "║                 <info>Your CloudFormation stack is being $word!</info>$word_padding                  ║" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
-                        "║                 <info>Your CloudFormation stack is being $word!</info>                  ║" . PHP_EOL .
-                        "║                  <info>This can typically take up to 20 minutes.</info>                   ║" . PHP_EOL .
-                        "║                                                                              ║" . PHP_EOL .
-                        "║           <info>You can view the progress of your stack's creation here:</info>           ║" . PHP_EOL .
+                        "║           <info>You can view the progress of your stack operation here:</info>            ║" . PHP_EOL .
                         "║      https://console.aws.amazon.com/cloudformation/home?region={$this->aws_region}     ║" . PHP_EOL .
-                        "║                                                                              ║" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
                         "╠══════════════════════════════════════════════════════════════════════════════╣" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
@@ -311,9 +251,9 @@ class CloudFormationClient extends Client
                         "║                                                                              ║" . PHP_EOL .
                         "╠══════════════════════════════════════════════════════════════════════════════╣" . PHP_EOL .
                         "║                                                                              ║" . PHP_EOL .
-                        "║                       <info>This would also be a great time</info>                        ║" . PHP_EOL .
-                        "║                        <info>to review the documentation!</info>                          ║" . PHP_EOL .
+                        "║         <info>This would also be a great time to review the documentation!</info>         ║" . PHP_EOL .
                         "║                         https://larasurf.com/docs                            ║" . PHP_EOL .
+                        "║                                                                              ║" . PHP_EOL .
                         "╚══════════════════════════════════════════════════════════════════════════════╝" . PHP_EOL
                         . PHP_EOL .
                         "If you do not wish to wait, you can safely exit this screen with Ctrl+C" . PHP_EOL;
@@ -331,6 +271,11 @@ class CloudFormationClient extends Client
 
         if ($tries >= $limit) {
             throw new TimeoutExceededException($tries * $limit);
+        }
+
+        if ($output) {
+            $cursor = new Cursor($output);
+            $cursor->clearScreen();
         }
 
         return [

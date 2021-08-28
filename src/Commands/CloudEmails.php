@@ -51,6 +51,14 @@ class CloudEmails extends Command
             return 1;
         }
 
+        $cloudformation = static::awsCloudFormation($env);
+
+        if (!$cloudformation->stackStatus()) {
+            $this->warn("Stack does not exist for the '$env' environment");
+
+            return 0;
+        }
+
         $this->startTimer();
 
         $domain = $this->domain($env);
@@ -121,6 +129,14 @@ class CloudEmails extends Command
             return 1;
         }
 
+        $cloudformation = static::awsCloudFormation($env);
+
+        if (!$cloudformation->stackStatus()) {
+            $this->warn("Stack does not exist for the '$env' environment");
+
+            return 0;
+        }
+
         $domain = $this->domain($env);
 
         if (!$domain) {
@@ -150,6 +166,14 @@ class CloudEmails extends Command
 
     protected function handleEnableSending()
     {
+        $cloudformation = static::awsCloudFormation(Cloud::ENVIRONMENT_PRODUCTION);
+
+        if (!$cloudformation->stackStatus()) {
+            $this->warn("Stack does not exist for the '" . Cloud::ENVIRONMENT_PRODUCTION . "' environment");
+
+            return 0;
+        }
+
         $domain = $this->domain(Cloud::ENVIRONMENT_PRODUCTION);
 
         if (!$domain) {
