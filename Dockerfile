@@ -61,4 +61,6 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" &&
 
 ARG WEB_ROOT=/var/www
 
+COPY ./ $WEB_ROOT
+
 WORKDIR $WEB_ROOT
