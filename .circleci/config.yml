@@ -9,15 +9,15 @@ jobs:
       - setup_remote_docker:
           version: 20.10.6
       - run:
-          name: Build Image
-          command: docker-compose build larasurf
+          name: Build Base Image
+          command: docker build -t larasurf_base .
       - run:
-          name: Install Dependencies
-          command: docker-compose run --rm larasurf composer install
+          name: Build Test Image
+          command: docker build -t larasurf_test .circleci/
       - run:
           name: Run Tests
           command: |
-            docker-compose run --rm --entrypoint bash larasurf -c "
+            docker run --rm --entrypoint bash larasurf_test -c "
             set -e
             cp .env.example .env
             ./vendor/bin/phpunit
