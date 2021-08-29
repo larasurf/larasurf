@@ -219,7 +219,7 @@ class CloudStacks extends Command
             'LOG_CHANNEL' => 'errorlog',
             'QUEUE_CONNECTION' => 'sqs',
             'MAIL_DRIVER' => $env === Cloud::ENVIRONMENT_PRODUCTION ? 'ses' : 'smtp',
-            'AWS_DEFAULT_REGION' => static::config()->get("environments.$env.aws-region"),
+            'AWS_DEFAULT_REGION' => $aws_region,
         ];
 
         $this->info('Created default cloud variables...');
