@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
@@ -12,6 +13,7 @@ use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 use LaraSurf\LaraSurf\Constants\Cloud;
+use PDO;
 
 class CloudStacks extends Command
 {
@@ -92,6 +94,24 @@ class CloudStacks extends Command
             return 1;
         }
 
+        $ssm = static::awsSsm($env);
+
+        $existing_parameters = $ssm->listParameters();
+
+        if ($existing_parameters) {
+            $this->info("The following variables exist for the '$env' environment:");
+            $this->getOutput()->writeln(implode(PHP_EOL, $existing_parameters));
+            $delete_params = $this->confirm('Are you sure you\'d like to delete these variables?', false);
+
+            if (!$delete_params) {
+                return 0;
+            }
+
+            foreach ($existing_parameters as $parameter) {
+                $ssm->deleteParameter($parameter);
+            }
+        }
+
         $db_instance_type = $this->askDatabaseInstanceType();
 
         $this->getOutput()->writeln('<info>Minimum database storage (GB):</info> ' . Cloud::DB_STORAGE_MIN_GB);
@@ -103,7 +123,7 @@ class CloudStacks extends Command
 
         $route53 = static::awsRoute53();
 
-        $this->info('Finding hosted zone from domain');
+        $this->info('Finding hosted zone from domain...');
 
         $hosted_zone_id = $route53->hostedZoneIdFromDomain($domain);
 
@@ -113,11 +133,13 @@ class CloudStacks extends Command
             return 0;
         }
 
+        $this->info("Hosted zone found with ID '$hosted_zone_id'");
+
         $acm_arn = $this->findOrCreateAcmCertificateArn($env, $domain, $hosted_zone_id);
 
         $this->startTimer();
 
-        $this->info("Creating stack for '$env' environment");
+        $this->info("Creating stack for '$env' environment...");
 
         $db_username = Str::random(random_int(16, 32));
         $db_password = Str::random(random_int(32, 40));
@@ -132,7 +154,7 @@ class CloudStacks extends Command
             $db_password
         );
 
-        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput());
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created');
 
         if (!$result['success']) {
             $this->error("Stack creation failed with status '{$result['status']}'");
@@ -140,13 +162,62 @@ class CloudStacks extends Command
             $this->info("Stack creation completed successfully");
         }
 
+        $tries = 0;
+        $limit = 10;
+
+        do {
+            $outputs = $cloudformation->stackOutput([
+                'DomainName',
+                'DBHost',
+                'DBPort',
+                'DBAdminsAccessPrefixListId',
+            ]);
+
+            if (empty($outputs)) {
+                sleep(2);
+            }
+        } while ($tries < $limit && empty($outputs));
+
+        if ($tries >= $limit) {
+            $this->error('Failed to get CloudFormation stack outputs');
+
+            return 1;
+        }
+
+        $this->info('Creating database schema...');
+
+        $database_name = $this->createDatabaseSchema(
+            static::config()->get('project-name'),
+            $env,
+            $outputs['DBHost'],
+            $outputs['DBPort'],
+            $db_username,
+            $db_password,
+        );
+
+        $parameters = [
+            'APP_ENV' => $env,
+            'APP_KEY' => 'base64:' . base64_encode(Encrypter::generateKey('AES-256-CBC')),
+            'CACHE_DRIVER' => 'redis',
+            'DB_CONNECTION' => 'mysql',
+            'DB_HOST' => $outputs['DBHost'],
+            'DB_PORT' => $outputs['DBPort'],
+            'DB_DATABASE' => $database_name,
+            'LOG_CHANNEL' => 'errorlog',
+            'QUEUE_CONNECTION' => 'sqs',
+            'MAIL_DRIVER' => $env === Cloud::ENVIRONMENT_PRODUCTION ? 'ses' : 'smtp',
+            'AWS_DEFAULT_REGION' => static::config()->get("environments.$env.aws-region"),
+        ];
+
+        $this->createSsmParameters($env, $parameters);
+
         $this->stopTimer();
         $this->displayTimeElapsed();
 
         return 0;
     }
 
-    public function updateStack()
+    public function handleUpdate()
     {
         $env = $this->environmentOption();
 
@@ -258,6 +329,18 @@ class CloudStacks extends Command
             return 1;
         }
 
+        if ($env === Cloud::ENVIRONMENT_PRODUCTION) {
+            if (!$this->confirm('Have you manually disabled deletion protection from the RDS database instance?', false)) {
+                $region = static::config()->get("environments.$env.aws-region");
+
+                $this->error('RDS database instance deletion protection must be manually disabled before deleting the stack');
+                $this->getOutput()->writeln("https://console.aws.amazon.com/rds/home?region=$region");
+
+                return 1;
+            }
+                
+        }
+
         if (!$this->confirm("Are you sure you want to delete the stack for the '$env' environment?", false)) {
             return 0;
         }
@@ -333,7 +416,7 @@ class CloudStacks extends Command
         if ($this->confirm('Is there a preexisting ACM certificate you\'d like to use?', false)) {
             $acm_arn = $this->askAcmCertificateArn();
         } else {
-            $this->info('Creating ACM certificate');
+            $this->info('Creating ACM certificate...');
 
             $acm = static::awsAcm($env);
             $acm_arn = null;
@@ -347,7 +430,7 @@ class CloudStacks extends Command
             );
 
             $this->getOutput()->writeln('');
-            $this->info('Verifying ACM certificate via DNS record');
+            $this->info('Verifying ACM certificate via DNS record...');
 
             $route53 = static::awsRoute53();
 
@@ -369,5 +452,41 @@ class CloudStacks extends Command
         }
 
         return $acm_arn;
+    }
+
+    protected function createDatabaseSchema(string $project_name, string $environment, string $db_host, string $db_port, string $db_username, string $db_password)
+    {
+        $pdo = new PDO(sprintf('mysql:host=%s;port=%s;', $db_host, $db_port), $db_username, $db_password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $database_name = str_replace('-', '_', $project_name) . '_' . $environment;
+
+        $result = $pdo->exec(sprintf(
+            'CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;',
+            $database_name,
+            'utf8mb4',
+            'utf8mb4_unicode_ci'
+        ));
+
+        if ($result === false) {
+            $this->error("Failed to create database schema '$database_name'");
+
+            return false;
+        }
+
+        $this->info("Created database schema '$database_name' successfully");
+
+        return $database_name;
+    }
+
+    protected function createSsmParameters(string $environment, array $parameters)
+    {
+        $ssm = static::awsSsm($environment);
+
+        foreach ($parameters as $name => $value) {
+            $ssm->putParameter($name, $value);
+
+            $this->info("Successfully created cloud variable '$name'");
+        }
     }
 }

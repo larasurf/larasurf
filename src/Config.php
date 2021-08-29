@@ -38,13 +38,15 @@ class Config
         return Arr::get($this->config, $key);
     }
 
-    public function set(string $key, string $value)
+    public function set(string $key, ?string $value)
     {
         if (!in_array($key, [
             'project-name',
             'project-id',
             'aws-profile',
+            'environments.stage',
             'environments.stage.aws-region',
+            'environments.production',
             'environments.production.aws-region',
         ])) {
             throw new InvalidConfigKeyException($key);
