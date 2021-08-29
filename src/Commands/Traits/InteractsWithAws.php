@@ -21,9 +21,9 @@ trait InteractsWithAws
         return new AcmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function awsCloudFormation(string $environment = null)
+    protected static function awsCloudFormation(string $environment = null, string $aws_region = null)
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment, $aws_region);
 
         return new CloudFormationClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
@@ -56,12 +56,12 @@ trait InteractsWithAws
         return new SsmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function clientArguments(string $environment = null): array
+    protected static function clientArguments(string $environment = null, string $aws_region = null): array
     {
         $project_name = static::config()->get('project-name');
         $project_id = static::config()->get('project-id');
         $aws_profile = static::config()->get('aws-profile');
-        $aws_region = static::config()->get("environments.$environment.aws-region") ?: Cloud::AWS_REGION_US_EAST_1;
+        $aws_region = $aws_region ?: static::config()->get("environments.$environment.aws-region") ?: Cloud::AWS_REGION_US_EAST_1;
 
         return [
             $project_name,

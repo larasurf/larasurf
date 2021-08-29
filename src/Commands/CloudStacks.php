@@ -86,7 +86,9 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $cloudformation = static::awsCloudFormation($env);
+        $aws_region = $this->choice('Which AWS region would you like to create the stack in?', Cloud::AWS_REGIONS);
+
+        $cloudformation = static::awsCloudFormation($env, $aws_region);
 
         if ($cloudformation->stackStatus()) {
             $this->error("Stack already exists for '$env' environment");
@@ -139,6 +141,7 @@ class CloudStacks extends Command
 
         $this->startTimer();
 
+        $this->newLine();
         $this->info("Creating stack for '$env' environment...");
 
         $db_username = Str::random(random_int(16, 32));
@@ -170,7 +173,7 @@ class CloudStacks extends Command
                 'DomainName',
                 'DBHost',
                 'DBPort',
-                'DBAdminsAccessPrefixListId',
+                'DBAdminAccessPrefixListId',
             ]);
 
             if (empty($outputs)) {
@@ -184,6 +187,10 @@ class CloudStacks extends Command
             return 1;
         }
 
+        $this->info('Allowing database ingress from current IP address...');
+
+        static::awsEc2($env)->allowIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
+
         $this->info('Creating database schema...');
 
         $database_name = $this->createDatabaseSchema(
@@ -194,6 +201,10 @@ class CloudStacks extends Command
             $db_username,
             $db_password,
         );
+
+        $this->info('Revoking database ingress from current IP address...');
+
+        static::awsEc2($env)->revokeIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
 
         $parameters = [
             'APP_ENV' => $env,
@@ -209,7 +220,21 @@ class CloudStacks extends Command
             'AWS_DEFAULT_REGION' => static::config()->get("environments.$env.aws-region"),
         ];
 
+        $this->info('Created default cloud variables...');
+
         $this->createSsmParameters($env, $parameters);
+
+        $this->info("Updating LaraSurf configuration...");
+
+        static::config()->set("environments.$env.aws-region", $aws_region);
+
+        if (!static::config()->write()) {
+            $this->error("Failed to update LaraSurf configuration");
+
+            return 1;
+        }
+
+        $this->info("Updated LaraSurf configuration successfully");
 
         $this->stopTimer();
         $this->displayTimeElapsed();
