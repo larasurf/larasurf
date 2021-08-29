@@ -14,49 +14,49 @@ trait InteractsWithAws
 {
     use InteractsWithConfig;
 
-    protected static function awsAcm(string $environment = null)
+    protected function awsAcm(string $environment = null)
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->clientArguments($environment);
 
         return new AcmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function awsCloudFormation(string $environment = null, string $aws_region = null)
+    protected function awsCloudFormation(string $environment = null, string $aws_region = null)
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment, $aws_region);
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->clientArguments($environment, $aws_region);
 
         return new CloudFormationClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function awsEc2(string $environment = null)
+    protected function awsEc2(string $environment = null)
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->clientArguments($environment);
 
         return new Ec2Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function awsRoute53()
+    protected function awsRoute53()
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments();
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->clientArguments();
 
         return new Route53Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function awsSes()
+    protected function awsSes()
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments();
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->clientArguments();
 
         return new SesClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function awsSsm(string $environment = null)
+    protected function awsSsm(string $environment = null)
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = static::clientArguments($environment);
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->clientArguments($environment);
 
         return new SsmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected static function clientArguments(string $environment = null, string $aws_region = null): array
+    protected function clientArguments(string $environment = null, string $aws_region = null): array
     {
         $project_name = static::config()->get('project-name');
         $project_id = static::config()->get('project-id');

@@ -59,7 +59,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $status = static::awsCloudFormation($env)->stackStatus();
+        $status = $this->awsCloudFormation($env)->stackStatus();
 
         if (!$status) {
             $this->warn("Stack for '$env' environment does not exist");
@@ -86,9 +86,9 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $aws_region = $this->choice('Which AWS region would you like to create the stack in?', Cloud::AWS_REGIONS);
+        $aws_region = $this->choice('Which AWS region would you like to create the stack in?', Cloud::AWS_REGIONS, 0);
 
-        $cloudformation = static::awsCloudFormation($env, $aws_region);
+        $cloudformation = $this->awsCloudFormation($env, $aws_region);
 
         if ($cloudformation->stackStatus()) {
             $this->error("Stack already exists for '$env' environment");
@@ -96,7 +96,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $ssm = static::awsSsm($env);
+        $ssm = $this->awsSsm($env);
 
         $existing_parameters = $ssm->listParameters();
 
@@ -123,7 +123,7 @@ class CloudStacks extends Command
 
         $domain = $this->ask('Fully qualified domain name?');
 
-        $route53 = static::awsRoute53();
+        $route53 = $this->awsRoute53();
 
         $this->info('Finding hosted zone from domain...');
 
@@ -189,7 +189,9 @@ class CloudStacks extends Command
 
         $this->info('Allowing database ingress from current IP address...');
 
-        static::awsEc2($env)->allowIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
+        $ec2 = $this->awsEc2($env);
+
+        $ec2->allowIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
 
         $this->info('Creating database schema...');
 
@@ -204,7 +206,7 @@ class CloudStacks extends Command
 
         $this->info('Revoking database ingress from current IP address...');
 
-        static::awsEc2($env)->revokeIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
+        $ec2->revokeIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
 
         $parameters = [
             'APP_ENV' => $env,
@@ -258,7 +260,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $cloudformation = static::awsCloudFormation($env);
+        $cloudformation = $this->awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
             $this->error("Stack does not exist for the '$env' environment");
@@ -286,7 +288,7 @@ class CloudStacks extends Command
         $new_db_instance_type = null;
         $new_db_storage = null;
 
-        $route53 = static::awsRoute53();
+        $route53 = $this->awsRoute53();
 
         if (in_array('ACM certificate ARN', $updates) && in_array('Domain + ACM certificate ARN', $updates)) {
             $index = array_search('ACM certificate ARN', $updates);
@@ -370,7 +372,7 @@ class CloudStacks extends Command
             return 0;
         }
 
-        $cloudformation = static::awsCloudFormation($env);
+        $cloudformation = $this->awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
             $this->error("Stack does not exist for the '$env' environment");
@@ -396,7 +398,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $result = static::awsCloudFormation($env)->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'changed');
+        $result = $this->awsCloudFormation($env)->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'changed');
 
         $this->getOutput()->writeln("<info>Stack operation finished with status:</info> {$result['status']}");
 
@@ -443,7 +445,7 @@ class CloudStacks extends Command
         } else {
             $this->info('Creating ACM certificate...');
 
-            $acm = static::awsAcm($env);
+            $acm = $this->awsAcm($env);
             $acm_arn = null;
 
             $dns_record = $acm->requestCertificate(
@@ -457,7 +459,7 @@ class CloudStacks extends Command
             $this->getOutput()->writeln('');
             $this->info('Verifying ACM certificate via DNS record...');
 
-            $route53 = static::awsRoute53();
+            $route53 = $this->awsRoute53();
 
             $changed_id = $route53->upsertDnsRecords($hosted_zone_id, [$dns_record]);
 
@@ -506,7 +508,7 @@ class CloudStacks extends Command
 
     protected function createSsmParameters(string $environment, array $parameters)
     {
-        $ssm = static::awsSsm($environment);
+        $ssm = $this->awsSsm($environment);
 
         foreach ($parameters as $name => $value) {
             $ssm->putParameter($name, $value);

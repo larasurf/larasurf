@@ -60,7 +60,7 @@ class CloudIngress extends Command
             return 1;
         }
 
-        if (!static::awsCloudFormation($env)->stackStatus()) {
+        if (!$this->awsCloudFormation($env)->stackStatus()) {
             $this->error("Stack does not exist for the '$env' environment");
 
             return 1;
@@ -72,7 +72,7 @@ class CloudIngress extends Command
             return 1;
         }
 
-        $ec2 = static::awsEc2($env);
+        $ec2 = $this->awsEc2($env);
         $ec2->allowIpPrefixList($prefix_list_id, $source);
         $ec2->waitForPrefixListUpdate(
             $prefix_list_id,
@@ -105,7 +105,7 @@ class CloudIngress extends Command
             return 1;
         }
 
-        if (!static::awsCloudFormation($env)->stackStatus()) {
+        if (!$this->awsCloudFormation($env)->stackStatus()) {
             $this->error("Stack does not exist for the '$env' environment");
 
             return 1;
@@ -117,7 +117,7 @@ class CloudIngress extends Command
             return 1;
         }
 
-        $ec2 = static::awsEc2($env);
+        $ec2 = $this->awsEc2($env);
         $ec2->revokeIpPrefixList($prefix_list_id, $source);
         $ec2->waitForPrefixListUpdate(
             $prefix_list_id,
@@ -144,7 +144,7 @@ class CloudIngress extends Command
             return 1;
         }
 
-        if (!static::awsCloudFormation($env)->stackStatus()) {
+        if (!$this->awsCloudFormation($env)->stackStatus()) {
             $this->error("Stack does not exist for the '$env' environment");
 
             return 1;
@@ -156,7 +156,7 @@ class CloudIngress extends Command
             return 1;
         }
 
-        $results = static::awsEc2($env)->listIpsPrefixList($prefix_list_id);
+        $results = $this->awsEc2($env)->listIpsPrefixList($prefix_list_id);
 
         foreach ($results as $result) {
             $cidr = $result->getCidr();
@@ -204,7 +204,7 @@ class CloudIngress extends Command
     {
         $key = $type === 'database' ? 'DBAdminAccessPrefixListId' : 'AppAccessPrefixListId';
 
-        $prefix_list_id = static::awsCloudFormation($env)->stackOutput($key);
+        $prefix_list_id = $this->awsCloudFormation($env)->stackOutput($key);
 
         if (!$prefix_list_id) {
             $this->error("Failed to find database Prefix List ID for '$env' environment");

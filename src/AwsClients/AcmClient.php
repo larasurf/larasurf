@@ -22,6 +22,7 @@ class AcmClient extends Client
             'DomainName' => $domain,
             'ValidationMethod' => $validation_method,
             'Tags' => $this->resourceTags('acm-certificate'),
+            'SubjectAlternativeNames' => ["*.$domain"],
         ]);
 
         $client = $this->client;

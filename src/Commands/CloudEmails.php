@@ -51,7 +51,7 @@ class CloudEmails extends Command
             return 1;
         }
 
-        $cloudformation = static::awsCloudFormation($env);
+        $cloudformation = $this->awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
             $this->error("Stack does not exist for the '$env' environment");
@@ -69,7 +69,7 @@ class CloudEmails extends Command
 
         $this->info("Verifying email domain '$domain'");
 
-        $ses = static::awsSes();
+        $ses = $this->awsSes();
 
         $dns_record = $ses->verifyDomain($domain);
 
@@ -79,7 +79,7 @@ class CloudEmails extends Command
             return 1;
         }
 
-        $route53 = static::awsRoute53();
+        $route53 = $this->awsRoute53();
 
         $change_id = $route53->upsertDnsRecords($hosted_zone_id, [
             $dns_record,
@@ -133,7 +133,7 @@ class CloudEmails extends Command
             return 1;
         }
 
-        $cloudformation = static::awsCloudFormation($env);
+        $cloudformation = $this->awsCloudFormation($env);
 
         if (!$cloudformation->stackStatus()) {
             $this->error("Stack does not exist for the '$env' environment");
@@ -147,7 +147,7 @@ class CloudEmails extends Command
             return 1;
         }
 
-        $ses = static::awsSes();
+        $ses = $this->awsSes();
 
         $verified = $ses->checkDomainVerification($domain);
 
@@ -170,7 +170,7 @@ class CloudEmails extends Command
 
     protected function handleEnableSending()
     {
-        $cloudformation = static::awsCloudFormation(Cloud::ENVIRONMENT_PRODUCTION);
+        $cloudformation = $this->awsCloudFormation(Cloud::ENVIRONMENT_PRODUCTION);
 
         if (!$cloudformation->stackStatus()) {
             $this->error("Stack does not exist for the '" . Cloud::ENVIRONMENT_PRODUCTION . "' environment");
@@ -178,7 +178,7 @@ class CloudEmails extends Command
             return 1;
         }
 
-        $ses = static::awsSes();
+        $ses = $this->awsSes();
 
         if ($ses->checkEmailSending()) {
             $this->warn('Live email sending is already enabled');
@@ -205,7 +205,7 @@ class CloudEmails extends Command
 
     protected function handleCheckSending()
     {
-        if (!static::awsSes()->checkEmailSending()) {
+        if (!$this->awsSes()->checkEmailSending()) {
             $this->warn('Live email sending not enabled');
 
             return 0;
@@ -218,7 +218,7 @@ class CloudEmails extends Command
 
     protected function domain(string $env): string|false
     {
-        $domain = static::awsCloudFormation($env)->stackOutput('DomainName');
+        $domain = $this->awsCloudFormation($env)->stackOutput('DomainName');
 
         if (!$domain) {
             $this->error("Failed to find domain name for '$env' environment");
@@ -231,7 +231,7 @@ class CloudEmails extends Command
 
     protected function hostedZoneId(string $env)
     {
-        $hosted_zone_id = static::awsCloudFormation($env)->stackOutput('HostedZoneId');
+        $hosted_zone_id = $this->awsCloudFormation($env)->stackOutput('HostedZoneId');
 
         if (!$hosted_zone_id) {
             $this->error("Failed to find Hosted Zone ID for '$env' environment");

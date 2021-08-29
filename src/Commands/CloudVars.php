@@ -59,7 +59,7 @@ class CloudVars extends Command
             return 1;
         }
 
-        if(static::awsSsm($env)->getParameter($key) === false) {
+        if($this->awsSsm($env)->getParameter($key) === false) {
             $this->warn("Variable '$key' does not exist in the '$env' environment");
         } else {
             $this->info("Variable '$key' exists for in '$env' environment");
@@ -82,7 +82,7 @@ class CloudVars extends Command
             return 1;
         }
 
-        $value = static::awsSsm($env)->getParameter($key);
+        $value = $this->awsSsm($env)->getParameter($key);
 
         if ($value === false) {
             $this->warn("Variable '$key' does not exist in the '$env' environment");
@@ -113,7 +113,7 @@ class CloudVars extends Command
             return 1;
         }
 
-        static::awsSsm($env)->putParameter($key, $value);
+        $this->awsSsm($env)->putParameter($key, $value);
 
         $this->info("Variable '$key' set in the '$env' environment successfully");
 
@@ -134,7 +134,7 @@ class CloudVars extends Command
             return 1;
         }
 
-        static::awsSsm($env)->deleteParameter($key);
+        $this->awsSsm($env)->deleteParameter($key);
 
         return 0;
     }
@@ -149,7 +149,7 @@ class CloudVars extends Command
 
         $show_values = $this->valuesOption();
 
-        $values = static::awsSsm($env)->listParameters($show_values);
+        $values = $this->awsSsm($env)->listParameters($show_values);
 
         if ($show_values) {
             foreach ($values as $key => $value) {
