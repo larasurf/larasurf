@@ -67,7 +67,7 @@ class CloudEmails extends Command
             return 1;
         }
 
-        $this->info("Verifying email domain '$domain'");
+        $this->info("Verifying email domain '$domain'...");
 
         $ses = $this->awsSes();
 
@@ -99,7 +99,7 @@ class CloudEmails extends Command
 
         $this->info('Email domain verified successfully');
 
-        $this->info("Verifying email domain '$domain' for DKIM");
+        $this->info("Verifying email domain '$domain' for DKIM...");
 
         $dns_records = $ses->verifyDomainDkim($domain);
 

@@ -18,7 +18,7 @@ class SesClient extends Client
 
         return (new DnsRecord())
             ->setName("_amazonses.$domain")
-            ->setValue($result['VerificationToken'])
+            ->setValue('"' . $result['VerificationToken'] . '"')
             ->setType(DnsRecord::TYPE_TXT);
     }
 
