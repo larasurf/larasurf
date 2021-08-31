@@ -252,6 +252,9 @@ Outputs:
   DomainName:
     Description: The fully qualified environment domain name.
     Value: !Ref DomainName
+  DBId:
+    Description: The ID of the database instance.
+    Value: !Ref DBInstance
   DBHost:
     Description: The database host.
     Value: !GetAtt DBInstance.Endpoint.Address

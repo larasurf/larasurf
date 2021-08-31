@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
+use LaraSurf\LaraSurf\AwsClients\RdsClient;
 use LaraSurf\LaraSurf\AwsClients\Route53Client;
 use LaraSurf\LaraSurf\AwsClients\SesClient;
 use LaraSurf\LaraSurf\AwsClients\SsmClient;
@@ -54,6 +55,13 @@ trait InteractsWithAws
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
 
         return new SsmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
+    }
+
+    protected function awsRds(string $environment)
+    {
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
+
+        return new RdsClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
     protected function awsClientArguments(string $environment = null, string $aws_region = null): array

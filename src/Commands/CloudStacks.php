@@ -356,18 +356,6 @@ class CloudStacks extends Command
             return 1;
         }
 
-        if ($env === Cloud::ENVIRONMENT_PRODUCTION) {
-            if (!$this->confirm('Have you manually disabled deletion protection from the RDS database instance?', false)) {
-                $region = static::config()->get("environments.$env.aws-region");
-
-                $this->error('RDS database instance deletion protection must be manually disabled before deleting the stack');
-                $this->getOutput()->writeln("https://console.aws.amazon.com/rds/home?region=$region");
-
-                return 1;
-            }
-                
-        }
-
         if (!$this->confirm("Are you sure you want to delete the stack for the '$env' environment?", false)) {
             return 0;
         }
@@ -378,6 +366,24 @@ class CloudStacks extends Command
             $this->error("Stack does not exist for the '$env' environment");
 
             return 1;
+        }
+
+        $database_id = $cloudformation->stackOutput('DBId');
+
+        $rds = $this->awsRds($env);
+
+        if ($database_id) {
+            if ($rds->checkDeletionProtection($database_id)) {
+                $this->warn("Database deletion protection is enabled for the '$env' environment's database");
+
+                if (!$this->confirm('Would you like to disable deletion protection and proceed?', false)) {
+                    return 0;
+                }
+
+                $this->info('Disabling database deletion protection...');
+
+                $rds->modifyDeletionProtection($database_id, false);
+            }
         }
 
         $cloudformation->deleteStack();
