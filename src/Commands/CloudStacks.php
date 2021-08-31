@@ -224,6 +224,8 @@ class CloudStacks extends Command
             'QUEUE_CONNECTION' => 'sqs',
             'MAIL_DRIVER' => $env === Cloud::ENVIRONMENT_PRODUCTION ? 'ses' : 'smtp',
             'AWS_DEFAULT_REGION' => $aws_region,
+            'REDIS_HOST' => $outputs['CacheEndpointAddress'],
+            'REDIS_PORT' => $outputs['CacheEndpointPort'],
         ];
 
         $this->info('Creating cloud variables...');

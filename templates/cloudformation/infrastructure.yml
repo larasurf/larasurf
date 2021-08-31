@@ -190,6 +190,39 @@ Resources:
           Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
         - Key: Environment
           Value: !Ref EnvironmentName
+  CacheCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheNodeType: !Ref CacheNodeType
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      Engine: redis
+      EngineVersion: 5.0.4
+      NumCacheNodes: 1
+      PreferredMaintenanceWindow: sun:23:00-mon:01:30
+      SnapshotRetentionLimit: 0
+      VpcSecurityGroupIds:
+        - !GetAtt CacheSecurityGroup.GroupId
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Default MultiAZ Subnet Group
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+  CacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: A self-referencing security group for the cache cluster and all agents that require access.
+      VpcId: !Ref Vpc
+  CacheSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref CacheSecurityGroup
+      IpProtocol: tcp
+      FromPort: 6379
+      ToPort: 6379
+      SourceSecurityGroupId: !Ref CacheSecurityGroup
 
 Parameters:
   ProjectName:
@@ -207,6 +240,9 @@ Parameters:
   DomainName:
     Type: String
     Description: The fully qualified environment domain name.
+  HostedZoneId:
+    Type: String
+    Description: The hosted zone ID for the domain.
   CertificateArn:
     Type: String
     Description: The ACM certificate ARN to use.
@@ -237,9 +273,24 @@ Parameters:
     Type: String
     Description: The database master password.
     NoEcho: true
-  HostedZoneId:
+  CacheNodeType:
     Type: String
-    Description: The hosted zone ID for the domain.
+    Description: The cache node type.
+    AllowedValues:
+      - cache.m5.large
+      - cache.m5.xlarge
+      - cache.m5.2xlarge
+      - cache.m5.4xlarge
+      - cache.m5.12xlarge
+      - cache.m5.24xlarge
+      - cache.m4.large
+      - cache.m4.xlarge
+      - cache.m4.2xlarge
+      - cache.m4.4xlarge
+      - cache.m4.10xlarge
+      - cache.t2.micro
+      - cache.t2.small
+      - cache.t2.medium
   # todo: parameter store params for laravel app?
 
 Conditions:
@@ -267,4 +318,9 @@ Outputs:
   HostedZoneId:
     Description: The hosted zone ID for the domain.
     Value: !Ref HostedZoneId
-
+  CacheEndpointAddress:
+    Description: The address of the cache cluster endpoint.
+    Value: !GetAtt CacheCluster.RedisEndpoint.Address
+  CacheEndpointPort:
+    Description: The port of the cache cluster endpoint.
+    Value: !GetAtt CacheCluster.RedisEndpoint.Port
