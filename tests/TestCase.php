@@ -10,6 +10,8 @@ use InvalidArgumentException;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
+use LaraSurf\LaraSurf\AwsClients\EcrClient;
+use LaraSurf\LaraSurf\AwsClients\RdsClient;
 use LaraSurf\LaraSurf\AwsClients\Route53Client;
 use LaraSurf\LaraSurf\AwsClients\SesClient;
 use LaraSurf\LaraSurf\AwsClients\SsmClient;
@@ -170,5 +172,25 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function mockAwsSsmClient(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . \Aws\Ssm\SsmClient::class);
+    }
+
+    protected function rdsClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): RdsClient
+    {
+        return $this->awsClient(RdsClient::class, $environment);
+    }
+
+    protected function mockAwsRdsClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\Rds\RdsClient::class);
+    }
+
+    protected function ecrClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): EcrClient
+    {
+        return $this->awsClient(EcrClient::class, $environment);
+    }
+
+    protected function mockAwsEcrClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\Ecr\EcrClient::class);
     }
 }
