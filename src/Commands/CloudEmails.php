@@ -3,7 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
-use LaraSurf\LaraSurf\Commands\Traits\HasEnvOption;
+use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
@@ -12,7 +12,7 @@ use LaraSurf\LaraSurf\Constants\Cloud;
 class CloudEmails extends Command
 {
     use HasSubCommands;
-    use HasEnvOption;
+    use HasEnvironmentOption;
     use HasTimer;
     use InteractsWithAws;
 
@@ -221,7 +221,7 @@ class CloudEmails extends Command
         $domain = $this->awsCloudFormation($env)->stackOutput('DomainName');
 
         if (!$domain) {
-            $this->error("Failed to find domain name for '$env' environment");
+            $this->error("Failed to find domain name for '$env' environment, has the stack been deployed?");
 
             return false;
         }
@@ -234,7 +234,7 @@ class CloudEmails extends Command
         $hosted_zone_id = $this->awsCloudFormation($env)->stackOutput('HostedZoneId');
 
         if (!$hosted_zone_id) {
-            $this->error("Failed to find Hosted Zone ID for '$env' environment");
+            $this->error("Failed to find Hosted Zone ID for '$env' environment, has the stack been deployed?");
 
             return false;
         }

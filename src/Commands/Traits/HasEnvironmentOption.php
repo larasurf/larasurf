@@ -4,7 +4,7 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 
 use LaraSurf\LaraSurf\Constants\Cloud;
 
-trait HasEnvOption
+trait HasEnvironmentOption
 {
     use InteractsWithConfig;
 

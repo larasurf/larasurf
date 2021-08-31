@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
+use LaraSurf\LaraSurf\AwsClients\EcrClient;
 use LaraSurf\LaraSurf\AwsClients\RdsClient;
 use LaraSurf\LaraSurf\AwsClients\Route53Client;
 use LaraSurf\LaraSurf\AwsClients\SesClient;
@@ -57,11 +58,18 @@ trait InteractsWithAws
         return new SsmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsRds(string $environment)
+    protected function awsRds(string $environment = null)
     {
-        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
 
         return new RdsClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
+    }
+
+    protected function awsEcr(string $environment = null, string $aws_region = null)
+    {
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
+
+        return new EcrClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
     protected function awsClientArguments(string $environment = null, string $aws_region = null): array

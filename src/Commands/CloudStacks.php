@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
-use LaraSurf\LaraSurf\Commands\Traits\HasEnvOption;
+use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
@@ -18,7 +18,7 @@ use PDO;
 class CloudStacks extends Command
 {
     use HasSubCommands;
-    use HasEnvOption;
+    use HasEnvironmentOption;
     use HasTimer;
     use InteractsWithAws;
 
@@ -86,7 +86,11 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $aws_region = $this->choice('Which AWS region would you like to create the stack in?', Cloud::AWS_REGIONS, 0);
+        $aws_region = static::config()->get("environments.$env.aws-region");
+
+        if (!$aws_region) {
+            $this->error("AWS region is not set for the '$env' environment; create an image repository first");
+        }
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
 
@@ -222,21 +226,9 @@ class CloudStacks extends Command
             'AWS_DEFAULT_REGION' => $aws_region,
         ];
 
-        $this->info('Created default cloud variables...');
+        $this->info('Creating cloud variables...');
 
         $this->createSsmParameters($env, $parameters);
-
-        $this->info("Updating LaraSurf configuration...");
-
-        static::config()->set("environments.$env.aws-region", $aws_region);
-
-        if (!static::config()->write()) {
-            $this->error("Failed to update LaraSurf configuration");
-
-            return 1;
-        }
-
-        $this->info("Updated LaraSurf configuration successfully");
 
         $this->stopTimer();
         $this->displayTimeElapsed();

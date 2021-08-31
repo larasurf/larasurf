@@ -71,11 +71,11 @@ abstract class Client
         ];
     }
 
-    protected function resourceTags(string $unique_resource = null): array
+    protected function resourceTags(): array
     {
         $this->validateEnvironmentIsSet();
 
-        $tags = [
+        return [
             [
                 'Key' => 'Project',
                 'Value' => $this->project_name . '-' . $this->project_id,
@@ -85,15 +85,6 @@ abstract class Client
                 'Value' => $this->environment,
             ],
         ];
-
-        if ($unique_resource) {
-            $tags[] = [
-                'Key' => 'LaraSurfID',
-                'Value' => $this->project_name . '-' . $this->project_id . '-' . $this->environment . '-' . $unique_resource,
-            ];
-        }
-
-        return $tags;
     }
 
     protected function validateEnvironmentIsSet()

@@ -3,14 +3,14 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
-use LaraSurf\LaraSurf\Commands\Traits\HasEnvOption;
+use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 
 class CloudIngress extends Command
 {
     use HasSubCommands;
-    use HasEnvOption;
+    use HasEnvironmentOption;
     use InteractsWithAws;
 
     const COMMAND_ALLOW = 'allow';
