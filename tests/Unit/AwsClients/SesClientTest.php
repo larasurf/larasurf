@@ -22,7 +22,7 @@ class SesClientTest extends TestCase
         $dns_record = $this->sesClient()->verifyDomain($domain);
 
         $this->assertEquals("_amazonses.$domain", $dns_record->getName());
-        $this->assertEquals($token, $dns_record->getValue());
+        $this->assertEquals('"'. $token . '"', $dns_record->getValue());
         $this->assertEquals(DnsRecord::TYPE_TXT, $dns_record->getType());
     }
 
