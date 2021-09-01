@@ -14,18 +14,18 @@ class CloudImages extends Command
     use InteractsWithAws;
     use HasEnvironmentOption;
 
-    const COMMAND_CREATE_REPOSITORY = 'create-repository';
-    const COMMAND_DELETE_REPOSITORY = 'delete-repository';
+    const COMMAND_CREATE_REPOSITORIES = 'create-repositories';
+    const COMMAND_DELETE_REPOSITORIES = 'delete-repositories';
 
     protected $signature = 'larasurf:cloud-images
                             {--environment= : The environment: \'stage\' or \'production\'}
-                            {subcommand : The subcommand to run: \'create-repository\', or \'delete-repository\'}';
+                            {subcommand : The subcommand to run: \'create-repositories\', or \'delete-repositories\'}';
 
-    protected $description = 'Manage images and image registries in cloud environments';
+    protected $description = 'Manage images and image repositories in cloud environments';
 
     protected array $commands = [
-        self::COMMAND_CREATE_REPOSITORY => 'handleCreateRepository',
-        self::COMMAND_DELETE_REPOSITORY => 'handleDeleteRepository',
+        self::COMMAND_CREATE_REPOSITORIES => 'handleCreateRepositories',
+        self::COMMAND_DELETE_REPOSITORIES => 'handleDeleteRepositories',
     ];
 
     public function handle()
@@ -49,9 +49,11 @@ class CloudImages extends Command
 
         $ecr = $this->awsEcr($env, $aws_region);
 
-        $uri = $ecr->createRepository($this->repositoryName($env));
+        $uri_application = $ecr->createRepository($this->repositoryName($env, 'application'));
+        $uri_webserver = $ecr->createRepository($this->repositoryName($env, 'webserver'));
 
-        $this->getOutput()->writeln("<info>Repository created successfully with URI:</info> $uri");
+        $this->getOutput()->writeln("<info>Application repository created successfully with URI:</info> $uri_application");
+        $this->getOutput()->writeln("<info>Webserver repository created successfully with URI:</info> $uri_webserver");
 
         $this->info('Updating LaraSurf configuration...');
 
@@ -86,13 +88,14 @@ class CloudImages extends Command
 
         $ecr = $this->awsEcr($env);
 
-        $ecr->deleteRepository($this->repositoryName($env));
+        $ecr->deleteRepository($this->repositoryName($env, 'application'));
+        $ecr->deleteRepository($this->repositoryName($env, 'webserver'));
 
         return 0;
     }
 
-    protected function repositoryName(string $environment): string
+    protected function repositoryName(string $environment, string $type): string
     {
-        return static::config()->get('project-name') . '-' . static::config()->get('project-id') . '-' . $environment;
+        return static::config()->get('project-name') . '-' . static::config()->get('project-id') . "-$environment/$type";
     }
 }

@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf;
 use Illuminate\Support\ServiceProvider;
 use LaraSurf\LaraSurf\Commands\CloudDomains;
 use LaraSurf\LaraSurf\Commands\CloudEmails;
+use LaraSurf\LaraSurf\Commands\CloudImages;
 use LaraSurf\LaraSurf\Commands\CloudIngress;
 use LaraSurf\LaraSurf\Commands\CloudStacks;
 use LaraSurf\LaraSurf\Commands\CloudVars;
@@ -31,6 +32,7 @@ class LaraSurfServiceProvider extends ServiceProvider
                 CloudIngress::class,
                 CloudStacks::class,
                 CloudVars::class,
+                CloudImages::class,
             ]);
         }
     }
