@@ -89,7 +89,9 @@ class CloudStacks extends Command
         $aws_region = static::config()->get("environments.$env.aws-region");
 
         if (!$aws_region) {
-            $this->error("AWS region is not set for the '$env' environment; create an image repository first");
+            $this->error("AWS region is not set for the '$env' environment; create image repositories first");
+            
+            return 1;
         }
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
@@ -383,9 +385,6 @@ class CloudStacks extends Command
         $cloudformation->deleteStack();
 
         $this->info('Stack deletion initiated');
-
-        static::config()->set("environments.$env", null);
-        static::config()->write();
 
         return 0;
     }
