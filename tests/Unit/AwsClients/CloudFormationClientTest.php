@@ -40,7 +40,8 @@ class CloudFormationClientTest extends TestCase
             random_int(20, 100),
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
-            Str::random()
+            Str::random(),
+            Arr::random(Cloud::CACHE_NODE_TYPES),
         );
     }
 
@@ -64,7 +65,8 @@ class CloudFormationClientTest extends TestCase
             random_int(20, 100),
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
-            Str::random()
+            Str::random(),
+            Arr::random(Cloud::CACHE_NODE_TYPES)
         );
     }
 
@@ -82,7 +84,8 @@ class CloudFormationClientTest extends TestCase
             random_int(20, 100),
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
-            Str::random()
+            Str::random(),
+            Arr::random(Cloud::CACHE_NODE_TYPES)
         );
     }
 
@@ -98,7 +101,8 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             random_int(20, 100),
-            Arr::random(Cloud::DB_INSTANCE_TYPES)
+            Arr::random(Cloud::DB_INSTANCE_TYPES),
+            Arr::random(Cloud::CACHE_NODE_TYPES)
         );
     }
 
