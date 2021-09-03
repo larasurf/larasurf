@@ -56,7 +56,7 @@ class Client
 
     public function checkApiKey(): bool
     {
-        return !Http::withHeaders($this->headers)->get('/me')->failed();
+        return !Http::withHeaders($this->headers)->get("{$this->base_url}/me")->failed();
     }
 
     protected function projectSlug(): string

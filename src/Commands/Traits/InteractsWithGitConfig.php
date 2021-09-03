@@ -33,7 +33,7 @@ trait InteractsWithGitConfig
 
     protected static function gitRemoteUrl(string $name = 'origin'): string|false
     {
-        return static::gitConfig()["remote \"{$name}\""]['url'] ?? false;
+        return static::gitConfig()["remote $name"]['url'] ?? false;
     }
 
     protected function gitOriginUrl()

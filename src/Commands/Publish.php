@@ -13,7 +13,7 @@ class Publish extends Command
     use DerivesAppUrl;
     use InteractsWithLaraSurfConfig;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
@@ -25,6 +25,7 @@ class Publish extends Command
                      'env-changes' => [$this, 'publishEnvChanges'],
                      'circleci' => [$this, 'publishCircleCiConfig'],
                      'cloudformation' => [$this, 'publishCloudFormation'],
+                     'gitignore' => [$this, 'publishGitIgnore'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -37,7 +38,7 @@ class Publish extends Command
         $success = File::copy(__DIR__ . '/../../templates/.php-cs-fixer.dist.php', base_path('.php-cs-fixer.dist.php'));
 
         if ($success) {
-            $this->info('Successfully published code style fixer config');
+            $this->info('Published code style fixer config successfully');
         } else {
             $this->error('Failed to publish code style fixer config');
         }
@@ -57,7 +58,7 @@ class Publish extends Command
                 $success = File::put($nginx_config_path, $new_config);
 
                 if ($success) {
-                    $this->info('Successfully modified nginx config');
+                    $this->info('Modified nginx config successfully');
                 } else {
                     $this->error('Failed to modify nginx config');
                 }
@@ -103,7 +104,7 @@ class Publish extends Command
                 $success = File::put($env_file, implode(PHP_EOL, array_merge($contents, [''])));
 
                 if ($success) {
-                    $this->info("Successfully modified $file");
+                    $this->info("Modified $file successfully");
                 } else {
                     $this->error("Failed to modify $file");
                 }
@@ -141,7 +142,7 @@ class Publish extends Command
             $success = File::copy(__DIR__ . "/../../templates/circleci/$filename", $circle_config_path);
 
             if ($success) {
-                $this->info('Successfully published CircleCI configuration file');
+                $this->info('Published CircleCI configuration file successfully');
             } else {
                 $this->error('Failed to publish CircleCI configuration file');
             }
@@ -155,7 +156,7 @@ class Publish extends Command
             $success = File::copy(__DIR__ . '/../../templates/circleci/docker-compose.ci.yml', $docker_compose_path);
 
             if ($success) {
-                $this->info('Successfully published docker-compose file');
+                $this->info('Published docker-compose file successfully');
             } else {
                 $this->error('Failed to publish docker-compose file');
             }
@@ -169,7 +170,7 @@ class Publish extends Command
             $success = File::copy(__DIR__ . '/../../templates/circleci/Dockerfile', $dockerfile_path);
 
             if ($success) {
-                $this->info('Successfully published Dockerfile file');
+                $this->info('Published Dockerfile file successfully');
             } else {
                 $this->error('Failed to publish Dockerfile file');
             }
@@ -190,12 +191,23 @@ class Publish extends Command
             $success = File::copy(__DIR__ . "/../../templates/cloudformation/infrastructure.yml", $infrastructure_template_path);
 
             if ($success) {
-                $this->info('Successfully published infrastructure CloudFormation template');
+                $this->info('Published infrastructure CloudFormation template successfully');
             } else {
                 $this->error('Failed to publish infrastructure CloudFormation template');
             }
         }
 
         // todo: publish app template file?
+    }
+
+    protected function publishGitIgnore()
+    {
+        $contents = File::get(__DIR__ . '/../../templates/gitignore.txt');
+
+        if (!File::put(base_path('.gitignore'), $contents)) {
+            $this->error('Failed to publish .gitignore');
+        } else {
+            $this->info('Published .gitignore successfully');
+        }
     }
 }
