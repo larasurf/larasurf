@@ -14,6 +14,8 @@ class CloudUsers extends Command
     use InteractsWithAws;
     use InteractsWithCircleCI;
 
+    const POLICY_ARN_ADMIN_ACCESS = 'arn:aws:iam::aws:policy/AdministratorAccess';
+
     const COMMAND_CREATE = 'create';
     const COMMAND_DELETE = 'delete';
 
@@ -61,6 +63,12 @@ class CloudUsers extends Command
         $this->info("Creating user '$iam_user'...");
 
         $iam->createUser($iam_user);
+
+        $this->info("Assigning permissions...");
+
+        // todo: create policy, assign that instead of admin access
+
+        $iam->attachUserPolicy($iam_user, self::POLICY_ARN_ADMIN_ACCESS);
 
         $this->info("Creating access keys...");
 

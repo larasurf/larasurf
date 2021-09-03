@@ -43,6 +43,14 @@ class IamClient extends Client
         return new AccessKeys($result);
     }
 
+    public function attachUserPolicy(string $user_name, string $policy_arn)
+    {
+        $this->client->attachUserPolicy([
+            'PolicyArn' => $policy_arn,
+            'UserName' => $user_name,
+        ]);
+    }
+
     protected function makeClient(array $args): \Aws\Iam\IamClient
     {
         return new \Aws\Iam\IamClient($args);

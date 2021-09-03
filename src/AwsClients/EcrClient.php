@@ -37,6 +37,8 @@ class EcrClient extends Client
         ]);
     }
 
+    // todo: describeImages by tag to see if commit exists for deployments
+
     protected function makeClient(array $args): \Aws\Ecr\EcrClient
     {
         return new \Aws\Ecr\EcrClient($args);
