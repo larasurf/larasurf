@@ -56,6 +56,16 @@ class IamClientTest extends TestCase
         $this->iamClient()->attachUserPolicy($this->faker->word, Str::random());
     }
 
+
+    public function testDetachUserPolicy()
+    {
+        $this->mockAwsIamClient()
+            ->shouldReceive('detachUserPolicy')
+            ->andReturn();
+
+        $this->iamClient()->detachUserPolicy($this->faker->word, Str::random());
+    }
+
     public function testCreateAccessKeys()
     {
         $id = Str::random();

@@ -56,7 +56,7 @@ class CircleCI extends Command
             return 1;
         }
 
-        $this->info("Wrote to file '$path' successfully");
+        $this->info("Updated file '$path' successfully");
 
         return 0;
     }

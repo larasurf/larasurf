@@ -40,12 +40,20 @@ class IamClient extends Client
             'UserName' => $user_name,
         ]);
 
-        return new AccessKeys($result);
+        return new AccessKeys($result->toArray());
     }
 
     public function attachUserPolicy(string $user_name, string $policy_arn)
     {
         $this->client->attachUserPolicy([
+            'PolicyArn' => $policy_arn,
+            'UserName' => $user_name,
+        ]);
+    }
+
+    public function detachUserPolicy(string $user_name, string $policy_arn)
+    {
+        $this->client->detachUserPolicy([
             'PolicyArn' => $policy_arn,
             'UserName' => $user_name,
         ]);
