@@ -48,7 +48,7 @@ class CircleCI extends Command
         
         $this->info('Verified API key successfully');
 
-        $path = static::circleCiApiKeyFilePath();
+        $path = static::circleCIApiKeyFilePath();
 
         if (!File::put($path, $api_token)) {
             $this->error("Failed to write to file: $path");
@@ -63,7 +63,7 @@ class CircleCI extends Command
 
     protected function handleDeleteApiToken()
     {
-        $path = static::circleCiApiKeyFilePath();
+        $path = static::circleCIApiKeyFilePath();
 
         if (!File::exists($path)) {
             $this->error("No file exists at: $path");

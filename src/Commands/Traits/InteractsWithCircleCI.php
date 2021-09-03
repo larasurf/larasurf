@@ -20,14 +20,14 @@ trait InteractsWithCircleCI
         return static::$circleci_client;
     }
 
-    protected static function circleCiApiKeyFilePath(): string
+    protected static function circleCIApiKeyFilePath(): string
     {
         return '.circleci/api-key.txt';
     }
 
     protected static function circleCIApiKey(): string|false
     {
-        return trim(File::get(base_path(static::circleCiApiKeyFilePath()))) ?: false;
+        return trim(File::get(base_path(static::circleCIApiKeyFilePath()))) ?: false;
     }
 
     protected function circleCIExistingEnvironmentVariablesAskDelete(Client $circleci): array|false

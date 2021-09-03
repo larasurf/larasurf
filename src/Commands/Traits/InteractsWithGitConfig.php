@@ -19,6 +19,8 @@ trait InteractsWithGitConfig
             if (!$config) {
                 throw new ParsingGitConfigFailedException($config_path);
             }
+
+            static::$git_config = $config;
         }
 
         return static::$git_config;
@@ -37,6 +39,12 @@ trait InteractsWithGitConfig
     protected function gitOriginUrl()
     {
         $url = static::gitRemoteUrl();
+
+        if (!$url) {
+            $this->error('Failed to find origin remote URL from git config, is git origin set?');
+
+            return false;
+        }
 
         $origin = str_replace('git@github.com:', '', str_replace('.git', '', $url));
 
