@@ -4,6 +4,7 @@ namespace LaraSurf\LaraSurf\Tests\Unit\AwsClients;
 
 use Aws\Command;
 use Aws\Exception\AwsException;
+use Aws\Result;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Tests\TestCase;
 
@@ -73,10 +74,10 @@ class IamClientTest extends TestCase
 
         $this->mockAwsIamClient()
             ->shouldReceive('createAccessKey')
-            ->andReturn([
+            ->andReturn(new Result([
                 'AccessKeyId' => $id,
                 'SecretAccessKey' => $secret,
-            ]);
+            ]));
 
         $keys = $this->iamClient()->createAccessKeys($this->faker->word);
 
