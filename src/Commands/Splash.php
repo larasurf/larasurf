@@ -86,5 +86,6 @@ ${w_n}╔═══════════════════════�
 EOD;
 
         echo $splash . PHP_EOL;
+        $this->getOutput()->write("\x07");
     }
 }
