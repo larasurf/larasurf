@@ -4,12 +4,12 @@ namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
-use LaraSurf\LaraSurf\Commands\Traits\InteractsWithConfig;
+use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
 class Config extends Command
 {
     use HasSubCommands;
-    use InteractsWithConfig;
+    use InteractsWithLaraSurfConfig;
 
     const COMMAND_GET = 'get';
     const COMMAND_SET = 'set';
@@ -39,7 +39,7 @@ class Config extends Command
 
             $this->line($value);
         } else {
-            $this->error("Key '$key' not found in '" . static::configFileName() . "'");
+            $this->error("Key '$key' not found in '" . static::laraSurfConfigFilePath() . "'");
 
             return 1;
         }
@@ -62,12 +62,12 @@ class Config extends Command
         static::config()->set($key, $value);
 
         if (!static::config()->write()) {
-            $this->error("Failed to write to file '" . static::configFileName() . "'");
+            $this->error("Failed to write to file '" . static::laraSurfConfigFilePath() . "'");
 
             return 1;
         }
 
-        $this->info("File '" . static::configFileName() ."' updated successfully");
+        $this->info("File '" . static::laraSurfConfigFilePath() ."' updated successfully");
 
         return 0;
     }

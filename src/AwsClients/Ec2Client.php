@@ -58,9 +58,7 @@ class Ec2Client extends Client
             'PrefixListId' => $prefix_list_id,
         ]);
 
-        return array_map(function ($entry) {
-            return new PrefixListEntry($entry);
-        }, $results['Entries']);
+        return array_map(fn ($entry) => new PrefixListEntry($entry), $results['Entries']);
     }
 
     public function waitForPrefixListUpdate(string $prefix_list_id, OutputStyle $output = null, string $wait_message = ''): bool

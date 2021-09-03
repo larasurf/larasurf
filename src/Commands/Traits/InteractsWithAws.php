@@ -14,7 +14,7 @@ use LaraSurf\LaraSurf\Constants\Cloud;
 
 trait InteractsWithAws
 {
-    use InteractsWithConfig;
+    use InteractsWithLaraSurfConfig;
 
     protected function awsAcm(string $environment = null)
     {

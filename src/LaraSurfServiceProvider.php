@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf;
 
 use Illuminate\Support\ServiceProvider;
+use LaraSurf\LaraSurf\Commands\CircleCI;
 use LaraSurf\LaraSurf\Commands\CloudDomains;
 use LaraSurf\LaraSurf\Commands\CloudEmails;
 use LaraSurf\LaraSurf\Commands\CloudImages;
@@ -28,6 +29,7 @@ class LaraSurfServiceProvider extends ServiceProvider
                 Splash::class,
                 Publish::class,
                 Config::class,
+                CircleCI::class,
                 CloudDomains::class,
                 CloudEmails::class,
                 CloudIngress::class,

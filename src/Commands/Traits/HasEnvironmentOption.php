@@ -6,7 +6,7 @@ use LaraSurf\LaraSurf\Constants\Cloud;
 
 trait HasEnvironmentOption
 {
-    use InteractsWithConfig;
+    use InteractsWithLaraSurfConfig;
 
     protected function environmentOption(): string|false
     {

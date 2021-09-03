@@ -89,6 +89,16 @@ elif [[ "$1" == 'cloud-images' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:cloud-images "${@:2}"
+elif [[ "$1" == 'cloud-users' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
+elif [[ "$1" == 'circleci' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:circleci "${@:2}"
 elif [[ "$1" == 'test' ]]; then
   exit_if_containers_not_running
 

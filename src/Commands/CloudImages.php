@@ -3,16 +3,19 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use LaraSurf\LaraSurf\CircleCI\Client;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
+use LaraSurf\LaraSurf\Commands\Traits\InteractsWithCircleCI;
 use LaraSurf\LaraSurf\Constants\Cloud;
 
 class CloudImages extends Command
 {
     use HasSubCommands;
-    use InteractsWithAws;
     use HasEnvironmentOption;
+    use InteractsWithAws;
+    use InteractsWithCircleCI;
 
     const REPOSITORY_TYPE_APPLICATION = 'application';
     const REPOSITORY_TYPE_WEBSERVER = 'webserver';
@@ -41,9 +44,37 @@ class CloudImages extends Command
             return 1;
         }
 
-        $aws_region = $this->choice('In which region would you like to create the repositories?', Cloud::AWS_REGIONS, 0);
+        $circleci_api_key = static::circleCIApiKey();
+
+        if (!$circleci_api_key) {
+            $this->error('Set a CircleCI API key first');
+
+            return 1;
+        }
+
+        $circleci_project = $this->gitOriginUrl();
+
+        $circleci = static::circleCI($circleci_api_key, $circleci_project);
+
+        $this->info('Checking CircleCI environment variables...');
+
+        $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci);
+
+        if ($circleci_existing_vars === false) {
+            return 1;
+        }
+
+        $aws_region = $this->choice('In which region would you like to create the image repositories?', Cloud::AWS_REGIONS, 0);
+
+        $this->info('Deleting CircleCI environment variables...');
+
+        foreach ($circleci_existing_vars as $name) {
+            $circleci->deleteEnvironmentVariable($name);
+        }
 
         $ecr = $this->awsEcr($env, $aws_region);
+
+        $this->info('Creating image repositories...');
 
         $uri_application = $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
         $uri_webserver = $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
@@ -86,6 +117,28 @@ class CloudImages extends Command
             $this->error('Environment AWS region not found in configuration file');
 
             return 1;
+        }
+
+        $circleci_api_key = static::circleCIApiKey();
+
+        if ($circleci_api_key) {
+            $circleci_project = $this->gitOriginUrl();
+
+            $circleci = static::circleCI($circleci_api_key, $circleci_project);
+
+            $this->info('Checking CircleCI environment variables...');
+
+            $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci);
+
+            if ($circleci_existing_vars === false) {
+                return 1;
+            }
+
+            $this->info('Deleting CircleCI environment variables...');
+
+            foreach ($circleci_existing_vars as $name) {
+                $circleci->deleteEnvironmentVariable($name);
+            }
         }
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
@@ -155,5 +208,32 @@ class CloudImages extends Command
     protected function repositoryName(string $environment, string $type): string
     {
         return static::config()->get('project-name') . '-' . static::config()->get('project-id') . "-$environment/$type";
+    }
+
+    protected function circleCIExistingEnvironmentVariablesAskDelete(Client $circleci): array|false
+    {
+        $existing_circleci_vars = $circleci->listEnvironmentVariables();
+
+        $exists = [];
+
+        foreach ($existing_circleci_vars as $name => $value) {
+            if (in_array($name, [
+                'AWS_ACCESS_KEY_ID',
+                'AWS_SECRET_ACCESS_KEY',
+                'AWS_REGION',
+                'AWS_ECR_URL_WEBSERVER',
+                'AWS_ECR_URL_APPLICATION',
+            ])) {
+                $exists[] = $name;
+
+                $this->warn("CircleCI environment variable '$name' already exists!");
+            }
+        }
+
+        if ($exists && !$this->ask('Would you like to delete these CircleCI environment variables and proceed?', false)) {
+            return false;
+        }
+
+        return $exists;
     }
 }

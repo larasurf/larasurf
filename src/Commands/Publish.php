@@ -6,12 +6,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Commands\Traits\DerivesAppUrl;
-use LaraSurf\LaraSurf\Commands\Traits\InteractsWithConfig;
+use LaraSurf\LaraSurf\Commands\Traits\InteractsWithLaraSurfConfig;
 
 class Publish extends Command
 {
     use DerivesAppUrl;
-    use InteractsWithConfig;
+    use InteractsWithLaraSurfConfig;
 
     protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation}';
 
