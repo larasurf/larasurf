@@ -33,15 +33,6 @@ class CloudImages extends Command
         self::COMMAND_REPO_URIS => 'handleRepoUris',
     ];
 
-    public function handle()
-    {
-        if (!$this->validateSubCommandArgument()) {
-            return 1;
-        }
-
-        return $this->runSubCommand();
-    }
-
     public function handleCreateRepo()
     {
         $env = $this->environmentOption();

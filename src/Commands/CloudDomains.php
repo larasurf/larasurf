@@ -27,15 +27,6 @@ class CloudDomains extends Command
         self::COMMAND_NAMESERVERS => 'handleNameServers',
     ];
 
-    public function handle()
-    {
-        if (!$this->validateSubCommandArgument()) {
-            return 1;
-        }
-
-        return $this->runSubCommand();
-    }
-
     public function handleHostedZoneExists()
     {
         $domain = $this->domainOption();

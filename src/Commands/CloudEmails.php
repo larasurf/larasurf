@@ -34,15 +34,6 @@ class CloudEmails extends Command
         self::COMMAND_CHECK_SENDING => 'handleCheckSending',
     ];
 
-    public function handle()
-    {
-        if (!$this->validateSubCommandArgument()) {
-            return 1;
-        }
-
-        return $this->runSubCommand();
-    }
-
     protected function handleVerifyDomain()
     {
         $env = $this->environmentOption();

@@ -36,15 +36,6 @@ class CloudVars extends Command
         self::COMMAND_LIST => 'handleList',
     ];
 
-    public function handle()
-    {
-        if (!$this->validateSubCommandArgument()) {
-            return 1;
-        }
-
-        return $this->runSubCommand();
-    }
-
     public function handleExists()
     {
         $env = $this->environmentOption();

@@ -18,6 +18,12 @@ class Cloud
         self::ENVIRONMENT_PRODUCTION,
     ];
 
+    const USER_CIRCLECI = 'circleci';
+
+    const USERS = [
+        self::USER_CIRCLECI,
+    ];
+
     const DB_INSTANCE_TYPES = [
         'db.t2.small',
         'db.t2.medium',

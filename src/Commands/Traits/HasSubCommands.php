@@ -4,6 +4,15 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 
 trait HasSubCommands
 {
+    public function handle()
+    {
+        if (!$this->validateSubCommandArgument()) {
+            return 1;
+        }
+
+        return $this->runSubCommand();
+    }
+
     protected function validateSubCommandArgument()
     {
         $command = $this->argument('subcommand');

@@ -26,15 +26,6 @@ class Config extends Command
         self::COMMAND_SET => 'handleSet',
     ];
 
-    public function handle()
-    {
-        if (!$this->validateSubCommandArgument()) {
-            return 1;
-        }
-
-        return $this->runSubCommand();
-    }
-
     protected function handleGet()
     {
         $key = $this->argument('key');

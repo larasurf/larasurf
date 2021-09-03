@@ -42,15 +42,6 @@ class CloudStacks extends Command
         self::COMMAND_WAIT => 'handleWait',
     ];
 
-    public function handle()
-    {
-        if (!$this->validateSubCommandArgument()) {
-            return 1;
-        }
-
-        return $this->runSubCommand();
-    }
-
     public function handleStatus()
     {
         $env = $this->environmentOption();
