@@ -113,8 +113,8 @@ class Publish extends Command
 
     protected function publishCircleCiConfig()
     {
-        $production = static::config()->exists('environments.production');
-        $stage = static::config()->exists('environments.stage');
+        $production = static::larasurfConfig()->exists('environments.production');
+        $stage = static::larasurfConfig()->exists('environments.stage');
 
         if ($production && $stage) {
             $this->publishCircleCi('config.local-stage-production.yml');

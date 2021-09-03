@@ -80,25 +80,31 @@ class CloudImages extends Command
         $uri_webserver = $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
         $this->info('Repositories created successfully');
-        $this->newLine();
-        $this->info('Application image repository URI:');
-        $this->getOutput()->writeln($uri_application);
-        $this->newLine();
-        $this->info('Webserver image repository URI:');
-        $this->getOutput()->writeln($uri_webserver);
 
         $this->newLine();
         $this->info('Updating LaraSurf configuration...');
 
-        static::config()->set("environments.$env.aws-region", $aws_region);
+        static::larasurfConfig()->set("environments.$env.aws-region", $aws_region);
 
-        if (!static::config()->write()) {
+        if (!static::larasurfConfig()->write()) {
             $this->error('Failed to update LaraSurf configuration');
 
             return 1;
         }
 
         $this->info('Updated LaraSurf configuration successfully');
+
+        $this->info('Updating CircleCI environment variables...');
+
+        foreach ([
+            'AWS_REGION' => $aws_region,
+            'AWS_ECR_URL_APPLICATION' => $uri_application,
+            'AWS_ECR_URL_WEBSERVER' => $uri_webserver,
+                 ] as $name => $value) {
+            $circleci->createEnvironmentVariable($name, $value);
+
+            $this->info("Set CircleCI environment variable '$name' successfully");
+        }
 
         return 0;
     }
@@ -111,7 +117,7 @@ class CloudImages extends Command
             return 1;
         }
 
-        $aws_region = static::config()->get("environments.$env.aws-region");
+        $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
 
         if (!$aws_region) {
             $this->error('Environment AWS region not found in configuration file');
@@ -139,6 +145,8 @@ class CloudImages extends Command
             foreach ($circleci_existing_vars as $name) {
                 $circleci->deleteEnvironmentVariable($name);
             }
+
+            $this->info('Deleted CircleCi environment variables successfully');
         }
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
@@ -156,9 +164,9 @@ class CloudImages extends Command
 
         $this->info('Successfully deleted both application and webserver image repositories');
 
-        static::config()->set("environments.$env", null);
+        static::larasurfConfig()->set("environments.$env", null);
 
-        if(!static::config()->write()) {
+        if(!static::larasurfConfig()->write()) {
             $this->error('Failed to update LaraSurf configuration');
 
             return 1;
@@ -177,7 +185,7 @@ class CloudImages extends Command
             return 1;
         }
 
-        $aws_region = static::config()->get("environments.$env.aws-region");
+        $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
 
         if (!$aws_region) {
             $this->error('Environment AWS region not found in configuration file');
@@ -207,33 +215,6 @@ class CloudImages extends Command
 
     protected function repositoryName(string $environment, string $type): string
     {
-        return static::config()->get('project-name') . '-' . static::config()->get('project-id') . "-$environment/$type";
-    }
-
-    protected function circleCIExistingEnvironmentVariablesAskDelete(Client $circleci): array|false
-    {
-        $existing_circleci_vars = $circleci->listEnvironmentVariables();
-
-        $exists = [];
-
-        foreach ($existing_circleci_vars as $name => $value) {
-            if (in_array($name, [
-                'AWS_ACCESS_KEY_ID',
-                'AWS_SECRET_ACCESS_KEY',
-                'AWS_REGION',
-                'AWS_ECR_URL_WEBSERVER',
-                'AWS_ECR_URL_APPLICATION',
-            ])) {
-                $exists[] = $name;
-
-                $this->warn("CircleCI environment variable '$name' already exists!");
-            }
-        }
-
-        if ($exists && !$this->ask('Would you like to delete these CircleCI environment variables and proceed?', false)) {
-            return false;
-        }
-
-        return $exists;
+        return static::larasurfConfig()->get('project-name') . '-' . static::larasurfConfig()->get('project-id') . "-$environment/$type";
     }
 }

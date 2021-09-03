@@ -30,7 +30,7 @@ class Config extends Command
     {
         $key = $this->argument('key');
 
-        $value = static::config()->get($key);
+        $value = static::larasurfConfig()->get($key);
 
         if ($value !== null) {
             if (is_bool($value)) {
@@ -59,9 +59,9 @@ class Config extends Command
 
         $key = $this->argument('key');
 
-        static::config()->set($key, $value);
+        static::larasurfConfig()->set($key, $value);
 
-        if (!static::config()->write()) {
+        if (!static::larasurfConfig()->write()) {
             $this->error("Failed to write to file '" . static::laraSurfConfigFilePath() . "'");
 
             return 1;

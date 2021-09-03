@@ -13,7 +13,7 @@ trait InteractsWithLaraSurfConfig
         return 'larasurf.json';
     }
 
-    protected static function config(): Config
+    protected static function larasurfConfig(): Config
     {
         if (!static::$larasurf_config) {
             static::$larasurf_config = new Config(static::laraSurfConfigFilePath());

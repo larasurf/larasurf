@@ -29,4 +29,31 @@ trait InteractsWithCircleCI
     {
         return trim(File::get(base_path(static::circleCiApiKeyFilePath()))) ?: false;
     }
+
+    protected function circleCIExistingEnvironmentVariablesAskDelete(Client $circleci): array|false
+    {
+        $existing_circleci_vars = $circleci->listEnvironmentVariables();
+
+        $exists = [];
+
+        foreach ($existing_circleci_vars as $name => $value) {
+            if (in_array($name, [
+                'AWS_ACCESS_KEY_ID',
+                'AWS_SECRET_ACCESS_KEY',
+                'AWS_REGION',
+                'AWS_ECR_URL_APPLICATION',
+                'AWS_ECR_URL_WEBSERVER',
+            ])) {
+                $exists[] = $name;
+
+                $this->warn("CircleCI environment variable '$name' already exists!");
+            }
+        }
+
+        if ($exists && !$this->ask('Would you like to delete these CircleCI environment variables and proceed?', false)) {
+            return false;
+        }
+
+        return $exists;
+    }
 }

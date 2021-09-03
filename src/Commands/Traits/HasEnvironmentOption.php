@@ -24,7 +24,7 @@ trait HasEnvironmentOption
             return false;
         }
 
-        if (!static::config()->exists("environments.$env")) {
+        if (!static::larasurfConfig()->exists("environments.$env")) {
             $this->error("The '$env' environment is not configured for this project");
 
             return false;

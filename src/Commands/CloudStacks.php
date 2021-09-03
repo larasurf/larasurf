@@ -77,7 +77,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $aws_region = static::config()->get("environments.$env.aws-region");
+        $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
 
         if (!$aws_region) {
             $this->error("AWS region is not set for the '$env' environment; create image repositories first");
@@ -196,7 +196,7 @@ class CloudStacks extends Command
         $this->info('Creating database schema...');
 
         $database_name = $this->createDatabaseSchema(
-            static::config()->get('project-name'),
+            static::larasurfConfig()->get('project-name'),
             $env,
             $outputs['DBHost'],
             $outputs['DBPort'],
