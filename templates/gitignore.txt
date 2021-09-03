@@ -13,7 +13,6 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
-.idea
 desktop.ini
 thumbs.db
 .DS_STORE
