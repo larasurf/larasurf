@@ -374,13 +374,15 @@ class CloudStacks extends Command
             return 1;
         }
 
+        $this->info('Checking database for deletion protection...');
+
         $database_id = $cloudformation->stackOutput('DBId');
 
         $rds = $this->awsRds($env);
 
         if ($database_id) {
             if ($rds->checkDeletionProtection($database_id)) {
-                $this->warn("Database deletion protection is enabled for the '$env' environment's database");
+                $this->warn("Deletion protection is enabled for the '$env' environment's database");
 
                 if (!$this->confirm('Would you like to disable deletion protection and proceed?', false)) {
                     return 0;
@@ -389,12 +391,27 @@ class CloudStacks extends Command
                 $this->info('Disabling database deletion protection...');
 
                 $rds->modifyDeletionProtection($database_id, false);
+
+                $this->info('Deletion protection disabled successfully');
             }
+        } else {
+            $this->warn('Failed to find database ID to check for deletion protection');
         }
+
+        $this->startTimer();
 
         $cloudformation->deleteStack();
 
-        $this->info('Stack deletion initiated');
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_DELETED, $this->getOutput(), 'deleted');
+
+        if (!$result['success']) {
+            $this->error("Stack deletion failed with status '{$result['status']}'");
+        } else {
+            $this->info("Stack deletion completed successfully");
+        }
+
+        $this->stopTimer();
+        $this->displayTimeElapsed();
 
         return 0;
     }

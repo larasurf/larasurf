@@ -14,6 +14,7 @@ class CloudFormationClient extends Client
 {
     const STACK_STATUS_CREATE_COMPLETE = 'CREATE_COMPLETE';
     const STACK_STATUS_UPDATE_COMPLETE = 'UPDATE_COMPLETE';
+    const STACK_STATUS_DELETED = 'DELETED';
 
     public function createStack(
         string $domain,
@@ -286,6 +287,7 @@ class CloudFormationClient extends Client
 
         if ($output) {
             $output->newLine();
+            $output->write("\x07");
         }
 
         return [

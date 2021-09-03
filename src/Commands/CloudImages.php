@@ -17,20 +17,20 @@ class CloudImages extends Command
     const REPOSITORY_TYPE_APPLICATION = 'application';
     const REPOSITORY_TYPE_WEBSERVER = 'webserver';
 
-    const COMMAND_CREATE_REPOSITORIES = 'create-repositories';
-    const COMMAND_DELETE_REPOSITORIES = 'delete-repositories';
-    const COMMAND_REPOSITORY_URIS = 'repository-uris';
+    const COMMAND_CREATE_REPOS = 'create-repos';
+    const COMMAND_DELETE_REPOS = 'delete-repos';
+    const COMMAND_REPO_URIS = 'repo-uris';
 
     protected $signature = 'larasurf:cloud-images
                             {--environment= : The environment: \'stage\' or \'production\'}
-                            {subcommand : The subcommand to run: \'create-repositories\', \'delete-repositories\', or \'repository-uris\'}';
+                            {subcommand : The subcommand to run: \'create-repos\', \'delete-repos\', or \'repo-uris\'}';
 
     protected $description = 'Manage images and image repositories in cloud environments';
 
     protected array $commands = [
-        self::COMMAND_CREATE_REPOSITORIES => 'handleCreateRepositories',
-        self::COMMAND_DELETE_REPOSITORIES => 'handleDeleteRepositories',
-        self::COMMAND_REPOSITORY_URIS => 'handleRepositoryUris',
+        self::COMMAND_CREATE_REPOS => 'handleCreateRepo',
+        self::COMMAND_DELETE_REPOS => 'handleDeleteRepo',
+        self::COMMAND_REPO_URIS => 'handleRepoUris',
     ];
 
     public function handle()
@@ -42,7 +42,7 @@ class CloudImages extends Command
         return $this->runSubCommand();
     }
 
-    public function handleCreateRepositories()
+    public function handleCreateRepo()
     {
         $env = $this->environmentOption();
 
@@ -81,7 +81,7 @@ class CloudImages extends Command
         return 0;
     }
 
-    public function handleDeleteRepositories()
+    public function handleDeleteRepo()
     {
         $env = $this->environmentOption();
 
@@ -125,7 +125,7 @@ class CloudImages extends Command
         return 0;
     }
 
-    public function handleRepositoryUris()
+    public function handleRepoUris()
     {
         $env = $this->environmentOption();
 
