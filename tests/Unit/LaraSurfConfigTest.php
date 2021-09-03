@@ -9,7 +9,7 @@ use LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException;
 use LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigValueException;
 use LaraSurf\LaraSurf\Tests\TestCase;
 
-class ConfigTest extends TestCase
+class LaraSurfConfigTest extends TestCase
 {
     protected function tearDown(): void
     {
