@@ -22,7 +22,8 @@ class CloudFormationClient extends Client
         int $db_storage_size,
         string $db_instance_class,
         string $db_username,
-        string $db_password
+        string $db_password,
+        string $cache_node_type
     )
     {
         $this->validateEnvironmentIsSet();
@@ -79,6 +80,10 @@ class CloudFormationClient extends Client
                     'ParameterKey' => 'DBMasterPassword',
                     'ParameterValue' => $db_password,
                 ],
+                [
+                    'ParameterKey' => 'CacheNodeType',
+                    'ParameterValue' => $cache_node_type,
+                ]
             ],
             'Tags' => $this->resourceTags(),
             'TemplateBody' => $this->template(),
@@ -90,7 +95,8 @@ class CloudFormationClient extends Client
         ?string $hosted_zone_id,
         ?string $certificate_arn,
         ?int $db_storage_size,
-        ?string $db_instance_class
+        ?string $db_instance_class,
+        ?string $cache_node_type,
     )
     {
         $update_params = [];
@@ -101,6 +107,7 @@ class CloudFormationClient extends Client
                      'CertificateArn' => $certificate_arn,
                      'DBStorageSize' => $db_storage_size,
                      'DBInstanceClass' => $db_instance_class,
+                     'CacheNodeType' => $cache_node_type,
                  ] as $key => $value) {
             if ($value) {
                 $update_params[] = [

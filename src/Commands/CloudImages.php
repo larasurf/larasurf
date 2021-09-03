@@ -97,12 +97,20 @@ class CloudImages extends Command
             return 1;
         }
 
+        $cloudformation = $this->awsCloudFormation($env, $aws_region);
+
+        if ($cloudformation->stackStatus()) {
+            $this->error("Stack exists for '$env' environment; delete that first");
+
+            return 1;
+        }
+
         $ecr = $this->awsEcr($env);
 
         $ecr->deleteRepository($this->repositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
         $ecr->deleteRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
-        $this->info('Successfully deleted both the application and webserver image repositories');
+        $this->info('Successfully deleted both application and webserver image repositories');
 
         static::config()->set("environments.$env", null);
 

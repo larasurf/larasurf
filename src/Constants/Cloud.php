@@ -29,7 +29,10 @@ class Cloud
 
     const DB_STORAGE_MAX_GB = 70368; // 64 tebibytes;
 
-    const CACHE_INSTANCE_TYPES = [
+    const CACHE_NODE_TYPES = [
+        'cache.t2.micro',
+        'cache.t2.small',
+        'cache.t2.medium',
         'cache.m5.large',
         'cache.m5.xlarge',
         'cache.m5.2xlarge',
@@ -41,8 +44,5 @@ class Cloud
         'cache.m4.2xlarge',
         'cache.m4.4xlarge',
         'cache.m4.10xlarge',
-        'cache.t2.micro',
-        'cache.t2.small',
-        'cache.t2.medium',
     ];
 }

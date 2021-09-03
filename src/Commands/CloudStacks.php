@@ -127,6 +127,8 @@ class CloudStacks extends Command
 
         $db_storage = $this->askDatabaseStorage();
 
+        $cache_node_type = $this->askCacheNodeType();
+
         $domain = $this->ask('Fully qualified domain name?');
 
         $route53 = $this->awsRoute53();
@@ -160,7 +162,8 @@ class CloudStacks extends Command
             $db_storage,
             $db_instance_type,
             $db_username,
-            $db_password
+            $db_password,
+            $cache_node_type
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created');
@@ -272,6 +275,7 @@ class CloudStacks extends Command
                 'ACM certificate ARN',
                 'Database instance type',
                 'Database storage size',
+                'Cache node type',
             ],
             0,
             null,
@@ -283,6 +287,7 @@ class CloudStacks extends Command
         $new_certificate_arn = null;
         $new_db_instance_type = null;
         $new_db_storage = null;
+        $new_cache_node_type = null;
 
         $route53 = $this->awsRoute53();
 
@@ -323,12 +328,17 @@ class CloudStacks extends Command
 
                     break;
                 }
+                case 'Cache node type': {
+                    $new_cache_node_type = $this->askCacheNodeType();
+
+                    break;
+                }
             }
         }
 
         $this->startTimer();
 
-        $cloudformation->updateStack($new_domain, $new_hosted_zone_id, $new_certificate_arn, $new_db_storage, $new_db_instance_type);
+        $cloudformation->updateStack($new_domain, $new_hosted_zone_id, $new_certificate_arn, $new_db_storage, $new_db_instance_type, $new_cache_node_type);
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
 
@@ -421,6 +431,11 @@ class CloudStacks extends Command
     protected function askDatabaseInstanceType(): string
     {
         return $this->choice('Database instance type?', Cloud::DB_INSTANCE_TYPES, 0);
+    }
+
+    protected function askCacheNodeType(): string
+    {
+        return $this->choice('Cache node type?', Cloud::CACHE_NODE_TYPES, 0);
     }
 
     protected function askDatabaseStorage(): string
