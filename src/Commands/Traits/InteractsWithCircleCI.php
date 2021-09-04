@@ -58,7 +58,7 @@ trait InteractsWithCircleCI
 
                 foreach ($circleci_existing_vars as $name) {
                     $circleci->deleteEnvironmentVariable($name);
-                }c
+                }
 
                 $this->info('Deleted CircleCi environment variables successfully');
             } else {
