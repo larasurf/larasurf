@@ -70,10 +70,12 @@ class CloudImages extends Command
 
         $this->info('Checking CircleCI environment variables...');
 
+        $suffix = strtoupper($env);
+
         $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, [
-            'AWS_REGION',
-            'AWS_ECR_URL_APPLICATION',
-            'AWS_ECR_URL_WEBSERVER',
+            'AWS_REGION_' . $suffix,
+            'AWS_ECR_URL_APPLICATION_' . $suffix,
+            'AWS_ECR_URL_WEBSERVER_' . $suffix,
         ]);
 
         if ($circleci_existing_vars === false) {
@@ -113,9 +115,9 @@ class CloudImages extends Command
         $this->info('Updating CircleCI environment variables...');
 
         foreach ([
-            'AWS_REGION' => $aws_region,
-            'AWS_ECR_URL_APPLICATION' => $uri_application,
-            'AWS_ECR_URL_WEBSERVER' => $uri_webserver,
+            'AWS_REGION_' . $suffix => $aws_region,
+            'AWS_ECR_URL_APPLICATION_' . $suffix => $uri_application,
+            'AWS_ECR_URL_WEBSERVER_' . $suffix => $uri_webserver,
                  ] as $name => $value) {
             $circleci->createEnvironmentVariable($name, $value);
 
@@ -141,10 +143,12 @@ class CloudImages extends Command
             return 1;
         }
 
+        $suffix = strtoupper($env);
+
         $this->maybeDeleteCircleCIEnvironmentVariables([
-            'AWS_REGION',
-            'AWS_ECR_URL_APPLICATION',
-            'AWS_ECR_URL_WEBSERVER',
+            'AWS_REGION_' . $suffix,
+            'AWS_ECR_URL_APPLICATION_' . $suffix,
+            'AWS_ECR_URL_WEBSERVER_' . $suffix,
         ]);
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
