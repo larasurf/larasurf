@@ -70,7 +70,11 @@ class CloudImages extends Command
 
         $this->info('Checking CircleCI environment variables...');
 
-        $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci);
+        $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, [
+            'AWS_REGION',
+            'AWS_ECR_URL_APPLICATION',
+            'AWS_ECR_URL_WEBSERVER',
+        ]);
 
         if ($circleci_existing_vars === false) {
             return 1;
@@ -137,41 +141,11 @@ class CloudImages extends Command
             return 1;
         }
 
-        $circleci_api_key = static::circleCIApiKey();
-
-        if ($circleci_api_key) {
-            $circleci_project = $this->gitOriginProjectName();
-
-            if (!$circleci_project) {
-                return 1;
-            }
-
-            $circleci = static::circleCI($circleci_api_key, $circleci_project);
-
-            $this->info('Checking CircleCI project is enabled...');
-
-            if (!$circleci->projectExists()) {
-                $this->error('CircleCI project has not yet been enabled through the web console');
-
-                return 1;
-            }
-
-            $this->info('Checking CircleCI environment variables...');
-
-            $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci);
-
-            if ($circleci_existing_vars === false) {
-                return 1;
-            }
-
-            $this->info('Deleting CircleCI environment variables...');
-
-            foreach ($circleci_existing_vars as $name) {
-                $circleci->deleteEnvironmentVariable($name);
-            }
-
-            $this->info('Deleted CircleCi environment variables successfully');
-        }
+        $this->maybeDeleteCircleCIEnvironmentVariables([
+            'AWS_REGION',
+            'AWS_ECR_URL_APPLICATION',
+            'AWS_ECR_URL_WEBSERVER',
+        ]);
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
 

@@ -62,6 +62,23 @@ class CloudUsers extends Command
             return 1;
         }
 
+        $this->info('Checking CircleCI environment variables...');
+
+        $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, [
+            'AWS_ACCESS_KEY_ID',
+            'AWS_SECRET_ACCESS_KEY',
+        ]);
+
+        if ($circleci_existing_vars === false) {
+            return 1;
+        }
+
+        $this->info('Deleting CircleCI environment variables...');
+
+        foreach ($circleci_existing_vars as $name) {
+            $circleci->deleteEnvironmentVariable($name);
+        }
+
         $iam_user = $this->iamUserName($user);
 
         $iam = static::awsIam();
@@ -125,6 +142,11 @@ class CloudUsers extends Command
         $this->info("Deleting user '$iam_user'...");
 
         $iam->deleteUser($iam_user);
+
+        $this->maybeDeleteCircleCIEnvironmentVariables([
+            'AWS_ACCESS_KEY_ID',
+            'AWS_SECRET_ACCESS_KEY',
+        ]);
 
         return 0;
     }

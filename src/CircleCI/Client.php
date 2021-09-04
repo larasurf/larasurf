@@ -19,7 +19,7 @@ class Client
 
     public function listEnvironmentVariables(): array
     {
-        $response = Http::withHeaders($this->headers)->get("{$this->base_url}/" . $this->projectSlug() . '/envvar');
+        $response = Http::withHeaders($this->headers)->get("{$this->base_url}/project/" . $this->projectSlug() . '/envvar');
 
         if ($response->failed()) {
             throw new RequestFailedException($response);
@@ -32,12 +32,12 @@ class Client
     {
         $response = Http
             ::withHeaders($this->headers)
-            ->post("{$this->base_url}/" . $this->projectSlug() . '/envvar', compact('name', 'value'));
+            ->post("{$this->base_url}/project/" . $this->projectSlug() . '/envvar', compact('name', 'value'));
 
         if ($response->failed()) {
             throw new RequestFailedException($response);
         }
-        
+
         return true;
     }
 
@@ -45,7 +45,7 @@ class Client
     {
         $response = Http
             ::withHeaders($this->headers)
-            ->delete("{$this->base_url}/" . $this->projectSlug() . "/envvar/$name");
+            ->delete("{$this->base_url}/project/" . $this->projectSlug() . "/envvar/$name");
 
         if ($response->failed()) {
             throw new RequestFailedException($response);
@@ -61,7 +61,7 @@ class Client
 
     public function projectExists(): bool
     {
-        return !Http::withHeaders($this->headers)->get("{$this->base_url}/" . $this->projectSlug())->failed();
+        return !Http::withHeaders($this->headers)->get("{$this->base_url}/project/" . $this->projectSlug())->failed();
     }
 
     protected function projectSlug(): string

@@ -30,20 +30,53 @@ trait InteractsWithCircleCI
         return trim(File::get(base_path(static::circleCIApiKeyFilePath()))) ?: false;
     }
 
-    protected function circleCIExistingEnvironmentVariablesAskDelete(Client $circleci): array|false
+    protected function maybeDeleteCircleCIEnvironmentVariables(array $variables): bool
+    {
+        $circleci_api_key = static::circleCIApiKey();
+
+        if ($circleci_api_key) {
+            $circleci_project = $this->gitOriginProjectName();
+
+            if (!$circleci_project) {
+                return 1;
+            }
+
+            $circleci = static::circleCI($circleci_api_key, $circleci_project);
+
+            $this->info('Checking CircleCI project is enabled...');
+
+            if ($circleci->projectExists()) {
+                $this->info('Checking CircleCI environment variables...');
+
+                $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, $variables);
+
+                if ($circleci_existing_vars === false) {
+                    return false;
+                }
+
+                $this->info('Deleting CircleCI environment variables...');
+
+                foreach ($circleci_existing_vars as $name) {
+                    $circleci->deleteEnvironmentVariable($name);
+                }
+
+                $this->info('Deleted CircleCi environment variables successfully');
+            } else {
+                $this->warn('CircleCI project was not found');
+            }
+        }
+
+        return true;
+    }
+
+    protected function circleCIExistingEnvironmentVariablesAskDelete(Client $circleci, array $variables): array|false
     {
         $existing_circleci_vars = $circleci->listEnvironmentVariables();
 
         $exists = [];
 
         foreach ($existing_circleci_vars as $name => $value) {
-            if (in_array($name, [
-                'AWS_ACCESS_KEY_ID',
-                'AWS_SECRET_ACCESS_KEY',
-                'AWS_REGION',
-                'AWS_ECR_URL_APPLICATION',
-                'AWS_ECR_URL_WEBSERVER',
-            ])) {
+            if (in_array($name, $variables)) {
                 $exists[] = $name;
 
                 $this->warn("CircleCI environment variable '$name' already exists!");
