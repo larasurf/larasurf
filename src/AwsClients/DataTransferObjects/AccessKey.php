@@ -2,7 +2,7 @@
 
 namespace LaraSurf\LaraSurf\AwsClients\DataTransferObjects;
 
-class AccessKeys extends DataTransferObject
+class AccessKey extends DataTransferObject
 {
     protected ?string $id;
     protected ?string $secret;

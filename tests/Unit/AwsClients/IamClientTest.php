@@ -67,21 +67,56 @@ class IamClientTest extends TestCase
         $this->iamClient()->detachUserPolicy($this->faker->word, Str::random());
     }
 
-    public function testCreateAccessKeys()
+    public function testCreateAccessKey()
     {
         $id = Str::random();
         $secret = Str::random();
 
         $this->mockAwsIamClient()
             ->shouldReceive('createAccessKey')
-            ->andReturn(new Result([
-                'AccessKeyId' => $id,
-                'SecretAccessKey' => $secret,
-            ]));
+            ->andReturn([
+                'AccessKey' => [
+                    'AccessKeyId' => $id,
+                    'SecretAccessKey' => $secret,
+                ],
+            ]);
 
-        $keys = $this->iamClient()->createAccessKeys($this->faker->word);
+        $keys = $this->iamClient()->createAccessKey($this->faker->word);
 
         $this->assertEquals($id, $keys->getId());
         $this->assertEquals($secret, $keys->getSecret());
+    }
+
+    public function testDeleteAccessKey()
+    {
+        $this->mockAwsIamClient()
+            ->shouldReceive('deleteAccessKey')
+            ->andReturn();
+
+        $this->iamClient()->deleteAccessKey($this->faker->word, Str::random());
+    }
+
+    public function testListAccessKeys()
+    {
+        $key1 = Str::random();
+        $key2 = Str::random();
+
+        $this->mockAwsIamClient()
+            ->shouldReceive('listAccessKeys')
+            ->andReturn([
+                'AccessKeyMetadata' => [
+                    [
+                        'AccessKeyId' => $key1,
+                    ],
+                    [
+                        'AccessKeyId' => $key2,
+                    ],
+                ],
+            ]);
+
+        $keys = $this->iamClient()->listAccessKeys($this->faker->word);
+
+        $this->assertTrue(in_array($key1, $keys));
+        $this->assertTrue(in_array($key2, $keys));
     }
 }

@@ -72,7 +72,7 @@ class CloudUsers extends Command
 
         $this->info("Creating access keys...");
 
-        $access_keys = $iam->createAccessKeys($iam_user);
+        $access_keys = $iam->createAccessKey($iam_user);
 
         $circleci->createEnvironmentVariable('AWS_ACCESS_KEY_ID', $access_keys->getId());
         $circleci->createEnvironmentVariable('AWS_SECRET_ACCESS_KEY', $access_keys->getSecret());
@@ -101,6 +101,14 @@ class CloudUsers extends Command
         $this->info('Detaching user policies...');
 
         $iam->detachUserPolicy($iam_user, self::IAM_POLICY_ARN_ADMIN_ACCESS);
+
+        $this->info('Deleting access keys...');
+
+        $access_keys = $iam->listAccessKeys($iam_user);
+
+        foreach ($access_keys as $access_key_id) {
+            $iam->deleteAccessKey($iam_user, $access_key_id);
+        }
 
         $this->info("Deleting user '$iam_user'...");
 

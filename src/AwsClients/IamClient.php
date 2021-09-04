@@ -3,7 +3,7 @@
 namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\Exception\AwsException;
-use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\AccessKeys;
+use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\AccessKey;
 
 class IamClient extends Client
 {
@@ -34,13 +34,30 @@ class IamClient extends Client
         ]);
     }
 
-    public function createAccessKeys(string $user_name): AccessKeys
+    public function createAccessKey(string $user_name): AccessKey
     {
         $result = $this->client->createAccessKey([
             'UserName' => $user_name,
         ]);
 
-        return new AccessKeys($result->toArray());
+        return new AccessKey($result['AccessKey']);
+    }
+
+    public function deleteAccessKey(string $user_name, string $access_key_id)
+    {
+        $this->client->deleteAccessKey([
+            'AccessKeyId' => $access_key_id,
+            'UserName' => $user_name,
+        ]);
+    }
+
+    public function listAccessKeys(string $user_name)
+    {
+        $result = $this->client->listAccessKeys([
+            'UserName' => $user_name,
+        ]);
+
+        return array_map(fn ($key) => $key['AccessKeyId'], $result['AccessKeyMetadata']);
     }
 
     public function attachUserPolicy(string $user_name, string $policy_arn)
