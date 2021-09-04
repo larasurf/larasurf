@@ -23,7 +23,7 @@ class Publish extends Command
                      'cs-fixer' => [$this, 'publishCsFixerConfig'],
                      'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
                      'env-changes' => [$this, 'publishEnvChanges'],
-                     'circleci' => [$this, 'publishCircleCiConfig'],
+                     'circleci' => [$this, 'publishCircleCIConfig'],
                      'cloudformation' => [$this, 'publishCloudFormation'],
                      'gitignore' => [$this, 'publishGitIgnore'],
                  ] as $option => $method) {
@@ -112,21 +112,21 @@ class Publish extends Command
         }
     }
 
-    protected function publishCircleCiConfig()
+    protected function publishCircleCIConfig()
     {
         $production = static::larasurfConfig()->exists('environments.production');
         $stage = static::larasurfConfig()->exists('environments.stage');
 
         if ($production && $stage) {
-            $this->publishCircleCi('config.local-stage-production.yml');
+            $this->publishCircleCI('config.local-stage-production.yml');
         } else if ($production) {
-            $this->publishCircleCi('config.local-production.yml');
+            $this->publishCircleCI('config.local-production.yml');
         } else {
-            $this->publishCircleCi('config.local.yml');
+            $this->publishCircleCI('config.local.yml');
         }
     }
 
-    protected function publishCircleCi($filename)
+    protected function publishCircleCI($filename)
     {
         if (!File::isDirectory(base_path('.circleci'))) {
             File::makeDirectory(base_path('.circleci'));

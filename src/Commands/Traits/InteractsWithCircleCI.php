@@ -60,7 +60,7 @@ trait InteractsWithCircleCI
                     $circleci->deleteEnvironmentVariable($name);
                 }
 
-                $this->info('Deleted CircleCi environment variables successfully');
+                $this->info('Deleted CircleCI environment variables successfully');
             } else {
                 $this->warn('CircleCI project was not found');
             }
