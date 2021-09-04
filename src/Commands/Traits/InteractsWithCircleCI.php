@@ -79,7 +79,7 @@ trait InteractsWithCircleCI
             if (in_array($name, $variables)) {
                 $exists[] = $name;
 
-                $this->warn("CircleCI environment variable '$name' already exists!");
+                $this->warn("CircleCI environment variable '$name' exists!");
             }
         }
 

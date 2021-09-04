@@ -137,7 +137,7 @@ class Publish extends Command
         $success = true;
 
         if (File::exists($circle_config_path)) {
-            $this->warn("File '.circleci/config.yml' already exists");
+            $this->warn("File '.circleci/config.yml' exists");
         } else {
             $success = File::copy(__DIR__ . "/../../templates/circleci/$filename", $circle_config_path);
 
@@ -151,7 +151,7 @@ class Publish extends Command
         $docker_compose_path = base_path('.circleci/docker-compose.ci.yml');
 
         if (File::exists($docker_compose_path)) {
-            $this->warn("File '.circleci/docker-compose.ci.yml' already exists");
+            $this->warn("File '.circleci/docker-compose.ci.yml' exists");
         } else {
             $success = File::copy(__DIR__ . '/../../templates/circleci/docker-compose.ci.yml', $docker_compose_path);
 
@@ -165,7 +165,7 @@ class Publish extends Command
         $dockerfile_path = base_path('.circleci/Dockerfile');
 
         if (File::exists($dockerfile_path)) {
-            $this->warn("File '.circleci/Dockerfile' already exists");
+            $this->warn("File '.circleci/Dockerfile' exists");
         } else {
             $success = File::copy(__DIR__ . '/../../templates/circleci/Dockerfile', $dockerfile_path);
 
@@ -186,7 +186,7 @@ class Publish extends Command
         $infrastructure_template_path = base_path('.cloudformation/infrastructure.yml');
 
         if (File::exists($infrastructure_template_path)) {
-            $this->warn("File '.cloudformation/infrastructure.yml' already exists");
+            $this->warn("File '.cloudformation/infrastructure.yml' exists");
         } else {
             $success = File::copy(__DIR__ . "/../../templates/cloudformation/infrastructure.yml", $infrastructure_template_path);
 

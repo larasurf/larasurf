@@ -84,7 +84,7 @@ class CloudUsers extends Command
         $iam = static::awsIam();
 
         if ($iam->userExists($iam_user)) {
-            $this->error("IAM user '$iam_user' already exists");
+            $this->error("IAM user '$iam_user' exists");
 
             return 1;
         }

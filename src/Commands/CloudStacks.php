@@ -88,7 +88,7 @@ class CloudStacks extends Command
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
 
         if ($cloudformation->stackStatus()) {
-            $this->error("Stack already exists for '$env' environment");
+            $this->error("Stack exists for '$env' environment");
 
             return 1;
         }
@@ -231,7 +231,7 @@ class CloudStacks extends Command
         $this->createSsmParameters($env, $parameters);
 
         // todo: migrate database?
-        
+
         $this->stopTimer();
         $this->displayTimeElapsed();
 
