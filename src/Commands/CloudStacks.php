@@ -174,6 +174,8 @@ class CloudStacks extends Command
                 'DBHost',
                 'DBPort',
                 'DBAdminAccessPrefixListId',
+                'CacheEndpointAddress',
+                'CacheEndpointPort',
             ]);
 
             if (empty($outputs)) {
@@ -203,6 +205,8 @@ class CloudStacks extends Command
             $db_username,
             $db_password,
         );
+
+        // todo: migrate database?
 
         $this->info('Revoking database ingress from current IP address...');
 
