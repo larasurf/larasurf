@@ -36,7 +36,7 @@ trait InteractsWithGitConfig
         return static::gitConfig()["remote $name"]['url'] ?? false;
     }
 
-    protected function gitOriginUrl()
+    protected function gitOriginProjectName()
     {
         $url = static::gitRemoteUrl();
 

@@ -87,4 +87,26 @@ class CircleCIClientTest extends TestCase
 
         $this->assertFalse($response);
     }
+
+    public function testProjectExists()
+    {
+        Http::fake(fn ($request) => Http::response([], 200, [
+            'Content-Type' => 'application/json',
+        ]));
+
+        $response = $this->client->projectExists();
+
+        $this->assertTrue($response);
+    }
+
+    public function testProjectDoesntExist()
+    {
+        Http::fake(fn ($request) => Http::response([], 404, [
+            'Content-Type' => 'application/json',
+        ]));
+
+        $response = $this->client->projectExists();
+
+        $this->assertFalse($response);
+    }
 }

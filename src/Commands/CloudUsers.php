@@ -46,9 +46,21 @@ class CloudUsers extends Command
             return 1;
         }
 
-        $circleci_project = $this->gitOriginUrl();
+        $circleci_project = $this->gitOriginProjectName();
+
+        if (!$circleci_project) {
+            return 1;
+        }
 
         $circleci = static::circleCI($circleci_api_key, $circleci_project);
+
+        $this->info('Checking CircleCI project is enabled...');
+
+        if (!$circleci->projectExists()) {
+            $this->error('CircleCI project has not yet been enabled through the web console');
+
+            return 1;
+        }
 
         $iam_user = $this->iamUserName($user);
 

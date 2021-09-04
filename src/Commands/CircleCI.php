@@ -28,7 +28,7 @@ class CircleCI extends Command
 
     protected function handleSetApiKey()
     {
-        $origin = $this->gitOriginUrl();
+        $origin = $this->gitOriginProjectName();
 
         if (!$origin) {
             return 1;

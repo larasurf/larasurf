@@ -59,6 +59,11 @@ class Client
         return !Http::withHeaders($this->headers)->get("{$this->base_url}/me")->failed();
     }
 
+    public function projectExists(): bool
+    {
+        return !Http::withHeaders($this->headers)->get("{$this->base_url}/" . $this->projectSlug())->failed();
+    }
+
     protected function projectSlug(): string
     {
         return "gh/{$this->project}";

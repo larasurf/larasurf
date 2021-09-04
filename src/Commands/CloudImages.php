@@ -52,9 +52,21 @@ class CloudImages extends Command
             return 1;
         }
 
-        $circleci_project = $this->gitOriginUrl();
+        $circleci_project = $this->gitOriginProjectName();
+
+        if (!$circleci_project) {
+            return 1;
+        }
 
         $circleci = static::circleCI($circleci_api_key, $circleci_project);
+
+        $this->info('Checking CircleCI project is enabled...');
+
+        if (!$circleci->projectExists()) {
+            $this->error('CircleCI project has not yet been enabled through the web console');
+
+            return 1;
+        }
 
         $this->info('Checking CircleCI environment variables...');
 
@@ -64,7 +76,7 @@ class CloudImages extends Command
             return 1;
         }
 
-        $aws_region = $this->choice('In which region would you like to create the image repositories?', Cloud::AWS_REGIONS, 0);
+        $aws_region = $this->choice('In which region will this project be deployed?', Cloud::AWS_REGIONS, 0);
 
         $this->info('Deleting CircleCI environment variables...');
 
@@ -128,9 +140,21 @@ class CloudImages extends Command
         $circleci_api_key = static::circleCIApiKey();
 
         if ($circleci_api_key) {
-            $circleci_project = $this->gitOriginUrl();
+            $circleci_project = $this->gitOriginProjectName();
+
+            if (!$circleci_project) {
+                return 1;
+            }
 
             $circleci = static::circleCI($circleci_api_key, $circleci_project);
+
+            $this->info('Checking CircleCI project is enabled...');
+
+            if (!$circleci->projectExists()) {
+                $this->error('CircleCI project has not yet been enabled through the web console');
+
+                return 1;
+            }
 
             $this->info('Checking CircleCI environment variables...');
 
