@@ -206,8 +206,6 @@ class CloudStacks extends Command
             $db_password,
         );
 
-        // todo: migrate database?
-
         $this->info('Revoking database ingress from current IP address...');
 
         $ec2->revokeIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
@@ -232,6 +230,8 @@ class CloudStacks extends Command
 
         $this->createSsmParameters($env, $parameters);
 
+        // todo: migrate database?
+        
         $this->stopTimer();
         $this->displayTimeElapsed();
 
