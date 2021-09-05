@@ -142,6 +142,12 @@ class CloudImages extends Command
             return 1;
         }
 
+        if (!$this->gitIsOnBranch('develop')) {
+            $this->error('The develop branch should be checked out before running this command');
+
+            return 1;
+        }
+
         $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
 
         if (!$aws_region) {
