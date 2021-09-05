@@ -2,10 +2,11 @@
 
 namespace LaraSurf\LaraSurf\Commands\Traits;
 
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Exceptions\Git\ParsingGitConfigFailedException;
 
-trait InteractsWithGitConfig
+trait InteractsWithGitFiles
 {
     protected static ?array $git_config = null;
 
@@ -29,6 +30,11 @@ trait InteractsWithGitConfig
     protected static function gitConfigFilePath()
     {
         return '.git/config';
+    }
+
+    protected static function gitHeadFilePath()
+    {
+        return '.git/HEAD';
     }
 
     protected static function gitRemoteUrl(string $name = 'origin'): string|false
@@ -55,5 +61,16 @@ trait InteractsWithGitConfig
         }
 
         return $origin;
+    }
+
+    protected function gitIsOnBranch(string $branch): bool
+    {
+        if (!File::exists(static::gitHeadFilePath())) {
+            $this->error('Failed to find git HEAD, is this a git repository?');
+
+            return false;
+        }
+
+        return trim(str_replace('ref: refs/heads/', '', File::get(static::gitHeadFilePath()))) === $branch;
     }
 }

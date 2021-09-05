@@ -45,6 +45,12 @@ class CloudImages extends Command
             return 1;
         }
 
+        if (!$this->gitIsOnBranch('develop')) {
+            $this->error('The develop branch should be checked out before running this command');
+
+            return 1;
+        }
+
         $circleci_api_key = static::circleCIApiKey();
 
         if (!$circleci_api_key) {

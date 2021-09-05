@@ -7,7 +7,7 @@ use LaraSurf\LaraSurf\CircleCI\Client;
 
 trait InteractsWithCircleCI
 {
-    use InteractsWithGitConfig;
+    use InteractsWithGitFiles;
 
     protected static ?Client $circleci_client = null;
 
