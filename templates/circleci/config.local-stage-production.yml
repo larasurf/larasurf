@@ -13,7 +13,7 @@ jobs:
         type: string
       var_name_region:
         type: env_var_name
-      var_name_ecr_account_url:
+      var_name_ecr_url_prefix:
         type: env_var_name
 
     docker:
@@ -32,13 +32,13 @@ jobs:
                   test -n "${AWS_ACCESS_KEY_ID}"
                   test -n "${AWS_SECRET_ACCESS_KEY}"
                   test -n "${<< parameters.var_name_region >>}"
-                  test -n "${<< parameters.var_name_ecr_account_url >>}"
+                  test -n "${<< parameters.var_name_ecr_url_prefix >>}"
             - run:
                 name: Build Images
                 command: |
-                  DOCKER_BUILDKIT=1 docker build -t "${<< parameters.var_name_ecr_account_url >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" --ssh default --progress plain .
-                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${<< parameters.var_name_ecr_account_url >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" .circleci/
-                  docker build -t "${<< parameters.var_name_ecr_account_url >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" .docker/nginx
+                  DOCKER_BUILDKIT=1 docker build -t "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" --ssh default --progress plain .
+                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" .circleci/
+                  docker build -t "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" .docker/nginx
       - unless:
           condition: << parameters.should_publish_images >>
           steps:
@@ -63,13 +63,13 @@ jobs:
           condition: << parameters.should_publish_images >>
           steps:
             - aws-ecr/ecr-login:
-                account-url: << parameters.var_name_ecr_account_url >>
+                account-url: << parameters.var_name_ecr_url_prefix >>
                 region: << parameters.var_name_region >>
             - run:
                 name: Publish Iamges
                 command: |
-                  docker push "${<< parameters.var_name_ecr_account_url >>}/<< parameters.envrionment >>/application:commit-${CIRCLE_SHA1}"
-                  docker push "${<< parameters.var_name_ecr_account_url >>}/<< parameters.envrionment >>/webserver:commit-${CIRCLE_SHA1}"
+                  docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}"
+                  docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}"
   deploy:
     docker:
       - image: cimg/base:2021.04
@@ -98,9 +98,9 @@ workflows:
     jobs:
       - test:
           should_publish_images: false
-          environment: none
-          var_name_region: none
-          var_name_ecr_account_url: none
+          environment: null
+          var_name_region: null
+          var_name_ecr_url_prefix: null
   deploy-workflow-stage:
     when:
       equal: [ stage, << pipeline.git.branch >> ]
@@ -109,7 +109,7 @@ workflows:
           should_publish_images: true
           environment: stage
           var_name_region: AWS_REGION_STAGE
-          var_name_ecr_account_url: AWS_ECR_ACCOUNT_URL_STAGE
+          var_name_ecr_url_prefix: AWS_ECR_ACCOUNT_URL_STAGE
       - deploy:
           requires:
             - test
@@ -121,7 +121,7 @@ workflows:
           should_publish_images: true
           environment: production
           var_name_region: AWS_REGION_PRODUCTION
-          var_name_ecr_account_url: AWS_ECR_ACCOUNT_URL_PRODUCTION
+          var_name_ecr_url_prefix: AWS_ECR_ACCOUNT_URL_PRODUCTION
       - deploy:
           requires:
             - test

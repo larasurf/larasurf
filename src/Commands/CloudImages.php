@@ -23,18 +23,16 @@ class CloudImages extends Command
 
     const COMMAND_CREATE_REPOS = 'create-repos';
     const COMMAND_DELETE_REPOS = 'delete-repos';
-    const COMMAND_REPO_URIS = 'repo-uris';
 
     protected $signature = 'larasurf:cloud-images
                             {--environment= : The environment: \'stage\' or \'production\'}
-                            {subcommand : The subcommand to run: \'create-repos\', \'delete-repos\', or \'repo-uris\'}';
+                            {subcommand : The subcommand to run: \'create-repos\' or \'delete-repos\'}';
 
     protected $description = 'Manage images and image repositories in cloud environments';
 
     protected array $commands = [
         self::COMMAND_CREATE_REPOS => 'handleCreateRepo',
         self::COMMAND_DELETE_REPOS => 'handleDeleteRepo',
-        self::COMMAND_REPO_URIS => 'handleRepoUris',
     ];
 
     public function handleCreateRepo()
@@ -81,7 +79,7 @@ class CloudImages extends Command
 
         $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, [
             'AWS_REGION_' . $suffix,
-            'AWS_ECR_ACCOUNT_URL_' . $suffix,
+            'AWS_ECR_URL_PREFIX_' . $suffix,
         ]);
 
         if ($circleci_existing_vars === false) {
@@ -106,8 +104,6 @@ class CloudImages extends Command
         $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
         $this->info('Repositories created successfully');
-
-        $this->newLine();
         $this->info('Updating LaraSurf configuration...');
 
         static::larasurfConfig()->set("environments.$env.aws-region", $aws_region);
@@ -124,7 +120,7 @@ class CloudImages extends Command
 
         foreach ([
             'AWS_REGION_' . $suffix => $aws_region,
-            'AWS_ECR_ACCOUNT_URL_' . $suffix => Str::before($uri_application, '/'),
+            'AWS_ECR_URL_PREFIX_' . $suffix => Str::replace("/$env/application", '', $uri_application),
                  ] as $name => $value) {
             $circleci->createEnvironmentVariable($name, $value);
 
@@ -160,8 +156,7 @@ class CloudImages extends Command
 
         $this->maybeDeleteCircleCIEnvironmentVariables([
             'AWS_REGION_' . $suffix,
-            'AWS_ECR_URL_APPLICATION_' . $suffix,
-            'AWS_ECR_URL_WEBSERVER_' . $suffix,
+            'AWS_ECR_URL_PREFIX_' . $suffix,
         ]);
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
@@ -188,42 +183,6 @@ class CloudImages extends Command
         }
 
         $this->info('Updated LaraSurf configuration successfully');
-
-        return 0;
-    }
-
-    public function handleRepoUris()
-    {
-        $env = $this->environmentOption();
-
-        if (!$env) {
-            return 1;
-        }
-
-        $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
-
-        if (!$aws_region) {
-            $this->error('Environment AWS region not found in configuration file');
-
-            return 1;
-        }
-
-        $ecr = $this->awsEcr($env);
-
-        $application_uri = $ecr->repositoryUri($this->repositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
-        $webserver_uri = $ecr->repositoryUri($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
-
-        if (!$application_uri || !$webserver_uri) {
-            $this->error("Application and/or webserver repositories do not exist for the '$env' environment");
-
-            return 1;
-        }
-
-        $this->info('Application image repository URI:');
-        $this->getOutput()->writeln($application_uri);
-        $this->newLine();
-        $this->info('Websever image repository URI:');
-        $this->getOutput()->writeln($webserver_uri);
 
         return 0;
     }
