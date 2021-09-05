@@ -54,13 +54,15 @@ trait InteractsWithCircleCI
                     return false;
                 }
 
-                $this->info('Deleting CircleCI environment variables...');
+                if ($circleci_existing_vars) {
+                    $this->info('Deleting CircleCI environment variables...');
 
-                foreach ($circleci_existing_vars as $name) {
-                    $circleci->deleteEnvironmentVariable($name);
+                    foreach ($circleci_existing_vars as $name) {
+                        $circleci->deleteEnvironmentVariable($name);
+                    }
+
+                    $this->info('Deleted CircleCI environment variables successfully');
                 }
-
-                $this->info('Deleted CircleCI environment variables successfully');
             } else {
                 $this->warn('CircleCI project was not found');
             }

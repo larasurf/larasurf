@@ -9,6 +9,8 @@ jobs:
     parameters:
       should_publish_images:
         type: boolean
+      environment:
+        type: string
       var_name_region:
         type: env_var_name
       var_name_ecr_account_url:
@@ -34,9 +36,9 @@ jobs:
             - run:
                 name: Build Images
                 command: |
-                  DOCKER_BUILDKIT=1 docker build -t "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/application:commit-${CIRCLE_SHA1}" --ssh default --progress plain .
-                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/application:commit-${CIRCLE_SHA1}" .circleci/
-                  docker build -t "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/webserver:commit-${CIRCLE_SHA1}" .docker/nginx
+                  DOCKER_BUILDKIT=1 docker build -t "${<< parameters.var_name_ecr_account_url >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" --ssh default --progress plain .
+                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${<< parameters.var_name_ecr_account_url >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" .circleci/
+                  docker build -t "${<< parameters.var_name_ecr_account_url >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" .docker/nginx
       - unless:
           condition: << parameters.should_publish_images >>
           steps:
@@ -62,12 +64,12 @@ jobs:
           steps:
             - aws-ecr/ecr-login:
                 account-url: << parameters.var_name_ecr_account_url >>
-                region: << parameters.var_region_name >>
+                region: << parameters.var_name_region >>
             - run:
                 name: Publish Iamges
                 command: |
-                  docker push "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/application:commit-${CIRCLE_SHA1}"
-                  docker push "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/webserver:commit-${CIRCLE_SHA1}"
+                  docker push "${<< parameters.var_name_ecr_account_url >>}/<< parameters.envrionment >>/application:commit-${CIRCLE_SHA1}"
+                  docker push "${<< parameters.var_name_ecr_account_url >>}/<< parameters.envrionment >>/webserver:commit-${CIRCLE_SHA1}"
   deploy:
     docker:
       - image: cimg/base:2021.04
@@ -80,7 +82,6 @@ jobs:
             test -n "${AWS_REGION}"
             test -n "${AWS_ACCESS_KEY_ID}"
             test -n "${AWS_SECRET_ACCESS_KEY}"
-      - export_image_tag_variables
       - run: # todo: add AWS CLI orb, call aws cloudformation deploy
           name: Deploy CloudFormation Stack
           command: echo "ToDo"
@@ -97,6 +98,8 @@ workflows:
     jobs:
       - test:
           should_publish_images: false
+          var_name_region: none
+          var_name_ecr_account_url: none
   deploy-workflow-stage:
     when:
       equal: [ stage, << pipeline.git.branch >> ]
@@ -104,8 +107,7 @@ workflows:
       - test:
           should_publish_images: true
           var_name_region: AWS_REGION_STAGE
-          var_name_application_ecr_url: AWS_ECR_URL_APPLICATION_STAGE
-          var_name_webserver_ecr_url: AWS_ECR_URL_WEBSERVER_STAGE
+          var_name_ecr_account_url: AWS_ECR_ACCOUNT_URL_STAGE
       - deploy:
           requires:
             - test
@@ -116,8 +118,7 @@ workflows:
       - test:
           should_publish_images: true
           var_name_region: AWS_REGION_PRODUCTION
-          var_name_application_ecr_url: AWS_ECR_URL_APPLICATION_PRODUCTION
-          var_name_webserver_ecr_url: AWS_ECR_URL_WEBSERVER_PRODUCTION
+          var_name_ecr_account_url: AWS_ECR_ACCOUNT_URL_PRODUCTION
       - deploy:
           requires:
             - test

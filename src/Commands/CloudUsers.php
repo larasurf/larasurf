@@ -73,10 +73,12 @@ class CloudUsers extends Command
             return 1;
         }
 
-        $this->info('Deleting CircleCI environment variables...');
+        if ($circleci_existing_vars) {
+            $this->info('Deleting CircleCI environment variables...');
 
-        foreach ($circleci_existing_vars as $name) {
-            $circleci->deleteEnvironmentVariable($name);
+            foreach ($circleci_existing_vars as $name) {
+                $circleci->deleteEnvironmentVariable($name);
+            }
         }
 
         $iam_user = $this->iamUserName($user);

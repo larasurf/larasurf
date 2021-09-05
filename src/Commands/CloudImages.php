@@ -84,10 +84,12 @@ class CloudImages extends Command
 
         $aws_region = $this->choice('In which region will this project be deployed?', Cloud::AWS_REGIONS, 0);
 
-        $this->info('Deleting CircleCI environment variables...');
+        if ($circleci_existing_vars) {
+            $this->info('Deleting CircleCI environment variables...');
 
-        foreach ($circleci_existing_vars as $name) {
-            $circleci->deleteEnvironmentVariable($name);
+            foreach ($circleci_existing_vars as $name) {
+                $circleci->deleteEnvironmentVariable($name);
+            }
         }
 
         $ecr = $this->awsEcr($env, $aws_region);
@@ -116,7 +118,7 @@ class CloudImages extends Command
 
         foreach ([
             'AWS_REGION_' . $suffix => $aws_region,
-            'AWS_ECR_ACCOUNT_URL_' . $suffix => Str::beforeLast($uri_application, '/'),
+            'AWS_ECR_ACCOUNT_URL_' . $suffix => Str::before($uri_application, '/'),
                  ] as $name => $value) {
             $circleci->createEnvironmentVariable($name, $value);
 
@@ -216,6 +218,6 @@ class CloudImages extends Command
 
     protected function repositoryName(string $environment, string $type): string
     {
-        return static::larasurfConfig()->get('project-name') . '-' . static::larasurfConfig()->get('project-id') . "-$environment/$type";
+        return static::larasurfConfig()->get('project-name') . '-' . static::larasurfConfig()->get('project-id') . "/$environment/$type";
     }
 }
