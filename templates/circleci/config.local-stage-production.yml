@@ -66,7 +66,7 @@ jobs:
                 account-url: << parameters.var_name_ecr_url_prefix >>
                 region: << parameters.var_name_region >>
             - run:
-                name: Publish Iamges
+                name: Publish Images
                 command: |
                   docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}"
                   docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}"
