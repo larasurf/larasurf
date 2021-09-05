@@ -1,20 +1,19 @@
 version: 2.1
 
-commands:
-  export_image_tag_variables:
-    steps:
-      - run:
-          name: Format Image Tags
-          command: |
-            echo 'export ECR_PREFIX="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"' >> $BASH_ENV
-            echo 'export WEBSERVER_VERSION_TAG_SUFFIX=":commit-${CIRCLE_SHA1}"' >> $BASH_ENV
-            echo 'export APPLICATION_VERSION_TAG_SUFFIX=":commit-${CIRCLE_SHA1}"' >> $BASH_ENV
+orbs:
+  aws-ecr: circleci/aws-ecr@7.2.0
+  jq: circleci/jq@2.2.0
 
 jobs:
   test:
     parameters:
       should_publish_images:
         type: boolean
+      var_name_region:
+        type: env_var_name
+      var_name_ecr_account_url:
+        type: env_var_name
+
     docker:
       - image: cimg/base:2021.04
     steps:
@@ -28,15 +27,16 @@ jobs:
                 name: Check Required Envionment Variables
                 command: |
                   set -e
-                  test -n "${AWS_ACCOUNT_ID}"
-                  test -n "${AWS_REGION}"
-            - export_image_tag_variables
+                  test -n "${AWS_ACCESS_KEY_ID}"
+                  test -n "${AWS_SECRET_ACCESS_KEY}"
+                  test -n "${<< parameters.var_name_region >>}"
+                  test -n "${<< parameters.var_name_ecr_account_url >>}"
             - run:
                 name: Build Images
                 command: |
-                  DOCKER_BUILDKIT=1 docker build -t "${ECR_PREFIX}surf-test-2/laravel${APPLICATION_VERSION_TAG_SUFFIX}" --ssh default --progress plain .
-                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${ECR_PREFIX}surf-test-2/laravel${APPLICATION_VERSION_TAG_SUFFIX}" .circleci/
-                  docker build -t "${ECR_PREFIX}surf-test-2/webserver${WEBSERVER_VERSION_TAG_SUFFIX}" .docker/nginx
+                  DOCKER_BUILDKIT=1 docker build -t "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/application:commit-${CIRCLE_SHA1}" --ssh default --progress plain .
+                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/application:commit-${CIRCLE_SHA1}" .circleci/
+                  docker build -t "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/webserver:commit-${CIRCLE_SHA1}" .docker/nginx
       - unless:
           condition: << parameters.should_publish_images >>
           steps:
@@ -60,9 +60,14 @@ jobs:
       - when:
           condition: << parameters.should_publish_images >>
           steps:
-            - run: # todo: add AWS ECR orb, login, push image
-                name: Publish Images
-                command: echo "ToDo"
+            - aws-ecr/ecr-login:
+                account-url: << parameters.var_name_ecr_account_url >>
+                region: << parameters.var_region_name >>
+            - run:
+                name: Publish Iamges
+                command: |
+                  docker push "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/application:commit-${CIRCLE_SHA1}"
+                  docker push "${<< parameters.var_name_ecr_account_url >>}.dkr.ecr.${ << parameters.var_name_region >>}.amazonaws.com/$(cat larasurf.json | jq -r '."project-name"')/webserver:commit-${CIRCLE_SHA1}"
   deploy:
     docker:
       - image: cimg/base:2021.04
@@ -92,14 +97,27 @@ workflows:
     jobs:
       - test:
           should_publish_images: false
-  deploy-workflow:
+  deploy-workflow-stage:
     when:
-      or:
-        - equal: [ main, << pipeline.git.branch >> ]
-        - equal: [ stage, << pipeline.git.branch >> ]
+      equal: [ stage, << pipeline.git.branch >> ]
     jobs:
       - test:
           should_publish_images: true
+          var_name_region: AWS_REGION_STAGE
+          var_name_application_ecr_url: AWS_ECR_URL_APPLICATION_STAGE
+          var_name_webserver_ecr_url: AWS_ECR_URL_WEBSERVER_STAGE
+      - deploy:
+          requires:
+            - test
+  deploy-workflow-production:
+    when:
+      equal: [ main, << pipeline.git.branch >> ]
+    jobs:
+      - test:
+          should_publish_images: true
+          var_name_region: AWS_REGION_PRODUCTION
+          var_name_application_ecr_url: AWS_ECR_URL_APPLICATION_PRODUCTION
+          var_name_webserver_ecr_url: AWS_ECR_URL_WEBSERVER_PRODUCTION
       - deploy:
           requires:
             - test

@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\CircleCI\Client;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
@@ -74,8 +75,7 @@ class CloudImages extends Command
 
         $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, [
             'AWS_REGION_' . $suffix,
-            'AWS_ECR_URL_APPLICATION_' . $suffix,
-            'AWS_ECR_URL_WEBSERVER_' . $suffix,
+            'AWS_ECR_ACCOUNT_URL_' . $suffix,
         ]);
 
         if ($circleci_existing_vars === false) {
@@ -95,7 +95,7 @@ class CloudImages extends Command
         $this->info('Creating image repositories...');
 
         $uri_application = $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
-        $uri_webserver = $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
+        $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
         $this->info('Repositories created successfully');
 
@@ -116,8 +116,7 @@ class CloudImages extends Command
 
         foreach ([
             'AWS_REGION_' . $suffix => $aws_region,
-            'AWS_ECR_URL_APPLICATION_' . $suffix => $uri_application,
-            'AWS_ECR_URL_WEBSERVER_' . $suffix => $uri_webserver,
+            'AWS_ECR_ACCOUNT_URL_' . $suffix => Str::beforeLast($uri_application, '/'),
                  ] as $name => $value) {
             $circleci->createEnvironmentVariable($name, $value);
 
