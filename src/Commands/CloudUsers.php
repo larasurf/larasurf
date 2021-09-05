@@ -105,8 +105,16 @@ class CloudUsers extends Command
 
         $access_keys = $iam->createAccessKey($iam_user);
 
-        $circleci->createEnvironmentVariable('AWS_ACCESS_KEY_ID', $access_keys->getId());
-        $circleci->createEnvironmentVariable('AWS_SECRET_ACCESS_KEY', $access_keys->getSecret());
+        $this->info("Updating CircleCI environment variables...");
+
+        foreach ([
+            'AWS_ACCESS_KEY_ID' => $access_keys->getId(),
+            'AWS_SECRET_ACCESS_KEY' => $access_keys->getSecret(),
+                 ] as $name => $value) {
+            $circleci->createEnvironmentVariable($name, $value);
+
+            $this->info("Set CircleCI environment variable '$name' successfully");
+        }
 
         return 0;
     }
