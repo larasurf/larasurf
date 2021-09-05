@@ -109,7 +109,7 @@ workflows:
           should_publish_images: true
           environment: stage
           var_name_region: AWS_REGION_STAGE
-          var_name_ecr_url_prefix: AWS_ECR_ACCOUNT_URL_STAGE
+          var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_STAGE
       - deploy:
           requires:
             - test
@@ -121,7 +121,7 @@ workflows:
           should_publish_images: true
           environment: production
           var_name_region: AWS_REGION_PRODUCTION
-          var_name_ecr_url_prefix: AWS_ECR_ACCOUNT_URL_PRODUCTION
+          var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
       - deploy:
           requires:
             - test
