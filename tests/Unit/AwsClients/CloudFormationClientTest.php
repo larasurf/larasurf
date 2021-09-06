@@ -34,6 +34,7 @@ class CloudFormationClientTest extends TestCase
         $this->createMockCloudformationTemplate();
 
         $this->cloudFormationClient()->createStack(
+            false,
             $this->faker->domainName,
             Str::random(),
             Str::random(),
@@ -42,6 +43,8 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             Arr::random(Cloud::CACHE_NODE_TYPES),
+            Str::random(),
+            Str::random()
         );
     }
 
@@ -59,6 +62,7 @@ class CloudFormationClientTest extends TestCase
         );
 
         $cloudformation->createStack(
+            false,
             $this->faker->domainName,
             Str::random(),
             Str::random(),
@@ -66,7 +70,9 @@ class CloudFormationClientTest extends TestCase
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
             Str::random(),
-            Arr::random(Cloud::CACHE_NODE_TYPES)
+            Arr::random(Cloud::CACHE_NODE_TYPES),
+            Str::random(),
+            Str::random()
         );
     }
 
@@ -78,6 +84,7 @@ class CloudFormationClientTest extends TestCase
             ->shouldReceive('createStack');
 
         $this->cloudFormationClient()->createStack(
+            false,
             $this->faker->domainName,
             Str::random(),
             Str::random(),
@@ -85,7 +92,9 @@ class CloudFormationClientTest extends TestCase
             Arr::random(Cloud::DB_INSTANCE_TYPES),
             Str::random(),
             Str::random(),
-            Arr::random(Cloud::CACHE_NODE_TYPES)
+            Arr::random(Cloud::CACHE_NODE_TYPES),
+            Str::random(),
+            Str::random()
         );
     }
 
@@ -97,6 +106,8 @@ class CloudFormationClientTest extends TestCase
         $this->createMockCloudformationTemplate();
 
         $this->cloudFormationClient()->updateStack(
+            true,
+            [],
             $this->faker->domainName,
             Str::random(),
             Str::random(),

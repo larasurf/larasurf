@@ -179,6 +179,63 @@ class SsmClientTest extends TestCase
         $this->assertEquals([$this->ssmParameterPath($name1), $this->ssmParameterPath($name2)], $results);
     }
 
+    public function testListParameterArnsAssoc()
+    {
+        $key1 = $this->faker->word;
+        $arn1 = Str::random();
+        $key2 = $this->faker->word;
+        $arn2 = Str::random();
+
+        $this->mockAwsSsmClient()
+            ->shouldReceive('getParametersByPath')
+            ->andReturn([
+                'Parameters' => [
+                    [
+                        'Name' => $this->ssmParameterPath($key1),
+                        'ARN' => $arn1,
+                    ],
+                    [
+                        'Name' => $this->ssmParameterPath($key2),
+                        'ARN' => $arn2,
+                    ],
+                ]
+            ]);
+
+        $results = $this->ssmClient()->listParameterArns(true);
+
+        $this->assertEquals([
+            $key1 => $arn1,
+            $key2 => $arn2,
+        ], $results);
+    }
+
+    public function testListParameterArnsArray()
+    {
+        $key1 = $this->faker->word;
+        $arn1 = Str::random();
+        $key2 = $this->faker->word;
+        $arn2 = Str::random();
+
+        $this->mockAwsSsmClient()
+            ->shouldReceive('getParametersByPath')
+            ->andReturn([
+                'Parameters' => [
+                    [
+                        'Name' => $this->ssmParameterPath($key1),
+                        'ARN' => $arn1,
+                    ],
+                    [
+                        'Name' => $this->ssmParameterPath($key2),
+                        'ARN' => $arn2,
+                    ],
+                ]
+            ]);
+
+        $results = $this->ssmClient()->listParameterArns(false);
+
+        $this->assertEquals([$arn1, $arn2], $results);
+    }
+
     protected function ssmParameterPath(string $name, string $environment = Cloud::ENVIRONMENT_PRODUCTION): string
     {
         return '/' . $this->project_name . '-' . $this->project_id . '/' . $environment . '/' . $name;

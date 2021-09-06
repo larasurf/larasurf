@@ -99,7 +99,7 @@ class SsmClient extends Client
 
             if ($assoc) {
                 foreach ($results['Parameters'] as $parameter) {
-                    $parameters[Str::after($parameter['Name'], '/')] = $parameter['ARN'];
+                    $parameters[Str::afterLast($parameter['Name'], '/')] = $parameter['ARN'];
                 }
             } else {
                 $parameters = array_merge(
