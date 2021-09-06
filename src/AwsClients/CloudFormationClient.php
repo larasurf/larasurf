@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\AwsClients;
 use Aws\Exception\AwsException;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException;
 use League\Flysystem\FileNotFoundException;
 use SebastianBergmann\CodeCoverage\Report\PHP;
@@ -17,6 +18,7 @@ class CloudFormationClient extends Client
     const STACK_STATUS_DELETED = 'DELETED';
 
     public function createStack(
+        bool $is_enabled,
         string $domain,
         string $hosted_zone_id,
         string $certificate_arn,
@@ -24,7 +26,9 @@ class CloudFormationClient extends Client
         string $db_instance_class,
         string $db_username,
         string $db_password,
-        string $cache_node_type
+        string $cache_node_type,
+        string $application_image,
+        string $webserver_image
     )
     {
         $this->validateEnvironmentIsSet();
@@ -33,6 +37,10 @@ class CloudFormationClient extends Client
             'Capabilities' => ['CAPABILITY_IAM'],
             'StackName' => $this->stackName(),
             'Parameters' => [
+                [
+                    'ParameterKey' => 'IsEnabled',
+                    'ParameterValue' => $is_enabled ? 'true' : 'false',
+                ],
                 [
                     'ParameterKey' => 'ProjectName',
                     'ParameterValue' => $this->project_name,
@@ -84,7 +92,15 @@ class CloudFormationClient extends Client
                 [
                     'ParameterKey' => 'CacheNodeType',
                     'ParameterValue' => $cache_node_type,
-                ]
+                ],
+                [
+                    'ParameterKey' => 'ApplicationImage',
+                    'ParameterValue' => $application_image,
+                ],
+                [
+                    'ParameterKey' => 'WebserverImage',
+                    'ParameterValue' => $webserver_image,
+                ],
             ],
             'Tags' => $this->resourceTags(),
             'TemplateBody' => $this->template(),
@@ -92,17 +108,20 @@ class CloudFormationClient extends Client
     }
 
     public function updateStack(
-        ?string $domain,
-        ?string $hosted_zone_id,
-        ?string $certificate_arn,
-        ?int $db_storage_size,
-        ?string $db_instance_class,
-        ?string $cache_node_type,
+        bool $is_enabled,
+        array $secrets = [],
+        ?string $domain = null,
+        ?string $hosted_zone_id = null,
+        ?string $certificate_arn = null,
+        ?int $db_storage_size = null,
+        ?string $db_instance_class = null,
+        ?string $cache_node_type = null,
     )
     {
         $update_params = [];
 
         foreach ([
+                     'IsEnabled' => $is_enabled,
                      'DomainName' => $domain,
                      'HostedZoneId' => $hosted_zone_id,
                      'CertificateArn' => $certificate_arn,
@@ -110,7 +129,7 @@ class CloudFormationClient extends Client
                      'DBInstanceClass' => $db_instance_class,
                      'CacheNodeType' => $cache_node_type,
                  ] as $key => $value) {
-            if ($value) {
+            if ($value !== null) {
                 $update_params[] = [
                     'ParameterKey' => $key,
                     'ParameterValue' => $value,
@@ -153,6 +172,14 @@ class CloudFormationClient extends Client
                 ],
                 [
                     'ParameterKey' => 'DBMasterPassword',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'ApplicationImage',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'WebserverImage',
                     'UsePreviousValue' => true,
                 ],
                 ...$update_params,
@@ -313,7 +340,7 @@ class CloudFormationClient extends Client
         return $this->project_name . '-' . $this->project_id . '-' . $this->environment;
     }
 
-    protected function template(): string
+    protected function template(array $secrets = []): string
     {
         $path = static::templatePath();
 
@@ -321,6 +348,20 @@ class CloudFormationClient extends Client
             throw new FileNotFoundException($path);
         }
 
-        return File::get($path);
+        $contents = File::get($path);
+
+        if ($secrets) {
+            $replace = '';
+
+            foreach ($secrets as $name => $arn) {
+                $replace .= PHP_EOL .
+                    "            - Name: $name" .
+                    "            - ValueFrom: $arn";
+            }
+        } else {
+            $replace = '';
+        }
+
+        return Str::replace('          Secrets: #LARASURF_SECRETS#', $replace, $contents);
     }
 }

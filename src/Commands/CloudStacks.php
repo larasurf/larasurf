@@ -12,6 +12,7 @@ use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
+use LaraSurf\LaraSurf\Commands\Traits\InteractsWithGitFiles;
 use LaraSurf\LaraSurf\Constants\Cloud;
 use PDO;
 
@@ -21,6 +22,7 @@ class CloudStacks extends Command
     use HasEnvironmentOption;
     use HasTimer;
     use InteractsWithAws;
+    use InteractsWithGitFiles;
 
     const COMMAND_STATUS = 'status';
     const COMMAND_CREATE = 'create';
@@ -30,6 +32,7 @@ class CloudStacks extends Command
 
     protected $signature = 'larasurf:cloud-stacks
                             {--environment=null : The environment: \'stage\' or \'production\'}
+                            {--refresh : If the environment should be refreshed when using the \'update\' command}
                             {subcommand : The subcommand to run: \'status\', \'create\', \'update\', \'delete\', or \'wait\'}';
 
     protected $description = 'Manage application environment variables in cloud environments';
@@ -69,6 +72,14 @@ class CloudStacks extends Command
             return 1;
         }
 
+        $branch = $env === Cloud::ENVIRONMENT_PRODUCTION ? 'main' : 'stage';
+
+        if (!$this->gitIsOnBranch($branch)) {
+            $this->error("Must be on the $branch branch to create a stack for this environment");
+
+            return 1;
+        }
+
         $path = CloudFormationClient::templatePath();
 
         if (!File::exists($path)) {
@@ -82,6 +93,32 @@ class CloudStacks extends Command
         if (!$aws_region) {
             $this->error("AWS region is not set for the '$env' environment; create image repositories first");
             
+            return 1;
+        }
+
+        $current_commit = $this->gitCurrentCommit($branch);
+
+        if (!$current_commit) {
+            return 1;
+        }
+
+        $ecr = $this->awsEcr($env, $aws_region);
+
+        $application_image_tag = 'commit-' . $current_commit;
+        $webserver_image_tag = 'commit-' . $current_commit;
+
+        $application_repo_name = $this->awsEcrRepositoryName($env, 'application');
+        $webserver_repo_name = $this->awsEcrRepositoryName($env, 'webserver');
+
+        if (!$ecr->imageTagExists($application_repo_name, $application_image_tag)) {
+            $this->error("Failed to find tag '$application_image_tag' in ECR repository '$application_repo_name'");
+
+            return 1;
+        }
+
+        if (!$ecr->imageTagExists($webserver_repo_name, $webserver_image_tag)) {
+            $this->error("Failed to find tag '$webserver_image_tag' in ECR repository '$webserver_repo_name'");
+
             return 1;
         }
 
@@ -146,7 +183,11 @@ class CloudStacks extends Command
         $db_username = Str::random(random_int(16, 32));
         $db_password = Str::random(random_int(32, 40));
 
+        $application_image = $ecr->repositoryUri($this->awsEcrRepositoryName($env, 'application')) . ':' . $application_image_tag;
+        $webserver_image = $ecr->repositoryUri($this->awsEcrRepositoryName($env, 'webserver')) . ':' . $webserver_image_tag;
+
         $cloudformation->createStack(
+            false,
             $domain,
             $hosted_zone_id,
             $acm_arn,
@@ -154,13 +195,17 @@ class CloudStacks extends Command
             $db_instance_type,
             $db_username,
             $db_password,
-            $cache_node_type
+            $cache_node_type,
+            $application_image,
+            $webserver_image
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created');
 
         if (!$result['success']) {
             $this->error("Stack creation failed with status '{$result['status']}'");
+
+            return 1;
         } else {
             $this->info("Stack creation completed successfully");
         }
@@ -176,6 +221,8 @@ class CloudStacks extends Command
                 'DBAdminAccessPrefixListId',
                 'CacheEndpointAddress',
                 'CacheEndpointPort',
+                'QueueUrl',
+                'BucketName',
             ]);
 
             if (empty($outputs)) {
@@ -224,13 +271,26 @@ class CloudStacks extends Command
             'AWS_DEFAULT_REGION' => $aws_region,
             'REDIS_HOST' => $outputs['CacheEndpointAddress'],
             'REDIS_PORT' => $outputs['CacheEndpointPort'],
+            'SQS_QUEUE' => $outputs['QueueUrl'],
+            'AWS_BUCKET' => $outputs['BucketName'],
         ];
 
         $this->info('Creating cloud variables...');
 
-        $this->createSsmParameters($env, $parameters);
+        $ssm = $this->awsSsm($env);
 
-        // todo: migrate database?
+        foreach ($parameters as $name => $value) {
+            $ssm->putParameter($name, $value);
+
+            $this->info("Successfully created cloud variable '$name'");
+        }
+
+        // todo: migrate database
+        //  create ecs client, run artisan migrate --force using artisan task
+
+        $secrets = $ssm->listParameterArns(true);
+
+        $cloudformation->updateStack(true, $secrets);
 
         $this->stopTimer();
         $this->displayTimeElapsed();
@@ -262,78 +322,88 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $updates = $name = $this->choice(
-            'Which options would you like to change?',
-            [
-                '(None)',
-                'Domain + ACM certificate ARN',
-                'ACM certificate ARN',
-                'Database instance type',
-                'Database storage size',
-                'Cache node type',
-            ],
-            0,
-            null,
-            true
-        );
+        $refresh = $this->option('refresh');
 
-        $new_domain = null;
-        $new_hosted_zone_id = null;
-        $new_certificate_arn = null;
-        $new_db_instance_type = null;
-        $new_db_storage = null;
-        $new_cache_node_type = null;
+        $secrets = $this->awsSsm($env)->listParameterArns(true);
 
-        $route53 = $this->awsRoute53();
+        if (!$refresh) {
+            $updates = $name = $this->choice(
+                'Which options would you like to change?',
+                [
+                    '(None)',
+                    'Domain + ACM certificate ARN',
+                    'ACM certificate ARN',
+                    'Database instance type',
+                    'Database storage size',
+                    'Cache node type',
+                ],
+                0,
+                null,
+                true
+            );
 
-        if (in_array('ACM certificate ARN', $updates) && in_array('Domain + ACM certificate ARN', $updates)) {
-            $index = array_search('ACM certificate ARN', $updates);
-            unset($updates[$index]);
-        }
+            $new_domain = null;
+            $new_hosted_zone_id = null;
+            $new_certificate_arn = null;
+            $new_db_instance_type = null;
+            $new_db_storage = null;
+            $new_cache_node_type = null;
 
-        foreach ($updates as $update) {
-            switch ($update) {
-                case 'Domain + ACM certificate ARN': {
-                    $new_domain = $this->ask('Fully qualified domain name?');
+            $route53 = $this->awsRoute53();
 
-                    $new_hosted_zone_id = $route53->hostedZoneIdFromDomain($new_domain);
+            if (in_array('ACM certificate ARN', $updates) && in_array('Domain + ACM certificate ARN', $updates)) {
+                $index = array_search('ACM certificate ARN', $updates);
+                unset($updates[$index]);
+            }
 
-                    if (!$new_hosted_zone_id) {
-                        $this->error("Hosted zone for domain '$new_domain' could not be found");
+            foreach ($updates as $update) {
+                switch ($update) {
+                    case 'Domain + ACM certificate ARN': {
+                        $new_domain = $this->ask('Fully qualified domain name?');
 
-                        return 0;
+                        $new_hosted_zone_id = $route53->hostedZoneIdFromDomain($new_domain);
+
+                        if (!$new_hosted_zone_id) {
+                            $this->error("Hosted zone for domain '$new_domain' could not be found");
+
+                            return 0;
+                        }
+
+                        $new_certificate_arn = $this->findOrCreateAcmCertificateArn($env, $new_domain, $new_hosted_zone_id);
+
+                        break;
                     }
+                    case 'ACM certificate ARN': {
+                        $new_certificate_arn = $this->askAcmCertificateArn();
 
-                    $new_certificate_arn = $this->findOrCreateAcmCertificateArn($env, $new_domain, $new_hosted_zone_id);
+                        break;
+                    }
+                    case 'Database instance type': {
+                        $new_db_instance_type = $this->askDatabaseInstanceType();
 
-                    break;
-                }
-                case 'ACM certificate ARN': {
-                    $new_certificate_arn = $this->askAcmCertificateArn();
+                        break;
+                    }
+                    case 'Database storage size': {
+                        $new_db_storage = $this->askDatabaseStorage();
 
-                    break;
-                }
-                case 'Database instance type': {
-                    $new_db_instance_type = $this->askDatabaseInstanceType();
+                        break;
+                    }
+                    case 'Cache node type': {
+                        $new_cache_node_type = $this->askCacheNodeType();
 
-                    break;
-                }
-                case 'Database storage size': {
-                    $new_db_storage = $this->askDatabaseStorage();
-
-                    break;
-                }
-                case 'Cache node type': {
-                    $new_cache_node_type = $this->askCacheNodeType();
-
-                    break;
+                        break;
+                    }
                 }
             }
+
+            $this->startTimer();
+
+            $cloudformation->updateStack(true, $secrets, $new_domain, $new_hosted_zone_id, $new_certificate_arn, $new_db_storage, $new_db_instance_type, $new_cache_node_type);
+        } else {
+            $this->startTimer();
+
+            $cloudformation->updateStack(true, $secrets);
         }
-
-        $this->startTimer();
-
-        $cloudformation->updateStack($new_domain, $new_hosted_zone_id, $new_certificate_arn, $new_db_storage, $new_db_instance_type, $new_cache_node_type);
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
 
@@ -530,16 +600,5 @@ class CloudStacks extends Command
         $this->info("Created database schema '$database_name' successfully");
 
         return $database_name;
-    }
-
-    protected function createSsmParameters(string $environment, array $parameters)
-    {
-        $ssm = $this->awsSsm($environment);
-
-        foreach ($parameters as $name => $value) {
-            $ssm->putParameter($name, $value);
-
-            $this->info("Successfully created cloud variable '$name'");
-        }
     }
 }

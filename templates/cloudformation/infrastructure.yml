@@ -179,7 +179,7 @@ Resources:
     Type: AWS::EC2::PrefixList
     Properties:
       AddressFamily: IPv4
-      MaxEntries: 50
+      MaxEntries: 25
       PrefixListName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-prefix-list-database'
       Tags:
         - Key: Project
@@ -227,7 +227,7 @@ Resources:
     Type: AWS::EC2::PrefixList
     Properties:
       AddressFamily: IPv4
-      MaxEntries: 50
+      MaxEntries: 25
       PrefixListName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-prefix-list-application'
       Tags:
         - Key: Project
@@ -271,14 +271,14 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
-        Type: redirect
-        RedirectConfig:
-          Host: '#{host}'
-          Path: '/#{path}'
-          Port: 443
-          Protocol: HTTPS
-          Query: '#{query}'
-          StatusCode: HTTP_301
+        - Type: redirect
+          RedirectConfig:
+            Host: '#{host}'
+            Path: '/#{path}'
+            Port: 443
+            Protocol: HTTPS
+            Query: '#{query}'
+            StatusCode: HTTP_301
       LoadBalancerArn: !Ref LoadBalancer
       Port: 80
       Protocol: HTTP
@@ -287,64 +287,365 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
-      - CertificateArn: !Ref CertificateArn
+        - CertificateArn: !Ref CertificateArn
       DefaultActions:
-      - Type: fixed-response
-        FixedResponseConfig:
-          ContentType: text/plain
-          MessageBody: Hello world!
-          StatusCode: 200
+        - Type: fixed-response
+          FixedResponseConfig:
+            ContentType: text/plain
+            MessageBody: Hello world!
+            StatusCode: 200
       LoadBalancerArn: !Ref LoadBalancer
       Port: 443
       Protocol: HTTPS
+  LoadBalancerListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref LoadBalancerTargetGroup
+      Conditions:
+        - Field: host-header
+          Values:
+            - !Ref DomainName
+      ListenerArn: !GetAtt LoadBalancerHttpListener.ListenerArn
+      Priority: 100
+  LoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 2
+      HealthyThresholdCount: 2
+      Name: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-target-group'
+      Port: 80
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 60
+      TargetType: ip
+      VpcId: !Ref Vpc
+
+  # Logs
+  ApplicationLogGroup:
+    Type: AWS::Logs::LogGroup
+  WebserverLogGroup:
+    Type: AWS::Logs::LogGroup
+  QueueLogGroup:
+    Type: AWS::Logs::LogGroup
+  ArtisanLogGroup:
+    Type: AWS::Logs::LogGroup
 
   # Containers
-#  ContainerCluster:
-#    Type: AWS::ECS::Cluster
-#    Properties:
-#      ClusterName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-cluster'
-#  ContainerRole:
-#    Type: AWS::IAM::Role
-#    Properties:
-#      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-role'
-#      AssumeRolePolicyDocument:
-#        Version: 2012-10-17
-#        Statement:
-#          - Effect: Allow
-#            Principal:
-#              Service: ecs-tasks.amazonaws.com
-#            Action: sts:AssumeRole
-#      ManagedPolicyArns:
-#        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-#  ContainerTaskRole:
-#    Type: AWS::IAM::Role
-#    Properties:
-#      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-task-role'
-#      AssumeRolePolicyDocument:
-#        Statement:
-#          - Effect: Allow
-#            Principal:
-#              Service: ecs-tasks.amazonaws.com
-#            Action: 'sts:AssumeRole'
-#      ManagedPolicyArns: # todo: lock these down
-#        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-#        - arn:aws:iam::aws:policy/AmazonSQSFullAccess
-#  ContainerAutoScalingRole:
-#    Type: AWS::IAM::Role
-#    Properties:
-#      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-autoscaling-role'
-#      AssumeRolePolicyDocument:
-#        Statement:
-#          - Effect: Allow
-#            Principal:
-#              Service: ecs-tasks.amazonaws.com
-#            Action: 'sts:AssumeRole'
-#      ManagedPolicyArns:
-#        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
-#  ContainerSecurityGroup:
+  ContainerCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-cluster'
+  ContainerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-execution-role'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ssm-parameter-store-policy'
+          PolicyDocument: | # todo: lock down
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ssm:DescribeParameters"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "ssm:GetParameters"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }
+  ContainerTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-task-role'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-queue-consumer'
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueUrl
+                  - sqs:ChangeMessageVisibility
+                  - sqs:SendMessageBatch
+                  - sqs:ReceiveMessage
+                  - sqs:SendMessage
+                  - sqs:GetQueueAttributes
+                Resource: !GetAtt Queue.Arn
+        - PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-bucket-user'
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:GetObjectAcl
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource: !Sub '${Bucket.Arn}/*'
+  ContainerAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-autoscaling-role'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
+  ContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-security-group'
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+  ContainerAppTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Ref 'AWS::StackName'
+      Cpu: 256
+      Memory: 0.5GB
+      NetworkMode: bridge
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ContainerExecutionRole.Arn
+      TaskRoleArn: !GetAtt ContainerTaskRole.Arn
+      Volumes:
+        - Name: PublicDirectory
+          DockerVolumeConfiguration:
+            Scope: task
+      ContainerDefinitions:
+        - Image: !Ref WebserverImage
+          Name: nginx
+          Essential: true
+          Environment:
+            - { Name: UPSTREAM_HOST, Value: 'app' }
+          VolumesFrom:
+            - SourceContainer: app
+              ReadOnly: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref WebserverLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: nginx
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 0
+              Protocol: tcp
+          Links:
+            - 'app:app'
+        - Image: !Ref ApplicationImage
+          Name: app
+          Essential: true
+          MountPoints:
+            - ContainerPath: /var/www/public
+              SourceVolume: PublicDirectory
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ApplicationLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: app
+          Secrets: #LARASURF_SECRETS#
+  ContainerService:
+    DependsOn:
+      - LoadBalancerListenerRule
+      - ContainerTaskRole
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ContainerCluster
+      TaskDefinition: !Ref ContainerAppTaskDefinition
+      LaunchType: EC2
+      DesiredCount: !If [IsEnabled, 5, 0]
+      LoadBalancers:
+        - ContainerName: nginx
+          ContainerPort: 80
+          TargetGroupArn: !Ref LoadBalancerTargetGroup
+  ContainerAutoScalingTarget:
+    Condition: IsEnabled
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MinCapacity: 5
+      MaxCapacity: 15
+      ResourceId: !Join [ '/', [ service, !Ref ContainerCluster, !GetAtt ContainerService.Name ] ]
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+      RoleARN: !GetAtt ContainerAutoScalingRole.Arn
+  ContainerAutoScalingPolicy:
+    Condition: IsEnabled
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-autoscaling-policy'
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ContainerAutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: 10
+        ScaleOutCooldown: 10
+        TargetValue: 75
+  ContainerQueueTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${AWS::StackName}-queue'
+      Cpu: 256
+      Memory: 0.5GB
+      NetworkMode: bridge
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ContainerExecutionRole.Arn
+      TaskRoleArn: !GetAtt ContainerTaskRole.Arn
+      ContainerDefinitions:
+        - Image: !Ref ApplicationImage
+          Name: 'sqs-queue-consumer'
+          Essential: true
+          Command: [ 'queue:work', 'sqs', '--daemon', '--queue', !Ref Queue, '--tries', '5' ]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref QueueLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: queue
+          Secrets: #LARASURF_SECRETS#
+  ContainerQueueService:
+    DependsOn: ContainerTaskRole
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ContainerCluster
+      TaskDefinition: !Ref ContainerQueueTaskDefinition
+      LaunchType: EC2
+      DesiredCount: !If [ IsEnabled, 3, 0 ]
+  ContainerArtisanTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${AWS::StackName}-artisan'
+      Cpu: 256
+      Memory: 0.5GB
+      NetworkMode: bridge
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ContainerExecutionRole.Arn
+      TaskRoleArn: !GetAtt ContainerTaskRole.Arn
+      ContainerDefinitions:
+        - Image: !Ref ApplicationImage
+          Name: artisan
+          Essential: true
+          Command: [ 'php', 'artisan', 'schedule:run' ]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ArtisanLogGroup
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: artisan
+          Secrets: #LARASURF_SECRETS#
+  ContainerArtisanScheduleRuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-invoke-ecs-task'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:RunTask
+                Resource:
+                  - !Sub 'arn:aws:ecs:*:${AWS::AccountId}:task-definition/${AWS::StackName}-artisan:*'
+                Condition:
+                  ArnLike:
+                    ecs:cluster: !Sub 'arn:aws:ecs:*:${AWS::AccountId}:cluster/${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-cluster'
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - '*'
+                Condition:
+                  StringLike:
+                    iam:PassedToService: ecs-tasks.amazonaws.com
+  ContainerArtisanScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Invoke the artisan scheduler task definition every 15 minutes.
+      ScheduleExpression: 'rate(15 minutes)'
+      State: !If [ IsEnabled, ENABLED, DISABLED ]
+      Targets:
+        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ClusterName}'
+          EcsParameters:
+            TaskDefinitionArn: !Ref ContainerArtisanTaskDefinition
+          Id: ContainerArtisanScheduleCommand
+          RoleArn: !GetAtt ContainerArtisanScheduleRuleRole.Arn
 
+  # Queue
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 345600
+      ReceiveMessageWaitTimeSeconds: 20
+      VisibilityTimeout: 30
+
+  # Bucket
+  Bucket:
+    DeletionPolicy: Retain
+    Type: AWS::S3::Bucket
+
+  # DNS
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Join [ '', [ !Ref DomainName, . ] ]
+      Name: !Join [ '', [ !Ref DomainName, . ] ]
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
 
 Parameters:
+  Enabled:
+    Type: String
+    Description: If the application is enabled.
   ProjectName:
     Type: String
     Description: The project name.
@@ -411,10 +712,16 @@ Parameters:
       - cache.t2.micro
       - cache.t2.small
       - cache.t2.medium
-  # todo: parameter store params for laravel app?
+  ApplicationImage:
+    Type: String
+    Description: The URL of an application image on ECR.
+  WebserverImage:
+    Type: String
+    Description: The URL of a websever image on ECR.
 
 Conditions:
   IsProduction: !Equals [!Ref EnvironmentName, production]
+  IsEnabled: !Equals [!Ref Enabled, 'true']
 
 Outputs:
   CertificateArn:
@@ -444,3 +751,12 @@ Outputs:
   CacheEndpointPort:
     Description: The port of the cache cluster endpoint.
     Value: !GetAtt CacheCluster.RedisEndpoint.Port
+  AppAccessPrefixListId:
+    Description: The Prefix List ID for application access.
+    Value: !Ref LoadBalancerPrefixList
+  QueueUrl:
+    Description: The URL of the SQS queue.
+    Value: !Ref Queue
+  BucketName:
+    Description: The name of the S3 bucket.
+    Value: !Ref Bucket

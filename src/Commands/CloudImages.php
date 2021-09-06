@@ -100,8 +100,8 @@ class CloudImages extends Command
 
         $this->info('Creating image repositories...');
 
-        $uri_application = $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
-        $ecr->createRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
+        $uri_application = $ecr->createRepository($this->awsEcrRepositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
+        $ecr->createRepository($this->awsEcrRepositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
         $this->info('Repositories created successfully');
         $this->info('Updating LaraSurf configuration...');
@@ -169,8 +169,8 @@ class CloudImages extends Command
 
         $ecr = $this->awsEcr($env);
 
-        $ecr->deleteRepository($this->repositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
-        $ecr->deleteRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
+        $ecr->deleteRepository($this->awsEcrRepositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
+        $ecr->deleteRepository($this->awsEcrRepositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
         $this->info('Deleted both application and webserver image repositories successfully');
 
@@ -185,10 +185,5 @@ class CloudImages extends Command
         $this->info('Updated LaraSurf configuration successfully');
 
         return 0;
-    }
-
-    protected function repositoryName(string $environment, string $type): string
-    {
-        return static::larasurfConfig()->get('project-name') . '-' . static::larasurfConfig()->get('project-id') . "/$environment/$type";
     }
 }

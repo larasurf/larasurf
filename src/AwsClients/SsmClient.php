@@ -2,9 +2,11 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
+use Illuminate\Support\Str;
+
 class SsmClient extends Client
 {
-    public function parameterExists($name): bool
+    public function parameterExists(string $name): bool
     {
         $path = $this->parameterPath($name);
         $parameters = $this->listParameters();
@@ -12,7 +14,7 @@ class SsmClient extends Client
         return in_array($path, $parameters);
     }
 
-    public function getParameter($name): string|false
+    public function getParameter(string $name): string|false
     {
         $result = $this->client->getParameter([
             'Name' => $this->parameterPath($name),
@@ -26,7 +28,7 @@ class SsmClient extends Client
         return $result['Parameter']['Value'];
     }
 
-    public function putParameter($name, $value)
+    public function putParameter(string $name, string $value)
     {
         $parameter_path = $this->parameterPath($name);
 
@@ -47,10 +49,8 @@ class SsmClient extends Client
         $this->client->putParameter($args);
     }
 
-    public function deleteParameter($name)
+    public function deleteParameter(string $path)
     {
-        $path = $this->parameterPath($name);
-
         $this->client->deleteParameter([
             'Name' => $path,
         ]);
@@ -86,12 +86,41 @@ class SsmClient extends Client
         return $parameters;
     }
 
+    public function listParameterArns(bool $assoc = true): array
+    {
+        $parameters = [];
+        $next_token = null;
+
+        do {
+            $results = $this->client->getParametersByPath([
+                'Path' => $this->parameterPath(),
+                'NextToken' => $next_token,
+            ]);
+
+            if ($assoc) {
+                foreach ($results['Parameters'] as $parameter) {
+                    $parameters[Str::after($parameter['Name'], '/')] = $parameter['ARN'];
+                }
+            } else {
+                $parameters = array_merge(
+                    $parameters,
+                    array_column($results['Parameters'], 'ARN')
+                );
+            }
+
+            $next_token = $results['NextToken'] ?? false;
+            $done = !$next_token || !($results['Parameters'] ?? false);
+        } while (!$done);
+
+        return $parameters;
+    }
+
     protected function makeClient(array $args): \Aws\Ssm\SsmClient
     {
         return new \Aws\Ssm\SsmClient($args);
     }
 
-    protected function parameterPath($parameter = null): string
+    protected function parameterPath(string $parameter = null): string
     {
         $this->validateEnvironmentIsSet();
 

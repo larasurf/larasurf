@@ -95,4 +95,9 @@ trait InteractsWithAws
             $environment,
         ];
     }
+
+    protected function awsEcrRepositoryName(string $environment, string $type): string
+    {
+        return static::larasurfConfig()->get('project-name') . '-' . static::larasurfConfig()->get('project-id') . "/$environment/$type";
+    }
 }

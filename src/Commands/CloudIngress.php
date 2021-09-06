@@ -198,7 +198,7 @@ class CloudIngress extends Command
         $prefix_list_id = $this->awsCloudFormation($env)->stackOutput($key);
 
         if (!$prefix_list_id) {
-            $this->error("Failed to find database Prefix List ID for '$env' environment");
+            $this->error("Failed to find $type Prefix List ID for '$env' environment");
 
             return false;
         }

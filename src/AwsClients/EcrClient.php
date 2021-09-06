@@ -37,7 +37,19 @@ class EcrClient extends Client
         ]);
     }
 
-    // todo: describeImages by tag to see if commit exists for deployments
+    public function imageTagExists(string $repository_name, string $tag): bool
+    {
+        $result = $this->client->describeImages([
+            'imageIds' => [
+                [
+                    'imageTag' => $tag,
+                ],
+            ],
+            'repositoryName' => $repository_name,
+        ]);
+
+        return !empty($result['imageDetails'][0]);
+    }
 
     protected function makeClient(array $args): \Aws\Ecr\EcrClient
     {

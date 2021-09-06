@@ -29,12 +29,17 @@ trait InteractsWithGitFiles
 
     protected static function gitConfigFilePath()
     {
-        return '.git/config';
+        return base_path('.git/config');
     }
 
     protected static function gitHeadFilePath()
     {
-        return '.git/HEAD';
+        return base_path('.git/HEAD');
+    }
+
+    protected static function gitRefHeadsPath()
+    {
+        return base_path('.git/refs/heads');
     }
 
     protected static function gitRemoteUrl(string $name = 'origin'): string|false
@@ -72,5 +77,18 @@ trait InteractsWithGitFiles
         }
 
         return trim(str_replace('ref: refs/heads/', '', File::get(static::gitHeadFilePath()))) === $branch;
+    }
+
+    protected function gitCurrentCommit(string $branch): string
+    {
+        $path = static::gitRefHeadsPath() . '/' . $branch;
+
+        if (!File::exists($path)) {
+            $this->error('Failed to find current commit, is this a git repository?');
+
+            return false;
+        }
+
+        return trim(File::get($path));
     }
 }

@@ -27,6 +27,10 @@ trait InteractsWithCircleCI
 
     protected static function circleCIApiKey(): string|false
     {
+        if (!File::exists(base_path(static::circleCIApiKeyFilePath()))) {
+            return false;
+        }
+
         return trim(File::get(base_path(static::circleCIApiKeyFilePath()))) ?: false;
     }
 
