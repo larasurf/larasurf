@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Resources:
-  # VPC
+  # Network
   Vpc:
     Type: AWS::EC2::VPC
     Properties:
@@ -44,7 +44,7 @@ Resources:
         - Key: Name
           Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet-1'
         - Key: Project
-          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+          Value: !Sub '${ProjectName}-${ProjectId}'
         - Key: Environment
           Value: !Ref EnvironmentName
   Subnet1RouteTableAssociation:
@@ -64,7 +64,7 @@ Resources:
         - Key: Name
           Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet-2'
         - Key: Project
-          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+          Value: !Sub '${ProjectName}-${ProjectId}'
         - Key: Environment
           Value: !Ref EnvironmentName
   Subnet2RouteTableAssociation:
@@ -84,7 +84,7 @@ Resources:
         - Key: Name
           Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet-3'
         - Key: Project
-          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+          Value: !Sub '${ProjectName}-${ProjectId}'
         - Key: Environment
           Value: !Ref EnvironmentName
   Subnet3RouteTableAssociation:
@@ -123,10 +123,8 @@ Resources:
         - !Ref DBSecurityGroup
         - !Ref DBAdminAccessSecurityGroup
       Tags:
-        - Key: LaraSurfID
-          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-database'
         - Key: Project
-          Value: !Join [ '-', [ !Ref ProjectName, !Ref ProjectId ] ]
+          Value: !Sub '${ProjectName}-${ProjectId}'
         - Key: Environment
           Value: !Ref EnvironmentName
   DBSubnetGroup:
@@ -167,7 +165,7 @@ Resources:
   DBAdminAccessSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: A security to allow admins database access.
+      GroupDescription: A security group to allow admins database access.
       VpcId: !Ref Vpc
   DBAdminAccessSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -182,14 +180,14 @@ Resources:
     Properties:
       AddressFamily: IPv4
       MaxEntries: 50
-      PrefixListName: !Join ['-', [!Ref ProjectName, !Ref ProjectId, !Ref EnvironmentName, 'prefix-list-database']]
+      PrefixListName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-prefix-list-database'
       Tags:
-        - Key: LaraSurfId
-          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId, !Ref EnvironmentName, 'prefix-list-database']]
         - Key: Project
-          Value: !Join ['-', [!Ref ProjectName, !Ref ProjectId]]
+          Value: !Sub '${ProjectName}-${ProjectId}'
         - Key: Environment
           Value: !Ref EnvironmentName
+
+  # Cache
   CacheCluster:
     Type: AWS::ElastiCache::CacheCluster
     Properties:
@@ -223,6 +221,128 @@ Resources:
       FromPort: 6379
       ToPort: 6379
       SourceSecurityGroupId: !Ref CacheSecurityGroup
+
+  # LoadBalancer
+  LoadBalancerPrefixList:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      AddressFamily: IPv4
+      MaxEntries: 50
+      PrefixListName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-prefix-list-application'
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: A security group to allow ingress through the load balancer.
+      VpcId: !Ref Vpc
+  LoadBalancerSecurityGroupIngressHttp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref LoadBalancerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourcePrefixListId: !Ref LoadBalancerPrefixList
+  LoadBalancerSecurityGroupIngressHttps:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref LoadBalancerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourcePrefixListId: !Ref LoadBalancerPrefixList
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Subnets:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+      Type: application
+      IpAddressType: ipv4
+  LoadBalancerHttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        Type: redirect
+        RedirectConfig:
+          Host: '#{host}'
+          Path: '/#{path}'
+          Port: 443
+          Protocol: HTTPS
+          Query: '#{query}'
+          StatusCode: HTTP_301
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+  # todo
+  LoadBalancerHttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+      - CertificateArn: !Ref CertificateArn
+      DefaultActions:
+      - Type: fixed-response
+        FixedResponseConfig:
+          ContentType: text/plain
+          MessageBody: Hello world!
+          StatusCode: 200
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+
+  # Containers
+#  ContainerCluster:
+#    Type: AWS::ECS::Cluster
+#    Properties:
+#      ClusterName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-cluster'
+#  ContainerRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-role'
+#      AssumeRolePolicyDocument:
+#        Version: 2012-10-17
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service: ecs-tasks.amazonaws.com
+#            Action: sts:AssumeRole
+#      ManagedPolicyArns:
+#        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+#  ContainerTaskRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-task-role'
+#      AssumeRolePolicyDocument:
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service: ecs-tasks.amazonaws.com
+#            Action: 'sts:AssumeRole'
+#      ManagedPolicyArns: # todo: lock these down
+#        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+#        - arn:aws:iam::aws:policy/AmazonSQSFullAccess
+#  ContainerAutoScalingRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-autoscaling-role'
+#      AssumeRolePolicyDocument:
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service: ecs-tasks.amazonaws.com
+#            Action: 'sts:AssumeRole'
+#      ManagedPolicyArns:
+#        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
+#  ContainerSecurityGroup:
+
 
 Parameters:
   ProjectName:

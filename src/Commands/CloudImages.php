@@ -172,7 +172,7 @@ class CloudImages extends Command
         $ecr->deleteRepository($this->repositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
         $ecr->deleteRepository($this->repositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
-        $this->info('Successfully deleted both application and webserver image repositories');
+        $this->info('Deleted both application and webserver image repositories successfully');
 
         static::larasurfConfig()->set("environments.$env", null);
 
