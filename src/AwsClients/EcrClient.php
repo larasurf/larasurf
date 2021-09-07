@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
+use Aws\Exception\AwsException;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
@@ -39,14 +40,19 @@ class EcrClient extends Client
 
     public function imageTagExists(string $repository_name, string $tag): bool
     {
-        $result = $this->client->describeImages([
-            'imageIds' => [
-                [
-                    'imageTag' => $tag,
+        try {
+            $result = $this->client->describeImages([
+                'imageIds' => [
+                    [
+                        'imageTag' => $tag,
+                    ],
                 ],
-            ],
-            'repositoryName' => $repository_name,
-        ]);
+                'repositoryName' => $repository_name,
+            ]);
+        } catch (AwsException $e) {
+            return false;
+        }
+
 
         return !empty($result['imageDetails'][0]);
     }

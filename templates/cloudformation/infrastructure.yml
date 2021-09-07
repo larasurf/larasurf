@@ -317,7 +317,7 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       UnhealthyThresholdCount: 2
       HealthyThresholdCount: 2
-      Name: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-target-group'
+      Name: !Sub '${ProjectId}-${EnvironmentName}'
       Port: 80
       Protocol: HTTP
       TargetGroupAttributes:
@@ -340,7 +340,7 @@ Resources:
   ContainerCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-cluster'
+      ClusterName: !Sub '${ProjectId}-${EnvironmentName}'
   ContainerExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -597,7 +597,7 @@ Resources:
                   - !Sub 'arn:aws:ecs:*:${AWS::AccountId}:task-definition/${AWS::StackName}-artisan:*'
                 Condition:
                   ArnLike:
-                    ecs:cluster: !Sub 'arn:aws:ecs:*:${AWS::AccountId}:cluster/${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-cluster'
+                    ecs:cluster: !Sub 'arn:aws:ecs:*:${AWS::AccountId}:cluster/${ProjectId}-${EnvironmentName}'
               - Effect: Allow
                 Action: iam:PassRole
                 Resource:
@@ -612,7 +612,7 @@ Resources:
       ScheduleExpression: 'rate(15 minutes)'
       State: !If [ IsEnabled, ENABLED, DISABLED ]
       Targets:
-        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ClusterName}'
+        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ProjectId}-${EnvironmentName}'
           EcsParameters:
             TaskDefinitionArn: !Ref ContainerArtisanTaskDefinition
           Id: ContainerArtisanScheduleCommand

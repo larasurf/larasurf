@@ -92,7 +92,7 @@ class CloudStacks extends Command
 
         if (!$aws_region) {
             $this->error("AWS region is not set for the '$env' environment; create image repositories first");
-            
+
             return 1;
         }
 
@@ -109,6 +109,8 @@ class CloudStacks extends Command
 
         $application_repo_name = $this->awsEcrRepositoryName($env, 'application');
         $webserver_repo_name = $this->awsEcrRepositoryName($env, 'webserver');
+
+        $this->info("Checking if application and webserver images exist...");
 
         if (!$ecr->imageTagExists($application_repo_name, $application_image_tag)) {
             $this->error("Failed to find tag '$application_image_tag' in ECR repository '$application_repo_name'");

@@ -34,11 +34,11 @@ class CloudFormationClient extends Client
         $this->validateEnvironmentIsSet();
 
         $this->client->createStack([
-            'Capabilities' => ['CAPABILITY_IAM'],
+            'Capabilities' => ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
             'StackName' => $this->stackName(),
             'Parameters' => [
                 [
-                    'ParameterKey' => 'IsEnabled',
+                    'ParameterKey' => 'Enabled',
                     'ParameterValue' => $is_enabled ? 'true' : 'false',
                 ],
                 [
@@ -121,7 +121,7 @@ class CloudFormationClient extends Client
         $update_params = [];
 
         foreach ([
-                     'IsEnabled' => $is_enabled,
+                     'Enabled' => $is_enabled,
                      'DomainName' => $domain,
                      'HostedZoneId' => $hosted_zone_id,
                      'CertificateArn' => $certificate_arn,
