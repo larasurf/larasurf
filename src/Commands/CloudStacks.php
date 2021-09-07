@@ -165,7 +165,9 @@ class CloudStacks extends Command
 
         $this->info('Finding hosted zone from domain...');
 
-        $hosted_zone_id = $route53->hostedZoneIdFromDomain($domain);
+        $root_domain = $this->rootDomainFromFullDomain($domain);
+
+        $hosted_zone_id = $route53->hostedZoneIdFromRootDomain($root_domain);
 
         if (!$hosted_zone_id) {
             $this->error("Hosted zone for domain '$domain' could not be found");
@@ -191,6 +193,7 @@ class CloudStacks extends Command
         $cloudformation->createStack(
             false,
             $domain,
+            $root_domain,
             $hosted_zone_id,
             $acm_arn,
             $db_storage,
@@ -402,12 +405,14 @@ class CloudStacks extends Command
                     case 'Domain + ACM certificate ARN': {
                         $new_domain = $this->ask('Fully qualified domain name?');
 
-                        $new_hosted_zone_id = $route53->hostedZoneIdFromDomain($new_domain);
+                        $root_domain = $this->rootDomainFromFullDomain($new_domain);
+
+                        $new_hosted_zone_id = $route53->hostedZoneIdFromRootDomain($root_domain);
 
                         if (!$new_hosted_zone_id) {
                             $this->error("Hosted zone for domain '$new_domain' could not be found");
 
-                            return 0;
+                            return 1;
                         }
 
                         $new_certificate_arn = $this->findOrCreateAcmCertificateArn($env, $new_domain, $new_hosted_zone_id);
@@ -439,7 +444,17 @@ class CloudStacks extends Command
 
             $this->startTimer();
 
-            $cloudformation->updateStack(true, $secrets, $new_domain, $new_hosted_zone_id, $new_certificate_arn, $new_db_storage, $new_db_instance_type, $new_cache_node_type);
+            $cloudformation->updateStack(
+                true,
+                $secrets,
+                $new_domain,
+                $new_domain ? $this->rootDomainFromFullDomain($new_domain) : null,
+                $new_hosted_zone_id,
+                $new_certificate_arn,
+                $new_db_storage,
+                $new_db_instance_type,
+                $new_cache_node_type
+            );
         } else {
             $this->startTimer();
 

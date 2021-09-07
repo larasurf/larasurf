@@ -20,6 +20,7 @@ class CloudFormationClient extends Client
     public function createStack(
         bool $is_enabled,
         string $domain,
+        string $root_domain,
         string $hosted_zone_id,
         string $certificate_arn,
         int $db_storage_size,
@@ -56,6 +57,10 @@ class CloudFormationClient extends Client
                 [
                     'ParameterKey' => 'DomainName',
                     'ParameterValue' => $domain,
+                ],
+                [
+                    'ParameterKey' => 'RootDomainName',
+                    'ParameterValue' => $root_domain,
                 ],
                 [
                     'ParameterKey' => 'HostedZoneId',
@@ -111,6 +116,7 @@ class CloudFormationClient extends Client
         bool $is_enabled,
         array $secrets = [],
         ?string $domain = null,
+        ?string $root_domain = null,
         ?string $hosted_zone_id = null,
         ?string $certificate_arn = null,
         ?int $db_storage_size = null,
@@ -123,6 +129,7 @@ class CloudFormationClient extends Client
         foreach ([
                      'Enabled' => $is_enabled,
                      'DomainName' => $domain,
+                     'RootDomainName' => $root_domain,
                      'HostedZoneId' => $hosted_zone_id,
                      'CertificateArn' => $certificate_arn,
                      'DBStorageSize' => $db_storage_size,
@@ -184,7 +191,7 @@ class CloudFormationClient extends Client
                 ],
                 ...$update_params,
             ],
-            'TemplateBody' => $this->template(),
+            'TemplateBody' => $this->template($secrets),
         ]);
     }
 

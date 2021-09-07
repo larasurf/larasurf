@@ -31,7 +31,9 @@ class CloudDomains extends Command
     {
         $domain = $this->domainOption();
 
-        $id = $this->awsRoute53()->hostedZoneIdFromDomain($domain);
+        $root_domain = $this->rootDomainFromFullDomain($domain);
+
+        $id = $this->awsRoute53()->hostedZoneIdFromRootDomain($root_domain);
 
         if (!$id) {
             $this->warn("Hosted zone not found for domain '$domain'");
@@ -46,7 +48,9 @@ class CloudDomains extends Command
     {
         $domain = $this->domainOption();
 
-        $id = $this->awsRoute53()->createHostedZone($domain);
+        $root_domain = $this->rootDomainFromFullDomain($domain);
+
+        $id = $this->awsRoute53()->createHostedZone($root_domain);
 
         $this->getOutput()->writeln("<info>Hosted zone created with ID:</info> $id");
     }
@@ -57,7 +61,9 @@ class CloudDomains extends Command
 
         $route53 = $this->awsRoute53();
 
-        $id = $route53->hostedZoneIdFromDomain($domain);
+        $root_domain = $this->rootDomainFromFullDomain($domain);
+
+        $id = $route53->hostedZoneIdFromRootDomain($root_domain);
 
         if (!$id) {
             $this->error("Hosted zone not found for domain '$domain'");

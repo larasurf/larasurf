@@ -9,23 +9,13 @@ use LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException;
 
 class Route53Client extends Client
 {
-    public function hostedZoneIdFromDomain(string $domain): string|false
+    public function hostedZoneIdFromRootDomain(string $root_domain): string|false
     {
         // todo: support more than 100 hosted zones
         $hosted_zones = $this->client->listHostedZones();
 
-        $suffix = Str::afterLast($domain, '.');
-        $domain_length = strlen($domain) - strlen($suffix) - 1;
-        $domain = substr($domain, 0, $domain_length);
-
-        if (Str::contains($domain, '.')) {
-            $domain = Str::afterLast($domain, '.');
-        }
-
-        $domain .= '.' . $suffix;
-
         foreach ($hosted_zones['HostedZones'] as $hosted_zone) {
-            if ($hosted_zone['Name'] === $domain . '.') {
+            if ($hosted_zone['Name'] === $root_domain . '.') {
                 return str_replace('/hostedzone/', '', $hosted_zone['Id']);
             }
         }

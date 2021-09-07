@@ -667,7 +667,7 @@ Resources:
   DNSRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneName: !Join [ '', [ !Ref DomainName, . ] ]
+      HostedZoneName: !Join [ '', [ !Ref RootDomainName, . ] ]
       Name: !Join [ '', [ !Ref DomainName, . ] ]
       Type: A
       AliasTarget:
@@ -692,7 +692,10 @@ Parameters:
       - production
   DomainName:
     Type: String
-    Description: The fully qualified environment domain name.
+    Description: The fully qualified domain name.
+  RootDomainName:
+    Type: String
+    Description: The root domain name.
   HostedZoneId:
     Type: String
     Description: The hosted zone ID for the domain.

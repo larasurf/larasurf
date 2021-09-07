@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\Commands\Traits;
 
+use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
@@ -107,5 +108,20 @@ trait InteractsWithAws
     protected function awsEcrRepositoryName(string $environment, string $type): string
     {
         return static::larasurfConfig()->get('project-name') . '-' . static::larasurfConfig()->get('project-id') . "/$environment/$type";
+    }
+
+    protected function rootDomainFromFullDomain(string $full_domain): string
+    {
+        $suffix = Str::afterLast($full_domain, '.');
+        $domain_length = strlen($full_domain) - strlen($suffix) - 1;
+        $domain = substr($full_domain, 0, $domain_length);
+
+        if (Str::contains($domain, '.')) {
+            $domain = Str::afterLast($domain, '.');
+        }
+
+        $domain .= '.' . $suffix;
+
+        return $domain;
     }
 }

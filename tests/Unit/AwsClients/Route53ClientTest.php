@@ -25,7 +25,7 @@ class Route53ClientTest extends TestCase
                 ],
             ]);
 
-        $this->assertEquals($id, $this->route53Client()->hostedZoneIdFromDomain($domain));
+        $this->assertEquals($id, $this->route53Client()->hostedZoneIdFromRootDomain($domain));
     }
 
     public function testHostedZoneIdFromDomainDoesntExist()
@@ -43,7 +43,7 @@ class Route53ClientTest extends TestCase
                 ],
             ]);
 
-        $this->assertFalse($this->route53Client()->hostedZoneIdFromDomain($domain));
+        $this->assertFalse($this->route53Client()->hostedZoneIdFromRootDomain($domain));
     }
 
     public function testUpsertDnsRecords()
