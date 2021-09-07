@@ -296,6 +296,16 @@ class CloudStacks extends Command
 
         $cloudformation->updateStack(true, $secrets);
 
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
+
+        if (!$result['success']) {
+            $this->error("Stack updating failed with status '{$result['status']}'");
+
+            return 1;
+        } else {
+            $this->info("Stack updating completed successfully");
+        }
+
         $security_groups = [
             $outputs['DBSecurityGroupId'],
             $outputs['CacheSecurityGroupId'],
@@ -304,10 +314,24 @@ class CloudStacks extends Command
 
         $subnets = [$outputs['Subnet1Id']];
 
+        $this->info('Starting ECS task to run migrations...');
+
         $ecs = $this->awsEcs($env, $aws_region);
-        $ecs->runTask($security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $outputs['ArtisanTaskDefinitionArn']);
+        $arn = $ecs->runTask($security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $outputs['ArtisanTaskDefinitionArn']);
+
+        if (!$arn) {
+            $this->error('Failed to start ECS task to run migrations');
+
+            return 1;
+        }
 
         $this->info('Started ECS task to run migrations successfully');
+
+        $ecs->waitForTaskFinish(
+            $arn,
+            $this->getOutput(),
+            'Task has not completed yet, checking again soon...'
+        );
 
         $this->stopTimer();
         $this->displayTimeElapsed();
