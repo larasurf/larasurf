@@ -95,6 +95,8 @@ Resources:
 
   # Database
   DBInstance:
+    DependsOn:
+      - VpcGatewayAttachment
     Type: AWS::RDS::DBInstance
     Properties:
       AllocatedStorage: !Ref DBStorageSize
@@ -482,8 +484,22 @@ Resources:
     Properties:
       Cluster: !Ref ContainerCluster
       TaskDefinition: !Ref ContainerAppTaskDefinition
-      LaunchType: EC2
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
       DesiredCount: !If [IsEnabled, 5, 0]
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref Subnet1
+            - !Ref Subnet2
+            - !Ref Subnet3
+          SecurityGroups:
+            - !Ref ContainerSecurityGroup
+            - !Ref DBSecurityGroup
+            - !Ref CacheSecurityGroup
       LoadBalancers:
         - ContainerName: nginx
           ContainerPort: 80
@@ -540,8 +556,22 @@ Resources:
     Properties:
       Cluster: !Ref ContainerCluster
       TaskDefinition: !Ref ContainerQueueTaskDefinition
-      LaunchType: EC2
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
       DesiredCount: !If [ IsEnabled, 3, 0 ]
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - !Ref Subnet1
+            - !Ref Subnet2
+            - !Ref Subnet3
+          SecurityGroups:
+            - !Ref ContainerSecurityGroup
+            - !Ref DBSecurityGroup
+            - !Ref CacheSecurityGroup
   ContainerArtisanTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -605,6 +635,18 @@ Resources:
         - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ProjectId}-${EnvironmentName}'
           EcsParameters:
             TaskDefinitionArn: !Ref ContainerArtisanTaskDefinition
+            LaunchType: FARGATE
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                AssignPublicIp: DISABLED
+                Subnets:
+                  - !Ref Subnet1
+                  - !Ref Subnet2
+                  - !Ref Subnet3
+                SecurityGroups:
+                  - !Ref ContainerSecurityGroup
+                  - !Ref DBSecurityGroup
+                  - !Ref CacheSecurityGroup
           Id: ContainerArtisanScheduleCommand
           RoleArn: !GetAtt ContainerArtisanScheduleRuleRole.Arn
 
@@ -750,3 +792,18 @@ Outputs:
   BucketName:
     Description: The name of the S3 bucket.
     Value: !Ref Bucket
+  DBSecurityGroupId:
+    Description: The ID of the database security group.
+    Value: !Ref DBSecurityGroup
+  ContainersSecurityGroupId:
+    Description: The ID of the containers security group.
+    Value: !Ref ContainerSecurityGroup
+  CacheSecurityGroupId:
+    Description: The ID of the cache security group.
+    Value: !Ref CacheSecurityGroup
+  ArtisanTaskDefinitionArn:
+    Description: The ARN of the artisan task definiton.
+    Value: !Ref ContainerArtisanTaskDefinition
+  Subnet1Id:
+    Description: The ID of the first subnet.
+    Value: !Ref Subnet1

@@ -11,6 +11,7 @@ use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
 use LaraSurf\LaraSurf\AwsClients\EcrClient;
+use LaraSurf\LaraSurf\AwsClients\EcsClient;
 use LaraSurf\LaraSurf\AwsClients\IamClient;
 use LaraSurf\LaraSurf\AwsClients\RdsClient;
 use LaraSurf\LaraSurf\AwsClients\Route53Client;
@@ -203,5 +204,15 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function mockAwsIamClient(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . \Aws\Iam\IamClient::class);
+    }
+
+    protected function ecsClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): EcsClient
+    {
+        return $this->awsClient(EcsClient::class, $environment);
+    }
+
+    protected function mockAwsEcsClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\Ecs\EcsClient::class);
     }
 }

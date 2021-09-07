@@ -225,6 +225,11 @@ class CloudStacks extends Command
                 'CacheEndpointPort',
                 'QueueUrl',
                 'BucketName',
+                'DBSecurityGroupId',
+                'ContainersSecurityGroupId',
+                'CacheSecurityGroupId',
+                'ArtisanTaskDefinitionArn',
+                'Subnet1Id',
             ]);
 
             if (empty($outputs)) {
@@ -287,12 +292,22 @@ class CloudStacks extends Command
             $this->info("Successfully created cloud variable '$name'");
         }
 
-        // todo: migrate database
-        //  create ecs client, run artisan migrate --force using artisan task
-
         $secrets = $ssm->listParameterArns(true);
 
         $cloudformation->updateStack(true, $secrets);
+
+        $security_groups = [
+            $outputs['DBSecurityGroupId'],
+            $outputs['CacheSecurityGroupId'],
+            $outputs['ContainersSecurityGroupId'],
+        ];
+
+        $subnets = [$outputs['Subnet1Id']];
+
+        $ecs = $this->awsEcs($env, $aws_region);
+        $ecs->runTask($security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $outputs['ArtisanTaskDefinitionArn']);
+
+        $this->info('Started ECS task to run migrations successfully');
 
         $this->stopTimer();
         $this->displayTimeElapsed();
