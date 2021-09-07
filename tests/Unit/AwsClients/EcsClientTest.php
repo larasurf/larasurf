@@ -15,4 +15,19 @@ class EcsClientTest extends TestCase
 
         $this->ecsClient()->runTask([], [], [], Str::random());
     }
+
+    public function testWaitForTaskFinish()
+    {
+        $this->mockAwsEcsClient()
+            ->shouldReceive('describeTasks')
+            ->andReturn([
+                'tasks' => [
+                    [
+                        'lastStatus' => 'STOPPED',
+                    ],
+                ],
+            ]);
+
+        $this->ecsClient()->waitForTaskFinish(Str::random());
+    }
 }
