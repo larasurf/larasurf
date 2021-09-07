@@ -45,7 +45,7 @@ jobs:
             - run:
                 name: Build Images
                 command: |
-                  DOCKER_BUILDKIT=1 docker build -t laravel-base --ssh default --progress plain .
+                  DOCKER_BUILDKIT=1 docker build -t laravel-base --ssh default --progress plain .docker/php-fpm/
                   DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg BASE_IMAGE=laravel-base .circleci/
       - run:
           name: Check Code Style and Run Tests
