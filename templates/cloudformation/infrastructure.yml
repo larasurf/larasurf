@@ -441,24 +441,19 @@ Resources:
       Family: !Ref 'AWS::StackName'
       Cpu: 256
       Memory: 0.5GB
-      NetworkMode: bridge
+      NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
       ExecutionRoleArn: !GetAtt ContainerExecutionRole.Arn
       TaskRoleArn: !GetAtt ContainerTaskRole.Arn
       Volumes:
         - Name: PublicDirectory
-          DockerVolumeConfiguration:
-            Scope: task
       ContainerDefinitions:
         - Image: !Ref WebserverImage
           Name: nginx
           Essential: true
           Environment:
             - { Name: UPSTREAM_HOST, Value: 'app' }
-          VolumesFrom:
-            - SourceContainer: app
-              ReadOnly: true
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -467,16 +462,11 @@ Resources:
               awslogs-stream-prefix: nginx
           PortMappings:
             - ContainerPort: 80
-              HostPort: 0
+              HostPort: 80
               Protocol: tcp
-          Links:
-            - 'app:app'
         - Image: !Ref ApplicationImage
           Name: app
           Essential: true
-          MountPoints:
-            - ContainerPath: /var/www/public
-              SourceVolume: PublicDirectory
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -527,7 +517,7 @@ Resources:
       Family: !Sub '${AWS::StackName}-queue'
       Cpu: 256
       Memory: 0.5GB
-      NetworkMode: bridge
+      NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
       ExecutionRoleArn: !GetAtt ContainerExecutionRole.Arn
@@ -558,7 +548,7 @@ Resources:
       Family: !Sub '${AWS::StackName}-artisan'
       Cpu: 256
       Memory: 0.5GB
-      NetworkMode: bridge
+      NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
       ExecutionRoleArn: !GetAtt ContainerExecutionRole.Arn
