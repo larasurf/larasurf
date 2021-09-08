@@ -442,7 +442,7 @@ Resources:
     Properties:
       Family: !Ref 'AWS::StackName'
       Cpu: !Ref TaskDefinitionCpu
-      Memory: !Ref TaskDefintionMemory
+      Memory: !Ref TaskDefinitionMemory
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -764,7 +764,7 @@ Parameters:
       - 1024
       - 2048
       - 4096
-  TaskDefintionMemory:
+  TaskDefinitionMemory:
     Type: String
     Description: The amount of memory for the task deifintion.
     AllowedValues:
