@@ -348,7 +348,7 @@ class CloudStacks extends Command
             if (empty($task_definition_arn)) {
                 sleep(2);
             }
-        } while ($tries < $limit && (empty($outputs) || $task_definition_arn === $outputs['ArtisanTaskDefinitionArn']));
+        } while ($tries < $limit && (empty($task_definition_arn) || $task_definition_arn === $outputs['ArtisanTaskDefinitionArn']));
 
         if ($tries >= $limit) {
             $this->error('Failed to get ArtisanTaskDefinitionArn from CloudFormation outputs');
