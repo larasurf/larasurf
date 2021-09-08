@@ -20,7 +20,7 @@ jobs:
               set -e
               cp .env.example .env
               php artisan key:generate --force
-              if [[ -f ".php-cs-fixer.dist.php" ]]; then ./vendor/bin/php-cs-fixer fix --dry-run ; else echo "Code Style config not found" ; fi
+              if [[ -f '.php-cs-fixer.dist.php' ]]; then ./vendor/bin/php-cs-fixer fix --dry-run ; else echo 'Code Style config not found' ; fi
               curl \${DB_HOST}:\${DB_PORT} --http0.9 --retry-connrefused --retry 30 --output /dev/null --silent
               php artisan migrate --force
               ./vendor/bin/phpunit
