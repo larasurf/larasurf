@@ -296,7 +296,7 @@ class CloudStacks extends Command
 
             $this->info("Successfully created cloud variable '$name'");
         }
-        
+
         $this->info('Waiting to list parameters...');
 
         do {

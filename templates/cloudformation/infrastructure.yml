@@ -319,7 +319,7 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       UnhealthyThresholdCount: 2
       HealthyThresholdCount: 2
-      Name: !Sub '${ProjectId}-${EnvironmentName}'
+      Name: !Sub 'larasurf-${ProjectId}-${EnvironmentName}'
       Port: 80
       Protocol: HTTP
       TargetGroupAttributes:
@@ -342,7 +342,7 @@ Resources:
   ContainerCluster:
     Type: AWS::ECS::Cluster
     Properties:
-      ClusterName: !Sub '${ProjectId}-${EnvironmentName}'
+      ClusterName: !Sub 'larasurf-${ProjectId}-${EnvironmentName}'
   ContainerExecutionRole:
     Type: AWS::IAM::Role
     Properties:
