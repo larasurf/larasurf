@@ -127,7 +127,7 @@ class CloudFormationClient extends Client
         $update_params = [];
 
         foreach ([
-                     'Enabled' => $is_enabled,
+                     'Enabled' => $is_enabled ? 'true' : 'false',
                      'DomainName' => $domain,
                      'RootDomainName' => $root_domain,
                      'HostedZoneId' => $hosted_zone_id,
@@ -150,7 +150,7 @@ class CloudFormationClient extends Client
         }
 
         $this->client->updateStack([
-            'Capabilities' => ['CAPABILITY_IAM'],
+            'Capabilities' => ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
             'StackName' => $this->stackName(),
             'Parameters' => [
                 [
@@ -358,12 +358,12 @@ class CloudFormationClient extends Client
         $contents = File::get($path);
 
         if ($secrets) {
-            $replace = '';
+            $replace = '          Secrets:' . PHP_EOL;
 
             foreach ($secrets as $name => $arn) {
-                $replace .= PHP_EOL .
-                    "            - Name: $name" .
-                    "            - ValueFrom: $arn";
+                $replace .=
+                    "            - Name: $name" . PHP_EOL .
+                    "              ValueFrom: $arn" . PHP_EOL;
             }
         } else {
             $replace = '';

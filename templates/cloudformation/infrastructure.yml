@@ -563,7 +563,7 @@ Resources:
       DesiredCount: !If [ IsEnabled, 3, 0 ]
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
+          AssignPublicIp: ENABLED
           Subnets:
             - !Ref Subnet1
             - !Ref Subnet2
@@ -638,7 +638,7 @@ Resources:
             LaunchType: FARGATE
             NetworkConfiguration:
               AwsVpcConfiguration:
-                AssignPublicIp: DISABLED
+                AssignPublicIp: ENABLED
                 Subnets:
                   - !Ref Subnet1
                   - !Ref Subnet2

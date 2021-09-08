@@ -81,6 +81,10 @@ class SsmClient extends Client
 
             $next_token = $results['NextToken'] ?? false;
             $done = !$next_token || !($results['Parameters'] ?? false);
+
+            if (!$done) {
+                sleep(1);
+            }
         } while (!$done);
 
         return $parameters;
@@ -110,6 +114,10 @@ class SsmClient extends Client
 
             $next_token = $results['NextToken'] ?? false;
             $done = !$next_token || !($results['Parameters'] ?? false);
+
+            if (!$done) {
+                sleep(1);
+            }
         } while (!$done);
 
         return $parameters;

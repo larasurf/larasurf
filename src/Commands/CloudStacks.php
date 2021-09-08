@@ -147,6 +147,7 @@ class CloudStacks extends Command
 
             foreach ($existing_parameters as $parameter) {
                 $ssm->deleteParameter($parameter);
+                sleep(1);
             }
         }
 
@@ -184,7 +185,7 @@ class CloudStacks extends Command
         $this->newLine();
         $this->info("Creating stack for '$env' environment...");
 
-        $db_username = Str::random(random_int(16, 32));
+        $db_username = Str::substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 1) . Str::random(random_int(10, 15));
         $db_password = Str::random(random_int(32, 40));
 
         $application_image = $ecr->repositoryUri($this->awsEcrRepositoryName($env, 'application')) . ':' . $application_image_tag;
@@ -291,11 +292,31 @@ class CloudStacks extends Command
 
         foreach ($parameters as $name => $value) {
             $ssm->putParameter($name, $value);
+            sleep(1);
 
             $this->info("Successfully created cloud variable '$name'");
         }
+        
+        $this->info('Waiting to list parameters...');
 
-        $secrets = $ssm->listParameterArns(true);
+        do {
+            $secrets = $ssm->listParameterArns(true);
+
+            $has_all = true;
+
+            foreach (array_keys($parameters) as $parameter) {
+                if (!in_array($parameter, array_keys($secrets))) {
+                    $has_all = false;
+
+                    break;
+                }
+            }
+
+            if (!$has_all) {
+                $this->info('Parameters still creating, checking again soon...');
+                sleep(5);
+            }
+        } while (!$has_all);
 
         $cloudformation->updateStack(true, $secrets);
 

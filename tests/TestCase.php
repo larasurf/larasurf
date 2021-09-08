@@ -46,7 +46,7 @@ class TestCase extends \Orchestra\Testbench\TestCase
         $this->cloudformation_template_path = base_path('.cloudformation/infrastructure.yml');
         $this->cloudformation_directory_path = base_path('.cloudformation');
         $this->project_name = implode('-', $this->faker->words());
-        $this->project_id = Str::random(6);
+        $this->project_id = $this->faker->numerify('######');
         $this->aws_profile = $this->faker->word;
         $this->aws_region = Arr::random(Cloud::AWS_REGIONS);
     }
