@@ -475,6 +475,8 @@ Resources:
               awslogs-group: !Ref ApplicationLogGroup
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: app
+          PortMappings:
+            - ContainerPort: 9000
           Secrets: #LARASURF_SECRETS#
   ContainerService:
     DependsOn:
@@ -542,7 +544,7 @@ Resources:
         - Image: !Ref ApplicationImage
           Name: 'sqs-queue-consumer'
           Essential: true
-          Command: [ 'queue:work', 'sqs', '--daemon', '--queue', !Ref Queue, '--tries', '5' ]
+          Command: [ 'php', 'artisan', 'queue:work', 'sqs', '--daemon', '--queue', !Ref Queue, '--tries', '5' ]
           LogConfiguration:
             LogDriver: awslogs
             Options:
