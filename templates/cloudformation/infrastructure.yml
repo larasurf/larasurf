@@ -579,7 +579,7 @@ Resources:
     Properties:
       Family: !Sub '${AWS::StackName}-artisan'
       Cpu: !Ref TaskDefinitionCpu
-      Memory: !Ref TaskDefintionMemory
+      Memory: !Ref TaskDefinitionMemory
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
