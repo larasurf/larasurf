@@ -240,7 +240,7 @@ class CloudFormationClient extends Client
         return is_array($keys) ? $keyed_values : ($keyed_values[$keys] ?? false);
     }
 
-    public function waitForStackInfoPanel(string $success_status, OutputStyle $output = null, string $word = null): array
+    public function waitForStackInfoPanel(string $success_status, OutputStyle $output = null, string $word = null, bool $can_exit = true): array
     {
         $finished = false;
         $tries = 0;
@@ -251,6 +251,10 @@ class CloudFormationClient extends Client
 
         if ($output) {
             $word_padding = str_repeat(' ', strlen($word) - 7);
+
+            $footer = $can_exit
+                ? 'If you do not wish to wait, you can safely exit this screen with Ctrl+C'
+                : 'Please do not exit this window! There are still things to do after this.';
 
             $message =
                 "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
@@ -267,7 +271,7 @@ class CloudFormationClient extends Client
                 "║                                                                              ║" . PHP_EOL .
                 "╚══════════════════════════════════════════════════════════════════════════════╝" . PHP_EOL .
                 PHP_EOL .
-                "If you do not wish to wait, you can safely exit this screen with Ctrl+C" . PHP_EOL .
+                $footer . PHP_EOL .
                 PHP_EOL .
                 "<info>Checking for updates every 60 seconds...</info>" . PHP_EOL;
 

@@ -206,7 +206,7 @@ class CloudStacks extends Command
             $webserver_image
         );
 
-        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created');
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created', false);
 
         if (!$result['success']) {
             $this->error("Stack creation failed with status '{$result['status']}'");
@@ -320,7 +320,7 @@ class CloudStacks extends Command
 
         $cloudformation->updateStack(true, $secrets);
 
-        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated', false);
 
         if (!$result['success']) {
             $this->error("Stack updating failed with status '{$result['status']}'");
