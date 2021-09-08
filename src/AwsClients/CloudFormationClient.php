@@ -29,7 +29,9 @@ class CloudFormationClient extends Client
         string $db_password,
         string $cache_node_type,
         string $application_image,
-        string $webserver_image
+        string $webserver_image,
+        string $task_cpu,
+        string $task_memory
     )
     {
         $this->validateEnvironmentIsSet();
@@ -106,6 +108,14 @@ class CloudFormationClient extends Client
                     'ParameterKey' => 'WebserverImage',
                     'ParameterValue' => $webserver_image,
                 ],
+                [
+                    'ParameterKey' => 'TaskDefinitionCpu',
+                    'ParameterValue' => $task_cpu,
+                ],
+                [
+                    'ParameterKey' => 'TaskDefinitionMemory',
+                    'ParameterValue' => $task_memory,
+                ],
             ],
             'Tags' => $this->resourceTags(),
             'TemplateBody' => $this->template(),
@@ -122,6 +132,8 @@ class CloudFormationClient extends Client
         ?int $db_storage_size = null,
         ?string $db_instance_class = null,
         ?string $cache_node_type = null,
+        ?string $task_cpu = null,
+        ?string $task_memory = null
     )
     {
         $update_params = [];
@@ -135,6 +147,8 @@ class CloudFormationClient extends Client
                      'DBStorageSize' => $db_storage_size,
                      'DBInstanceClass' => $db_instance_class,
                      'CacheNodeType' => $cache_node_type,
+                     'TaskDefinitionCpu' => $task_cpu,
+                     'TaskDefinitionMemory' => $task_memory,
                  ] as $key => $value) {
             if ($value !== null) {
                 $update_params[] = [
@@ -254,7 +268,7 @@ class CloudFormationClient extends Client
 
             $footer = $can_exit
                 ? 'If you do not wish to wait, you can safely exit this screen with Ctrl+C'
-                : 'Please do not exit this window! There are still things to do after this.';
+                : 'Please do not exit this screen! There are still things to do after this.';
 
             $message =
                 "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .

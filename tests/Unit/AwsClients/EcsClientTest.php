@@ -13,7 +13,7 @@ class EcsClientTest extends TestCase
             ->shouldReceive('runTask')
             ->andReturn();
 
-        $this->ecsClient()->runTask([], [], [], Str::random());
+        $this->ecsClient()->runTask(Str::random(), [], [], [], Str::random());
     }
 
     public function testWaitForTaskFinish()

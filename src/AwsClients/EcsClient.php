@@ -9,9 +9,10 @@ use LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException;
 
 class EcsClient extends Client
 {
-    public function runTask(array $security_groups, array $subnets, array $command, string $task_definition): string|false
+    public function runTask(string $cluster, array $security_groups, array $subnets, array $command, string $task_definition): string|false
     {
         $result = $this->client->runTask([
+            'cluster' => $cluster,
             'launchType' => 'FARGATE',
             'networkConfiguration' => [
                 'awsvpcConfiguration' => [
@@ -56,7 +57,7 @@ class EcsClient extends Client
             return false;
         }, $output, $wait_message);
     }
-    
+
     protected function makeClient(array $args): \Aws\Ecs\EcsClient
     {
         return new \Aws\Ecs\EcsClient($args);

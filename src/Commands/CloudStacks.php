@@ -114,6 +114,7 @@ class CloudStacks extends Command
 
         if (!$ecr->imageTagExists($application_repo_name, $application_image_tag)) {
             $this->error("Failed to find tag '$application_image_tag' in ECR repository '$application_repo_name'");
+            $this->info('Is CircleCI finished building and publishing the images?');
 
             return 1;
         }
@@ -160,6 +161,10 @@ class CloudStacks extends Command
 
         $cache_node_type = $this->askCacheNodeType();
 
+        $cpu = $this->askTaskDefinitionCpu();
+
+        $memory = $this->askTaskDefinitionMemory($cpu);
+
         $domain = $this->ask('Fully qualified domain name?');
 
         $route53 = $this->awsRoute53();
@@ -203,7 +208,9 @@ class CloudStacks extends Command
             $db_password,
             $cache_node_type,
             $application_image,
-            $webserver_image
+            $webserver_image,
+            $cpu,
+            $memory
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created', false);
@@ -330,6 +337,25 @@ class CloudStacks extends Command
             $this->info("Stack updating completed successfully");
         }
 
+        $tries = 0;
+        $limit = 10;
+
+        do {
+            $task_definition_arn = $cloudformation->stackOutput([
+                'ArtisanTaskDefinitionArn',
+            ])['ArtisanTaskDefinitionArn'] ?? null;
+
+            if (empty($task_definition_arn)) {
+                sleep(2);
+            }
+        } while ($tries < $limit && (empty($outputs) || $task_definition_arn === $outputs['ArtisanTaskDefinitionArn']));
+
+        if ($tries >= $limit) {
+            $this->error('Failed to get ArtisanTaskDefinitionArn from CloudFormation outputs');
+
+            return 1;
+        }
+
         $security_groups = [
             $outputs['DBSecurityGroupId'],
             $outputs['CacheSecurityGroupId'],
@@ -338,10 +364,14 @@ class CloudStacks extends Command
 
         $subnets = [$outputs['Subnet1Id']];
 
+        $project_id = static::larasurfConfig()->get('project-id');
+
+        $cluster = "larasurf-$project_id-$env";
+
         $this->info('Starting ECS task to run migrations...');
 
         $ecs = $this->awsEcs($env, $aws_region);
-        $arn = $ecs->runTask($security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $outputs['ArtisanTaskDefinitionArn']);
+        $arn = $ecs->runTask($cluster, $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $task_definition_arn);
 
         if (!$arn) {
             $this->error('Failed to start ECS task to run migrations');
@@ -359,6 +389,8 @@ class CloudStacks extends Command
 
         $this->stopTimer();
         $this->displayTimeElapsed();
+
+        $this->info("Visit https://$domain to see your application");
 
         return 0;
     }
@@ -413,6 +445,8 @@ class CloudStacks extends Command
             $new_db_instance_type = null;
             $new_db_storage = null;
             $new_cache_node_type = null;
+            $new_cpu = null;
+            $new_memory = null;
 
             $route53 = $this->awsRoute53();
 
@@ -460,6 +494,12 @@ class CloudStacks extends Command
 
                         break;
                     }
+                    case 'Task definition CPU + Memory': {
+                        $new_cpu = $this->askTaskDefinitionCpu();
+                        $new_memory = $this->askTaskDefinitionMemory($new_cpu);
+
+                        break;
+                    }
                 }
             }
 
@@ -474,7 +514,9 @@ class CloudStacks extends Command
                 $new_certificate_arn,
                 $new_db_storage,
                 $new_db_instance_type,
-                $new_cache_node_type
+                $new_cache_node_type,
+                $new_cpu,
+                $new_memory
             );
         } else {
             $this->startTimer();
@@ -595,6 +637,16 @@ class CloudStacks extends Command
     protected function askCacheNodeType(): string
     {
         return $this->choice('Cache node type?', Cloud::CACHE_NODE_TYPES, 0);
+    }
+
+    protected function askTaskDefinitionCpu(): string
+    {
+        return $this->choice('Task definition CPU?', Cloud::FARGATE_CPU_VALUES, 0);
+    }
+
+    protected function askTaskDefinitionMemory(string $cpu): string
+    {
+        return $this->choice('Task definition memory?', Cloud::FARGATE_CPU_MEMORY_VALUES_MAP[$cpu] ?? []);
     }
 
     protected function askDatabaseStorage(): string

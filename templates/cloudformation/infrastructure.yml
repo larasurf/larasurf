@@ -441,8 +441,8 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Ref 'AWS::StackName'
-      Cpu: 256
-      Memory: 0.5GB
+      Cpu: !Ref TaskDefinitionCpu
+      Memory: !Ref TaskDefintionMemory
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -533,8 +533,8 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub '${AWS::StackName}-queue'
-      Cpu: 256
-      Memory: 0.5GB
+      Cpu: !Ref TaskDefinitionCpu
+      Memory: !Ref TaskDefintionMemory
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -578,8 +578,8 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub '${AWS::StackName}-artisan'
-      Cpu: 256
-      Memory: 0.5GB
+      Cpu: !Ref TaskDefinitionCpu
+      Memory: !Ref TaskDefintionMemory
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -755,6 +755,36 @@ Parameters:
   WebserverImage:
     Type: String
     Description: The URL of a websever image on ECR.
+  TaskDefinitionCpu:
+    Type: String
+    Description: The CPU value for the task definitions.
+    AllowedValues:
+      - 256
+      - 512
+      - 1024
+      - 2048
+      - 4096
+  TaskDefintionMemory:
+    Type: String
+    Description: The amount of memory for the task deifintion.
+    AllowedValues:
+      - 512
+      - 1024
+      - 2048
+      - 3072
+      - 4096
+      - 5120
+      - 6144
+      - 7168
+      - 8192
+      - 9216
+      - 10240
+      - 11264
+      - 12288
+      - 13312
+      - 14336
+      - 15360
+      - 16384
 
 Conditions:
   IsProduction: !Equals [!Ref EnvironmentName, production]
