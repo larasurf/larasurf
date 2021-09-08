@@ -346,7 +346,8 @@ class CloudStacks extends Command
             ])['ArtisanTaskDefinitionArn'] ?? null;
 
             if (empty($task_definition_arn)) {
-                sleep(2);
+                $this->info('Stack outputs are not yet updated, checking again soon...');
+                sleep(5);
             }
         } while ($tries < $limit && (empty($task_definition_arn) || $task_definition_arn === $outputs['ArtisanTaskDefinitionArn']));
 
