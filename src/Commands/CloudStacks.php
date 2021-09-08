@@ -341,18 +341,19 @@ class CloudStacks extends Command
         $limit = 10;
 
         do {
-            $task_definition_arn = $cloudformation->stackOutput([
+            $updated_outputs = $cloudformation->stackOutput([
                 'ArtisanTaskDefinitionArn',
-            ])['ArtisanTaskDefinitionArn'] ?? null;
+                'ContainerClusterArn',
+            ]) ?? null;
 
-            if (empty($task_definition_arn)) {
+            if (empty($updated_outputs)) {
                 $this->info('Stack outputs are not yet updated, checking again soon...');
                 sleep(5);
             }
-        } while ($tries < $limit && (empty($task_definition_arn) || $task_definition_arn === $outputs['ArtisanTaskDefinitionArn']));
+        } while ($tries < $limit && (empty($updated_outputs) || $updated_outputs['ArtisanTaskDefinitionArn'] === $outputs['ArtisanTaskDefinitionArn']));
 
         if ($tries >= $limit) {
-            $this->error('Failed to get ArtisanTaskDefinitionArn from CloudFormation outputs');
+            $this->error('Failed to get updated CloudFormation outputs');
 
             return 1;
         }
@@ -365,14 +366,10 @@ class CloudStacks extends Command
 
         $subnets = [$outputs['Subnet1Id']];
 
-        $project_id = static::larasurfConfig()->get('project-id');
-
-        $cluster = "larasurf-$project_id-$env";
-
         $this->info('Starting ECS task to run migrations...');
 
         $ecs = $this->awsEcs($env, $aws_region);
-        $arn = $ecs->runTask($cluster, $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $task_definition_arn);
+        $arn = $ecs->runTask($updated_outputs['ContainerClusterArn'], $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $task_definition_arn);
 
         if (!$arn) {
             $this->error('Failed to start ECS task to run migrations');
@@ -647,7 +644,7 @@ class CloudStacks extends Command
 
     protected function askTaskDefinitionMemory(string $cpu): string
     {
-        return $this->choice('Task definition memory?', Cloud::FARGATE_CPU_MEMORY_VALUES_MAP[$cpu] ?? []);
+        return $this->choice('Task definition memory?', Cloud::FARGATE_CPU_MEMORY_VALUES_MAP[$cpu] ?? [], 0);
     }
 
     protected function askDatabaseStorage(): string

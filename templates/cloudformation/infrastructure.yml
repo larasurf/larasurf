@@ -842,3 +842,6 @@ Outputs:
   Subnet1Id:
     Description: The ID of the first subnet.
     Value: !Ref Subnet1
+  ContainerClusterArn:
+    Description: The ARN of the container cluster.
+    Value: !GetAtt ContainerCluster.Arn

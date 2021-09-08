@@ -9,7 +9,7 @@ use LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException;
 
 class EcsClient extends Client
 {
-    public function runTask(string $cluster, array $security_groups, array $subnets, array $command, string $task_definition): string|false
+    public function runTask(string $cluster, array $security_groups, array $subnets, array $command, string $task_definition, string $container_name = 'artisan'): string|false
     {
         $result = $this->client->runTask([
             'cluster' => $cluster,
@@ -25,6 +25,7 @@ class EcsClient extends Client
                 'containerOverrides' => [
                     [
                         'command' => $command,
+                        'name' => $container_name,
                     ],
                 ],
             ],
