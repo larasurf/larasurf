@@ -267,8 +267,8 @@ class CloudFormationClient extends Client
             $word_padding = str_repeat(' ', strlen($word) - 7);
 
             $footer = $can_exit
-                ? 'If you do not wish to wait, you can safely exit this screen with Ctrl+C'
-                : 'Please do not exit this screen! There are still things to do after this.';
+                ? "║   <info>If you do not wish to wait, you can safely exit this screen with Ctrl+C.</info>   ║"
+                : "║   <info>Please do not exit this screen! There are still things to do after this.</info>   ║";
 
             $message =
                 "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
@@ -283,11 +283,13 @@ class CloudFormationClient extends Client
                 "║         <info>This would also be a great time to review the documentation!</info>         ║" . PHP_EOL .
                 "║                         https://larasurf.com/docs                            ║" . PHP_EOL .
                 "║                                                                              ║" . PHP_EOL .
+                "╠══════════════════════════════════════════════════════════════════════════════╣" . PHP_EOL .
+                "║                                                                              ║" . PHP_EOL .
+                $footer . PHP_EOL .
+                "║                                                                              ║" . PHP_EOL .
                 "╚══════════════════════════════════════════════════════════════════════════════╝" . PHP_EOL .
                 PHP_EOL .
-                $footer . PHP_EOL .
-                PHP_EOL .
-                "<info>Checking for updates every 60 seconds...</info>" . PHP_EOL;
+                "Checking for updates every 60 seconds..." . PHP_EOL;
 
             $output->writeln($message);
         }

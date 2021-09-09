@@ -454,8 +454,6 @@ Resources:
         - Image: !Ref WebserverImage
           Name: nginx
           Essential: true
-          Environment:
-            - { Name: UPSTREAM_HOST, Value: '127.0.0.1' }
           LogConfiguration:
             LogDriver: awslogs
             Options:

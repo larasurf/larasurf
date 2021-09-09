@@ -231,7 +231,7 @@ EOF;
 
         File::append($path, $append);
 
-        $this->info('Created health check route successfully');
+        $this->info('Published health check route successfully');
 
         $test = <<<'EOF'
 <?php
@@ -252,6 +252,6 @@ EOF;
 
         File::put(base_path('tests/Feature/HealthCheckTest.php'), $test);
 
-        $this->info('Created health check feature test successfully');
+        $this->info('Published health check feature test successfully');
     }
 }
