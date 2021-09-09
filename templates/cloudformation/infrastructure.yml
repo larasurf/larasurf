@@ -455,7 +455,7 @@ Resources:
           Name: nginx
           Essential: true
           Environment:
-            - { Name: UPSTREAM_HOST, Value: 'app' }
+            - { Name: UPSTREAM_HOST, Value: '127.0.0.1' }
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -478,8 +478,6 @@ Resources:
               awslogs-group: !Ref ApplicationLogGroup
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: app
-          PortMappings:
-            - ContainerPort: 9000
           Secrets: #LARASURF_SECRETS#
   ContainerService:
     DependsOn:
