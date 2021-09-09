@@ -214,7 +214,7 @@ class Publish extends Command
 
     protected function publishHealthCheck()
     {
-        $path = base_path('routes/web.php');
+        $path = base_path('routes/api.php');
 
         if (!File::exists($path)) {
             $this->error("Failed to find file at path: $path");
@@ -244,7 +244,7 @@ class HealthCheckTest extends TestCase
 {
     public function testHealthCheck()
     {
-        $this->get('/healthcheck')->assertOk();
+        $this->get('/api/healthcheck')->assertOk();
     }
 }
 

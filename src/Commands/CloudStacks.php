@@ -286,6 +286,8 @@ class CloudStacks extends Command
             'DB_HOST' => $outputs['DBHost'],
             'DB_PORT' => $outputs['DBPort'],
             'DB_DATABASE' => $database_name,
+            'DB_USERNAME' => $db_username,
+            'DB_PASSWORD' => $db_password,
             'LOG_CHANNEL' => 'errorlog',
             'QUEUE_CONNECTION' => 'sqs',
             'MAIL_DRIVER' => $env === Cloud::ENVIRONMENT_PRODUCTION ? 'ses' : 'smtp',
