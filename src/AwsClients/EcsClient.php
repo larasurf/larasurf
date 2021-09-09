@@ -9,10 +9,10 @@ use LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException;
 
 class EcsClient extends Client
 {
-    public function runTask(string $cluster, array $security_groups, array $subnets, array $command, string $task_definition, string $container_name = 'artisan'): string|false
+    public function runTask(string $cluster_arn, array $security_groups, array $subnets, array $command, string $task_definition, string $container_name = 'artisan'): string|false
     {
         $result = $this->client->runTask([
-            'cluster' => $cluster,
+            'cluster' => $cluster_arn,
             'launchType' => 'FARGATE',
             'networkConfiguration' => [
                 'awsvpcConfiguration' => [
@@ -35,13 +35,14 @@ class EcsClient extends Client
         return $result['tasks'][0]['taskArn'] ?? false;
     }
 
-    public function waitForTaskFinish(string $arn, OutputStyle $output = null, $wait_message = '')
+    public function waitForTaskFinish(string $cluster_arn, string $task_arn, OutputStyle $output = null, $wait_message = '')
     {
         $client = $this->client;
 
-        $this->waitForFinish(60, 60, function (&$success) use ($client, $arn) {
+        $this->waitForFinish(60, 60, function (&$success) use ($client, $cluster_arn, $task_arn) {
             $result = $client->describeTasks([
-                'tasks' => [$arn],
+                'cluster' => $cluster_arn,
+                'tasks' => [$task_arn],
             ]);
 
             if (isset($result['tasks'][0]['lastStatus'])) {

@@ -466,6 +466,9 @@ Resources:
             - ContainerPort: 80
               HostPort: 80
               Protocol: tcp
+          DependsOn:
+            - ContainerName: app
+              Condition: START
         - Image: !Ref ApplicationImage
           Name: app
           Essential: true

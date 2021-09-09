@@ -13,19 +13,20 @@ class Publish extends Command
     use DerivesAppUrl;
     use InteractsWithLaraSurfConfig;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
     public function handle()
     {
         foreach ([
-                     'cs-fixer' => [$this, 'publishCsFixerConfig'],
-                     'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
-                     'env-changes' => [$this, 'publishEnvChanges'],
-                     'circleci' => [$this, 'publishCircleCIConfig'],
-                     'cloudformation' => [$this, 'publishCloudFormation'],
-                     'gitignore' => [$this, 'publishGitIgnore'],
+            'cs-fixer' => [$this, 'publishCsFixerConfig'],
+            'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
+            'env-changes' => [$this, 'publishEnvChanges'],
+            'circleci' => [$this, 'publishCircleCIConfig'],
+            'cloudformation' => [$this, 'publishCloudFormation'],
+            'gitignore' => [$this, 'publishGitIgnore'],
+            'healthcheck' => [$this, 'publishHealthCheck'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -209,5 +210,48 @@ class Publish extends Command
         } else {
             $this->info('Published .gitignore successfully');
         }
+    }
+
+    protected function publishHealthCheck()
+    {
+        $path = base_path('routes/web.php');
+
+        if (!File::exists($path)) {
+            $this->error("Failed to find file at path: $path");
+        }
+
+        $append = <<<EOF
+
+// AWS Health Check Route
+Route::get('/healthcheck', function () {
+    return response()->noContent(\Illuminate\Http\Response::HTTP_OK);
+});
+
+EOF;
+
+        File::append($path, $append);
+
+        $this->info('Created health check route successfully');
+
+        $test = <<<'EOF'
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+
+class HealthCheckTest extends TestCase
+{
+    public function testHealthCheck()
+    {
+        $this->get('/healthcheck')->assertOk();
+    }
+}
+
+EOF;
+
+        File::put(base_path('tests/Feature/HealthCheckTest.php'), $test);
+
+        $this->info('Created health check feature test successfully');
     }
 }

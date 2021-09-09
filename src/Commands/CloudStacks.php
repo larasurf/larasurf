@@ -146,10 +146,12 @@ class CloudStacks extends Command
                 return 0;
             }
 
-            foreach ($existing_parameters as $parameter) {
+            $this->info('Deleting cloud variables...');
+
+            $this->withProgressBar($existing_parameters, function ($parameter) use ($ssm) {
                 $ssm->deleteParameter($parameter);
-                sleep(1);
-            }
+                sleep (1);
+            });
         }
 
         $db_instance_type = $this->askDatabaseInstanceType();
@@ -232,6 +234,7 @@ class CloudStacks extends Command
                 'DBHost',
                 'DBPort',
                 'DBAdminAccessPrefixListId',
+                'AppAccessPrefixListId',
                 'CacheEndpointAddress',
                 'CacheEndpointPort',
                 'QueueUrl',
@@ -342,9 +345,9 @@ class CloudStacks extends Command
 
         do {
             $updated_outputs = $cloudformation->stackOutput([
-                'ArtisanTaskDefinitionArn',
-                'ContainerClusterArn',
-            ]) ?? null;
+                    'ArtisanTaskDefinitionArn',
+                    'ContainerClusterArn',
+                ]) ?? null;
 
             if (empty($updated_outputs)) {
                 $this->info('Stack outputs are not yet updated, checking again soon...');
@@ -369,21 +372,27 @@ class CloudStacks extends Command
         $this->info('Starting ECS task to run migrations...');
 
         $ecs = $this->awsEcs($env, $aws_region);
-        $arn = $ecs->runTask($updated_outputs['ContainerClusterArn'], $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $task_definition_arn);
+        $task_arn = $ecs->runTask($updated_outputs['ContainerClusterArn'], $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $updated_outputs['ArtisanTaskDefinitionArn']);
 
-        if (!$arn) {
+        if (!$task_arn) {
             $this->error('Failed to start ECS task to run migrations');
 
             return 1;
         }
 
         $this->info('Started ECS task to run migrations successfully');
+        $this->getOutput()->writeln($task_arn);
 
         $ecs->waitForTaskFinish(
-            $arn,
+            $updated_outputs['ContainerClusterArn'],
+            $task_arn,
             $this->getOutput(),
             'Task has not completed yet, checking again soon...'
         );
+
+        $this->info('Updating application prefix list to allow ingress from this IP...');
+
+        $ec2->allowIpPrefixList($outputs['AppAccessPrefixListId'], 'me');
 
         $this->stopTimer();
         $this->displayTimeElapsed();

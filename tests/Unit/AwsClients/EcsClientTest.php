@@ -28,6 +28,6 @@ class EcsClientTest extends TestCase
                 ],
             ]);
 
-        $this->ecsClient()->waitForTaskFinish(Str::random());
+        $this->ecsClient()->waitForTaskFinish(Str::random(), Str::random());
     }
 }
