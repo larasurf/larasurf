@@ -16,7 +16,7 @@ class EcsClient extends Client
             'launchType' => 'FARGATE',
             'networkConfiguration' => [
                 'awsvpcConfiguration' => [
-                    'assignPublicIp' => 'DISABLED',
+                    'assignPublicIp' => 'ENABLED',
                     'securityGroups' => $security_groups,
                     'subnets' => $subnets,
                 ],

@@ -397,7 +397,7 @@ class CloudStacks extends Command
         $this->stopTimer();
         $this->displayTimeElapsed();
 
-        $this->info("Visit https://$domain to see your application");
+        $this->getOutput()->writeln("<info>Visit</info> https://$domain <info>to see your application</info>");
 
         return 0;
     }
