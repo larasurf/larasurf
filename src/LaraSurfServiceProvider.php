@@ -4,6 +4,7 @@ namespace LaraSurf\LaraSurf;
 
 use Illuminate\Support\ServiceProvider;
 use LaraSurf\LaraSurf\Commands\CircleCI;
+use LaraSurf\LaraSurf\Commands\CloudArtisan;
 use LaraSurf\LaraSurf\Commands\CloudDomains;
 use LaraSurf\LaraSurf\Commands\CloudEmails;
 use LaraSurf\LaraSurf\Commands\CloudImages;
@@ -37,6 +38,7 @@ class LaraSurfServiceProvider extends ServiceProvider
                 CloudVars::class,
                 CloudImages::class,
                 CloudUsers::class,
+                CloudArtisan::class,
             ]);
         }
     }

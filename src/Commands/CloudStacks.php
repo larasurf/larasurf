@@ -283,6 +283,7 @@ class CloudStacks extends Command
         $parameters = [
             'APP_ENV' => $env,
             'APP_KEY' => 'base64:' . base64_encode(Encrypter::generateKey('AES-256-CBC')),
+            'APP_URL' => "https://$domain",
             'CACHE_DRIVER' => 'redis',
             'DB_CONNECTION' => 'mysql',
             'DB_HOST' => $outputs['DBHost'],

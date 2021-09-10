@@ -13,7 +13,7 @@ class Publish extends Command
     use DerivesAppUrl;
     use InteractsWithLaraSurfConfig;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--app-service-provider}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
@@ -27,6 +27,7 @@ class Publish extends Command
             'cloudformation' => [$this, 'publishCloudFormation'],
             'gitignore' => [$this, 'publishGitIgnore'],
             'healthcheck' => [$this, 'publishHealthCheck'],
+            'app-service-provider' => [$this, 'publishAppServiceProvider']
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -253,5 +254,31 @@ EOF;
         File::put(base_path('tests/Feature/HealthCheckTest.php'), $test);
 
         $this->info('Published health check feature test successfully');
+    }
+
+    protected function publishAppServiceProvider()
+    {
+        $path = app_path('Providers/AppServiceProvider.php');
+
+        $contents = File::get($path);
+
+        $search = <<<EOF
+    public function boot()
+    {
+    }
+EOF;
+
+        $replace = <<<EOF
+    public function boot()
+    {
+        if (\App::environment(['stage', 'production'])) {
+            \Url::forceScheme('https');
+        }
+    }
+EOF;
+
+        $contents = Str::replace($search, $replace, $contents);
+
+        File::put($path, $contents);
     }
 }
