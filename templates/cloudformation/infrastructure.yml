@@ -176,18 +176,7 @@ Resources:
       IpProtocol: tcp
       FromPort: 3306
       ToPort: 3306
-      SourcePrefixListId: !Ref DBAdminAccessPrefixList
-  DBAdminAccessPrefixList:
-    Type: AWS::EC2::PrefixList
-    Properties:
-      AddressFamily: IPv4
-      MaxEntries: 25
-      PrefixListName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-prefix-list-database'
-      Tags:
-        - Key: Project
-          Value: !Sub '${ProjectName}-${ProjectId}'
-        - Key: Environment
-          Value: !Ref EnvironmentName
+      SourcePrefixListId: !Ref DatabasePrefixListId
 
   # Cache
   CacheCluster:
@@ -225,17 +214,6 @@ Resources:
       SourceSecurityGroupId: !Ref CacheSecurityGroup
 
   # LoadBalancer
-  LoadBalancerPrefixList:
-    Type: AWS::EC2::PrefixList
-    Properties:
-      AddressFamily: IPv4
-      MaxEntries: 25
-      PrefixListName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-prefix-list-application'
-      Tags:
-        - Key: Project
-          Value: !Sub '${ProjectName}-${ProjectId}'
-        - Key: Environment
-          Value: !Ref EnvironmentName
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -248,7 +226,7 @@ Resources:
       IpProtocol: tcp
       FromPort: 80
       ToPort: 80
-      SourcePrefixListId: !Ref LoadBalancerPrefixList
+      SourcePrefixListId: !Ref ApplicationPrefixListId
   LoadBalancerSecurityGroupIngressHttps:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -256,7 +234,7 @@ Resources:
       IpProtocol: tcp
       FromPort: 443
       ToPort: 443
-      SourcePrefixListId: !Ref LoadBalancerPrefixList
+      SourcePrefixListId: !Ref ApplicationPrefixListId
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -796,6 +774,12 @@ Parameters:
       - 14336
       - 15360
       - 16384
+  ApplicationPrefixListId:
+    Type: String
+    Description: The ID of the application prefix list.
+  DatabasePrefixListId:
+    Type: String
+    Description: The ID of the database prefix list.
 
 Conditions:
   IsProduction: !Equals [!Ref EnvironmentName, production]
@@ -819,7 +803,7 @@ Outputs:
     Value: !GetAtt DBInstance.Endpoint.Port
   DBAdminAccessPrefixListId:
     Description: The Prefix List ID for database admin access.
-    Value: !Ref DBAdminAccessPrefixList
+    Value: !Ref DatabasePrefixListId
   HostedZoneId:
     Description: The hosted zone ID for the domain.
     Value: !Ref HostedZoneId
@@ -831,7 +815,7 @@ Outputs:
     Value: !GetAtt CacheCluster.RedisEndpoint.Port
   AppAccessPrefixListId:
     Description: The Prefix List ID for application access.
-    Value: !Ref LoadBalancerPrefixList
+    Value: !Ref ApplicationPrefixListId
   QueueUrl:
     Description: The URL of the SQS queue.
     Value: !Ref Queue

@@ -126,6 +126,25 @@ class Publish extends Command
         } else {
             $this->publishCircleCI('config.local.yml');
         }
+
+        if ($production || $stage) {
+            $this->publishCircleCIInjectSecretsScript();
+        }
+    }
+
+    protected function publishCircleCIInjectSecretsScript()
+    {
+        if (!File::isDirectory(base_path('.circleci'))) {
+            File::makeDirectory(base_path('.circleci'));
+        }
+
+        $success = File::copy(__DIR__ . "/../../templates/circleci/inject-secrets.sh", '.circleci/inject-secrets.sh');
+
+        if ($success) {
+            $this->info('Published CircleCI inject secrets script successfully');
+        } else {
+            $this->error('Failed to publish CircleCI inject secrets script');
+        }
     }
 
     protected function publishCircleCI($filename)
@@ -135,8 +154,6 @@ class Publish extends Command
         }
 
         $circle_config_path = base_path('.circleci/config.yml');
-
-        $success = true;
 
         if (File::exists($circle_config_path)) {
             $this->warn("File '.circleci/config.yml' exists");

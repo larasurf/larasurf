@@ -31,7 +31,9 @@ class CloudFormationClient extends Client
         string $application_image,
         string $webserver_image,
         string $task_cpu,
-        string $task_memory
+        string $task_memory,
+        string $database_prefix_list_id,
+        string $application_prefix_list_id
     )
     {
         $this->validateEnvironmentIsSet();
@@ -115,6 +117,14 @@ class CloudFormationClient extends Client
                 [
                     'ParameterKey' => 'TaskDefinitionMemory',
                     'ParameterValue' => $task_memory,
+                ],
+                [
+                    'ParameterKey' => 'ApplicationPrefixListId',
+                    'ParameterValue' => $application_prefix_list_id,
+                ],
+                [
+                    'ParameterKey' => 'DatabasePrefixListId',
+                    'ParameterValue' => $database_prefix_list_id,
                 ],
             ],
             'Tags' => $this->resourceTags(),
@@ -201,6 +211,14 @@ class CloudFormationClient extends Client
                 ],
                 [
                     'ParameterKey' => 'WebserverImage',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'ApplicationPrefixListId',
+                    'UsePreviousValue' => true,
+                ],
+                [
+                    'ParameterKey' => 'DatabasePrefixListId',
                     'UsePreviousValue' => true,
                 ],
                 ...$update_params,

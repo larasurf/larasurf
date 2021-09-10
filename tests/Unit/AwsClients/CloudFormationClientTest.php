@@ -48,6 +48,8 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             Str::random(),
+            Str::random(),
+            Str::random()
         );
     }
 
@@ -78,6 +80,8 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             Str::random(),
+            Str::random(),
+            Str::random(),
             Str::random()
         );
     }
@@ -104,6 +108,8 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             Str::random(),
+            Str::random(),
+            Str::random()
         );
     }
 

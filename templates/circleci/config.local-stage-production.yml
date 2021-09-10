@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   aws-ecr: circleci/aws-ecr@7.2.0
+  aws-cli: circleci/aws-cli@2.0.3
   jq: circleci/jq@2.2.0
 
 jobs:
@@ -72,19 +73,48 @@ jobs:
                   docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}"
                   docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}"
   deploy:
-    docker:
-      - image: cimg/base:2021.04
+    parameters:
+      environment:
+        type: string
+      var_name_region:
+        type: env_var_name
+      var_name_ecr_url_prefix:
+        type: env_var_name
+    executor: aws-cli/default
     steps:
+      - checkout
       - run:
           name: Check Required Envionment Variables
           command: |
             set -e
-            test -n "${AWS_ACCOUNT_ID}"
-            test -n "${AWS_REGION}"
             test -n "${AWS_ACCESS_KEY_ID}"
             test -n "${AWS_SECRET_ACCESS_KEY}"
-      - run: # todo: add AWS CLI orb, call aws cloudformation deploy, preprocess cloudformation template secrets with aws cli, jq, and sed
+            test -n "${<< parameters.var_name_region >>}"
+            test -n "${<< parameters.var_name_ecr_url_prefix >>}"
+      - aws-cli/setup:
+          aws-region: << parameters.var_name_region >>
+      - run:
+          name: Preprocess CloudFormation Template
+          command: .circleci/inject-secrets.sh << parameters.environment >>
+      - run:
           name: Deploy CloudFormation Stack
+          command: |
+            export PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
+            export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
+
+            aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-${PROJECT_ID}-<< parameters.environment >>" > /dev/null 2>&1 && \
+            aws cloudformation deploy \
+              --region "${<< parameters.var_name_region >>}" \
+              --template-file infrastructure.yml \
+              --stack-name "${PROJECT_NAME}-${PROJECT_ID}-<< parameters.environment >>" \
+              --capabilities CAPABILITY_NAMED_IAM \
+              --no-fail-on-empty-changeset \
+              --parameter-overrides \
+                  "ApplicationImage=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" \
+                  "WebserverImage=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" \
+              || echo 'Stack not yet deployed'
+      - run:
+          name: Run Migrations
           command: echo "ToDo"
 
 workflows:
@@ -112,6 +142,9 @@ workflows:
           var_name_region: AWS_REGION_STAGE
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_STAGE
       - deploy:
+          environment: stage
+          var_name_region: AWS_REGION_STAGE
+          var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_STAGE
           requires:
             - test
   deploy-workflow-production:
@@ -124,5 +157,8 @@ workflows:
           var_name_region: AWS_REGION_PRODUCTION
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
       - deploy:
+          environment: production
+          var_name_region: AWS_REGION_PRODUCTION
+          var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
           requires:
             - test

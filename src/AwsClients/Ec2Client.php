@@ -9,6 +9,37 @@ use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\PrefixListEntry;
 
 class Ec2Client extends Client
 {
+    public function createPrefixList(string $type, string $default_ip = null): string|false
+    {
+        $args = [
+            'AddressFamily' => 'IPv4',
+            'MaxEntries' => 25,
+            'PrefixListName' => "{$this->project_name}-{$this->project_id}-{$this->environment}-$type",
+        ];
+
+        if ($default_ip) {
+            $cidr_description = $this->cidrWithDescriptionFromIpArgument($default_ip);
+
+            $args['Entries'] = [
+                [
+                    'Cidr' => $cidr_description['cidr'],
+                    'Description' => $cidr_description['description'],
+                ],
+            ];
+        }
+
+        $result = $this->client->createManagedPrefixList($args);
+
+        return $result['PrefixList']['PrefixListId'] ?? false;
+    }
+
+    public function deletePrefixList(string $prefix_list_id)
+    {
+        $this->client->deleteManagedPrefixList([
+            'PrefixListId' => $prefix_list_id,
+        ]);
+    }
+
     public function allowIpPrefixList(string $prefix_list_id, string $ip)
     {
         $result = $this->client->describeManagedPrefixLists([

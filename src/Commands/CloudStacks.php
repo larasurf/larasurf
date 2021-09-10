@@ -32,7 +32,6 @@ class CloudStacks extends Command
 
     protected $signature = 'larasurf:cloud-stacks
                             {--environment=null : The environment: \'stage\' or \'production\'}
-                            {--refresh : If the environment should be refreshed when using the \'update\' command}
                             {subcommand : The subcommand to run: \'status\', \'create\', \'update\', \'delete\', or \'wait\'}';
 
     protected $description = 'Manage application environment variables in cloud environments';
@@ -189,6 +188,13 @@ class CloudStacks extends Command
 
         $acm_arn = $this->findOrCreateAcmCertificateArn($env, $domain, $hosted_zone_id);
 
+        $ec2 = $this->awsEc2($env);
+
+        $this->info('Creating prefix lists...');
+
+        $database_prefix_list_id = $ec2->createPrefixList('database', 'me');
+        $application_prefix_list_id = $ec2->createPrefixList('application', 'me');
+
         $this->startTimer();
 
         $this->newLine();
@@ -214,7 +220,9 @@ class CloudStacks extends Command
             $application_image,
             $webserver_image,
             $cpu,
-            $memory
+            $memory,
+            $database_prefix_list_id,
+            $application_prefix_list_id
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created', false);
@@ -261,10 +269,6 @@ class CloudStacks extends Command
 
         $this->info('Allowing database ingress from current IP address...');
 
-        $ec2 = $this->awsEc2($env);
-
-        $ec2->allowIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
-
         $this->info('Creating database schema...');
 
         $database_name = $this->createDatabaseSchema(
@@ -275,10 +279,6 @@ class CloudStacks extends Command
             $db_username,
             $db_password,
         );
-
-        $this->info('Revoking database ingress from current IP address...');
-
-        $ec2->revokeIpPrefixList($outputs['DBAdminAccessPrefixListId'], 'me');
 
         $parameters = [
             'APP_ENV' => $env,
@@ -432,110 +432,103 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $refresh = $this->option('refresh');
-
         $secrets = $this->awsSsm($env)->listParameterArns(true);
 
-        if (!$refresh) {
-            $updates = $name = $this->choice(
-                'Which options would you like to change?',
-                [
-                    '(None)',
-                    'Domain + ACM certificate ARN',
-                    'ACM certificate ARN',
-                    'Database instance type',
-                    'Database storage size',
-                    'Cache node type',
-                ],
-                0,
-                null,
-                true
-            );
+        $updates = $name = $this->choice(
+            'Which options would you like to change?',
+            [
+                '(None)',
+                'Domain + ACM certificate ARN',
+                'ACM certificate ARN',
+                'Database instance type',
+                'Database storage size',
+                'Cache node type',
+                'Task definition CPU + Memory',
+            ],
+            0,
+            null,
+            true
+        );
 
-            $new_domain = null;
-            $new_hosted_zone_id = null;
-            $new_certificate_arn = null;
-            $new_db_instance_type = null;
-            $new_db_storage = null;
-            $new_cache_node_type = null;
-            $new_cpu = null;
-            $new_memory = null;
+        $new_domain = null;
+        $new_hosted_zone_id = null;
+        $new_certificate_arn = null;
+        $new_db_instance_type = null;
+        $new_db_storage = null;
+        $new_cache_node_type = null;
+        $new_cpu = null;
+        $new_memory = null;
 
-            $route53 = $this->awsRoute53();
+        $route53 = $this->awsRoute53();
 
-            if (in_array('ACM certificate ARN', $updates) && in_array('Domain + ACM certificate ARN', $updates)) {
-                $index = array_search('ACM certificate ARN', $updates);
-                unset($updates[$index]);
-            }
+        if (in_array('ACM certificate ARN', $updates) && in_array('Domain + ACM certificate ARN', $updates)) {
+            $index = array_search('ACM certificate ARN', $updates);
+            unset($updates[$index]);
+        }
 
-            foreach ($updates as $update) {
-                switch ($update) {
-                    case 'Domain + ACM certificate ARN': {
-                        $new_domain = $this->ask('Fully qualified domain name?');
+        foreach ($updates as $update) {
+            switch ($update) {
+                case 'Domain + ACM certificate ARN': {
+                    $new_domain = $this->ask('Fully qualified domain name?');
 
-                        $root_domain = $this->rootDomainFromFullDomain($new_domain);
+                    $root_domain = $this->rootDomainFromFullDomain($new_domain);
 
-                        $new_hosted_zone_id = $route53->hostedZoneIdFromRootDomain($root_domain);
+                    $new_hosted_zone_id = $route53->hostedZoneIdFromRootDomain($root_domain);
 
-                        if (!$new_hosted_zone_id) {
-                            $this->error("Hosted zone for domain '$new_domain' could not be found");
+                    if (!$new_hosted_zone_id) {
+                        $this->error("Hosted zone for domain '$new_domain' could not be found");
 
-                            return 1;
-                        }
-
-                        $new_certificate_arn = $this->findOrCreateAcmCertificateArn($env, $new_domain, $new_hosted_zone_id);
-
-                        break;
+                        return 1;
                     }
-                    case 'ACM certificate ARN': {
-                        $new_certificate_arn = $this->askAcmCertificateArn();
 
-                        break;
-                    }
-                    case 'Database instance type': {
-                        $new_db_instance_type = $this->askDatabaseInstanceType();
+                    $new_certificate_arn = $this->findOrCreateAcmCertificateArn($env, $new_domain, $new_hosted_zone_id);
 
-                        break;
-                    }
-                    case 'Database storage size': {
-                        $new_db_storage = $this->askDatabaseStorage();
+                    break;
+                }
+                case 'ACM certificate ARN': {
+                    $new_certificate_arn = $this->askAcmCertificateArn();
 
-                        break;
-                    }
-                    case 'Cache node type': {
-                        $new_cache_node_type = $this->askCacheNodeType();
+                    break;
+                }
+                case 'Database instance type': {
+                    $new_db_instance_type = $this->askDatabaseInstanceType();
 
-                        break;
-                    }
-                    case 'Task definition CPU + Memory': {
-                        $new_cpu = $this->askTaskDefinitionCpu();
-                        $new_memory = $this->askTaskDefinitionMemory($new_cpu);
+                    break;
+                }
+                case 'Database storage size': {
+                    $new_db_storage = $this->askDatabaseStorage();
 
-                        break;
-                    }
+                    break;
+                }
+                case 'Cache node type': {
+                    $new_cache_node_type = $this->askCacheNodeType();
+
+                    break;
+                }
+                case 'Task definition CPU + Memory': {
+                    $new_cpu = $this->askTaskDefinitionCpu();
+                    $new_memory = $this->askTaskDefinitionMemory($new_cpu);
+
+                    break;
                 }
             }
-
-            $this->startTimer();
-
-            $cloudformation->updateStack(
-                true,
-                $secrets,
-                $new_domain,
-                $new_domain ? $this->rootDomainFromFullDomain($new_domain) : null,
-                $new_hosted_zone_id,
-                $new_certificate_arn,
-                $new_db_storage,
-                $new_db_instance_type,
-                $new_cache_node_type,
-                $new_cpu,
-                $new_memory
-            );
-        } else {
-            $this->startTimer();
-
-            $cloudformation->updateStack(true, $secrets);
         }
+
+        $this->startTimer();
+
+        $cloudformation->updateStack(
+            true,
+            $secrets,
+            $new_domain,
+            $new_domain ? $this->rootDomainFromFullDomain($new_domain) : null,
+            $new_hosted_zone_id,
+            $new_certificate_arn,
+            $new_db_storage,
+            $new_db_instance_type,
+            $new_cache_node_type,
+            $new_cpu,
+            $new_memory
+        );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
 
@@ -573,12 +566,17 @@ class CloudStacks extends Command
 
         $this->info('Checking database for deletion protection...');
 
-        $database_id = $cloudformation->stackOutput('DBId');
+        $outputs = $cloudformation->stackOutput([
+            'DBId',
+            'DBAdminAccessPrefixListId',
+            'AppAccessPrefixListId',
+        ]);
 
         $rds = $this->awsRds($env);
+        $ec2 = $this->awsEc2($env);
 
-        if ($database_id) {
-            if ($rds->checkDeletionProtection($database_id)) {
+        if ($outputs) {
+            if ($rds->checkDeletionProtection($outputs['DBId'])) {
                 $this->warn("Deletion protection is enabled for the '$env' environment's database");
 
                 if (!$this->confirm('Would you like to disable deletion protection and proceed?', false)) {
@@ -587,12 +585,19 @@ class CloudStacks extends Command
 
                 $this->info('Disabling database deletion protection...');
 
-                $rds->modifyDeletionProtection($database_id, false);
+                $rds->modifyDeletionProtection($outputs['DBId'], false);
 
                 $this->info('Deletion protection disabled successfully');
             }
+
+            $this->info('Deleting prefix lists...');
+
+            $ec2->deletePrefixList($outputs['DBAdminAccessPrefixListId']);
+            $ec2->deletePrefixList($outputs['AppAccessPrefixListId']);
+
+            $this->info('Deleted prefix lists successfully');
         } else {
-            $this->warn('Failed to find database ID to check for deletion protection');
+            $this->warn('Failed to get stack outputs');
         }
 
         $this->startTimer();

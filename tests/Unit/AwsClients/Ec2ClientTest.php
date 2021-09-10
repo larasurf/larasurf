@@ -8,6 +8,30 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class Ec2ClientTest extends TestCase
 {
+    public function testCreatePrefixList()
+    {
+        $id = Str::random();
+
+        $this->mockAwsEc2Client()
+            ->shouldReceive('createManagedPrefixList')
+            ->andReturn([
+                'PrefixList' => [
+                    'PrefixListId' => $id,
+                ]
+            ]);
+
+        $this->assertEquals($id, $this->ec2Client()->createPrefixList('application'));
+    }
+
+    public function testDeletePrefixList()
+    {
+        $this->mockAwsEc2Client()
+            ->shouldReceive('deleteManagedPrefixList')
+            ->andReturn();
+
+        $this->ec2Client()->deletePrefixList(Str::random());
+    }
+
     public function testAllowIpPrefixListMe()
     {
         Http::fake([
