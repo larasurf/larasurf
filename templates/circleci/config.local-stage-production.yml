@@ -103,7 +103,7 @@ jobs:
             export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
             export STACK_NAME="${PROJECT_NAME}-${PROJECT_ID}-<< parameters.environment >>"
 
-            aws cloudformation describe-stacks --stack-name "${STACK_NAME} > /dev/null 2>&1 && \
+            aws cloudformation describe-stacks --stack-name "${STACK_NAME}" > /dev/null 2>&1 && \
             aws cloudformation deploy \
               --region "${<< parameters.var_name_region >>}" \
               --template-file infrastructure.yml \
@@ -117,7 +117,7 @@ jobs:
       - run:
           name: Run Migrations
           command: |
-            if $(aws cloudformation describe-stacks --stack-name "${STACK_NAME} > /dev/null 2>&1); then
+            if $(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" > /dev/null 2>&1); then
               export PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
               export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
               export STACK_NAME="${PROJECT_NAME}-${PROJECT_ID}-<< parameters.environment >>"

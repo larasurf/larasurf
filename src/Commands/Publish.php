@@ -20,14 +20,14 @@ class Publish extends Command
     public function handle()
     {
         foreach ([
-            'cs-fixer' => [$this, 'publishCsFixerConfig'],
-            'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
-            'env-changes' => [$this, 'publishEnvChanges'],
-            'circleci' => [$this, 'publishCircleCIConfig'],
-            'cloudformation' => [$this, 'publishCloudFormation'],
-            'gitignore' => [$this, 'publishGitIgnore'],
-            'healthcheck' => [$this, 'publishHealthCheck'],
-            'app-service-provider' => [$this, 'publishAppServiceProvider']
+                     'cs-fixer' => [$this, 'publishCsFixerConfig'],
+                     'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
+                     'env-changes' => [$this, 'publishEnvChanges'],
+                     'circleci' => [$this, 'publishCircleCIConfig'],
+                     'cloudformation' => [$this, 'publishCloudFormation'],
+                     'gitignore' => [$this, 'publishGitIgnore'],
+                     'healthcheck' => [$this, 'publishHealthCheck'],
+                     'app-service-provider' => [$this, 'publishAppServiceProvider']
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -279,12 +279,6 @@ EOF;
 
         $contents = File::get($path);
 
-        $search = <<<EOF
-    public function boot()
-    {
-    }
-EOF;
-
         $replace = <<<EOF
     public function boot()
     {
@@ -294,7 +288,7 @@ EOF;
     }
 EOF;
 
-        $contents = Str::replace($search, $replace, $contents);
+        $contents = preg_replace('/^\s*public function boot\(\)\s*{\s*}/m', $replace, $contents);
 
         File::put($path, $contents);
     }

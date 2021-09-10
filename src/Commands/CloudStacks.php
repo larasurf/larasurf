@@ -197,7 +197,6 @@ class CloudStacks extends Command
 
         $this->startTimer();
 
-        $this->newLine();
         $this->info("Creating stack for '$env' environment...");
 
         $db_username = Str::substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 1) . Str::random(random_int(10, 15));
@@ -266,8 +265,6 @@ class CloudStacks extends Command
 
             return 1;
         }
-
-        $this->info('Allowing database ingress from current IP address...');
 
         $this->info('Creating database schema...');
 
@@ -397,8 +394,6 @@ class CloudStacks extends Command
         );
 
         $this->info('Updating application prefix list to allow ingress from this IP...');
-
-        $ec2->allowIpPrefixList($outputs['AppAccessPrefixListId'], 'me');
 
         $this->stopTimer();
         $this->displayTimeElapsed();
