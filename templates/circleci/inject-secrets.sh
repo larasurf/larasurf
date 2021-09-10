@@ -5,11 +5,8 @@ set -e
 PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
 PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
 ENVIRONMENT=$1
-
 PATH_PREFIX="/${PROJECT_NAME}-${PROJECT_ID}/${ENVIRONMENT}/"
-
 REPLACE="          Secrets:"
-
 NEXT_TOKEN=""
 
 while [[ "${NEXT_TOKEN}" != "null" ]]; do
