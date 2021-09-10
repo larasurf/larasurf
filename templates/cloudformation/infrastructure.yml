@@ -309,7 +309,7 @@ Resources:
         - Field: host-header
           Values:
             - !Ref DomainName
-      ListenerArn: !GetAtt LoadBalancerHttpListener.ListenerArn
+      ListenerArn: !GetAtt LoadBalancerHttpsListener.ListenerArn
       Priority: 100
   LoadBalancerTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup

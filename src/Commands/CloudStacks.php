@@ -152,6 +152,8 @@ class CloudStacks extends Command
                 $ssm->deleteParameter($parameter);
                 sleep (1);
             });
+
+            $this->newLine();
         }
 
         $db_instance_type = $this->askDatabaseInstanceType();
@@ -383,7 +385,6 @@ class CloudStacks extends Command
         }
 
         $this->info('Started ECS task to run migrations successfully');
-        $this->getOutput()->writeln($task_arn);
 
         $ecs->waitForTaskFinish(
             $updated_outputs['ContainerClusterArn'],
