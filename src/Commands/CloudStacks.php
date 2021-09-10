@@ -312,7 +312,7 @@ class CloudStacks extends Command
             $this->info("Successfully created cloud variable '$name'");
         }
 
-        $this->info('Waiting to list parameters...');
+        $this->info('Waiting to list cloud variables...');
 
         do {
             $secrets = $ssm->listParameterArns(true);
@@ -328,10 +328,12 @@ class CloudStacks extends Command
             }
 
             if (!$has_all) {
-                $this->info('Parameters still creating, checking again soon...');
+                $this->info('Cloud variables still creating, checking again soon...');
                 sleep(5);
             }
         } while (!$has_all);
+
+        $this->info('Updating stack with cloud variables...');
 
         $cloudformation->updateStack(true, $secrets);
 
