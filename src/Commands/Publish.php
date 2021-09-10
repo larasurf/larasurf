@@ -272,7 +272,7 @@ EOF;
     public function boot()
     {
         if (\App::environment(['stage', 'production'])) {
-            \Url::forceScheme('https');
+            \URL::forceScheme('https');
         }
     }
 EOF;
