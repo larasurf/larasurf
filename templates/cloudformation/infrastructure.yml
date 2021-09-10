@@ -663,6 +663,18 @@ Resources:
   Bucket:
     DeletionPolicy: Retain
     Type: AWS::S3::Bucket
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedOrigins:
+              - !Ref DomainName
+            MaxAge: '3600'
 
   # DNS
   DNSRecord:
