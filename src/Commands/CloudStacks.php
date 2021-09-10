@@ -293,7 +293,7 @@ class CloudStacks extends Command
             'DB_PASSWORD' => $db_password,
             'LOG_CHANNEL' => 'errorlog',
             'QUEUE_CONNECTION' => 'sqs',
-            'MAIL_DRIVER' => $env === Cloud::ENVIRONMENT_PRODUCTION ? 'ses' : 'smtp',
+            'MAIL_MAILER' => $env === Cloud::ENVIRONMENT_PRODUCTION ? 'ses' : 'smtp',
             'AWS_DEFAULT_REGION' => $aws_region,
             'REDIS_HOST' => $outputs['CacheEndpointAddress'],
             'REDIS_PORT' => $outputs['CacheEndpointPort'],
