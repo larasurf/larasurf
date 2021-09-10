@@ -270,7 +270,7 @@ class CloudFormationClient extends Client
                 ? "║   <info>If you do not wish to wait, you can safely exit this screen with Ctrl+C.</info>   ║"
                 : "║   <info>Please do not exit this screen! There are still things to do after this.</info>   ║";
 
-            $message =
+            $message = PHP_EOL .
                 "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
                 "║                                                                              ║" . PHP_EOL .
                 "║                 <info>Your CloudFormation stack is being $word!</info>$word_padding                  ║" . PHP_EOL .
