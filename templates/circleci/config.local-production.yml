@@ -117,10 +117,11 @@ jobs:
       - run:
           name: Run Migrations
           command: |
+            export PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
+            export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
+            export STACK_NAME="${PROJECT_NAME}-${PROJECT_ID}-<< parameters.environment >>"
+
             if $(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" > /dev/null 2>&1); then
-              export PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
-              export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
-              export STACK_NAME="${PROJECT_NAME}-${PROJECT_ID}-<< parameters.environment >>"
               export CLUSTER_ARN="$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[0].Outputs[?OutputKey==`ContainerClusterArn`] | [0].OutputValue' --output text)"
               export TASK_DEFINITION_ARN="$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[0].Outputs[?OutputKey==`ArtisanTaskDefinitionArn`] | [0].OutputValue' --output text)"
               export SUBNET_ID="$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[0].Outputs[?OutputKey==`Subnet1Id`] | [0].OutputValue' --output text)"
@@ -129,10 +130,10 @@ jobs:
               export CONTAINER_SECURITY_GROUP_ID="$(aws cloudformation describe-stacks --stack-name ${STACK_NAME} --query 'Stacks[0].Outputs[?OutputKey==`ContainersSecurityGroupId`] | [0].OutputValue' --output text)"
 
               aws ecs run-task \
-                --cluster ${CLUSTER_ARN}
-                --launch-type FARGATE
-                --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_ID}],securityGroups=[${CACHE_SECURITY_GROUP_ID},${DATABASE_SECURITY_GROUP_ID},${CONTAINER_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}"
-                --overrides '{"containerOverrides":[{"name":"artisan","command":["migrate", "--force"]}]}' \
+                --cluster ${CLUSTER_ARN} \
+                --launch-type FARGATE \
+                --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_ID}],securityGroups=[${CACHE_SECURITY_GROUP_ID},${DATABASE_SECURITY_GROUP_ID},${CONTAINER_SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
+                --overrides '{"containerOverrides":[{"name":"artisan","command":["php", "artisan", "migrate", "--force"]}]}' \
                 --task-definition ${TASK_DEFINITION_ARN}
             else
               echo 'Stack not yet deployed'
