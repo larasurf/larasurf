@@ -673,7 +673,7 @@ Resources:
               - PUT
               - POST
             AllowedOrigins:
-              - !Ref DomainName
+              - !Sub 'https://${DomainName}'
             MaxAge: '3600'
 
   # DNS
