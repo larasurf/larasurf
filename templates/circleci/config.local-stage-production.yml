@@ -95,7 +95,9 @@ jobs:
           aws-region: << parameters.var_name_region >>
       - run:
           name: Preprocess CloudFormation Template
-          command: .circleci/inject-secrets.sh << parameters.environment >>
+          command: |
+            chmod +x .circleci/inject-secrets.sh
+            .circleci/inject-secrets.sh << parameters.environment >>
       - run:
           name: Deploy CloudFormation Stack
           command: |
