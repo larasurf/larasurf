@@ -849,3 +849,6 @@ Outputs:
   ContainerClusterArn:
     Description: The ARN of the container cluster.
     Value: !GetAtt ContainerCluster.Arn
+  ArtisanLogGroupName:
+    Description: The CloudWatch Logs group name for artisan.
+    Value: !Ref ArtisanLogGroup

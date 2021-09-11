@@ -5,6 +5,7 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
+use LaraSurf\LaraSurf\AwsClients\CloudWatchLogsClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
 use LaraSurf\LaraSurf\AwsClients\EcrClient;
 use LaraSurf\LaraSurf\AwsClients\EcsClient;
@@ -19,70 +20,77 @@ trait InteractsWithAws
 {
     use InteractsWithLaraSurfConfig;
 
-    protected function awsAcm(string $environment = null)
+    protected function awsAcm(string $environment = null): AcmClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
 
         return new AcmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsCloudFormation(string $environment = null, string $aws_region = null)
+    protected function awsCloudFormation(string $environment = null, string $aws_region = null): CloudFormationClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
 
         return new CloudFormationClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsEc2(string $environment = null)
+    protected function awsCloudWatchLogs(string $environment = null, string $aws_region = null): CloudWatchLogsClient
+    {
+        [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
+
+        return new CloudWatchLogsClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
+    }
+
+    protected function awsEc2(string $environment = null): Ec2Client
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
 
         return new Ec2Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsRoute53()
+    protected function awsRoute53(): Route53Client
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
 
         return new Route53Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsSes()
+    protected function awsSes(): SesClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
 
         return new SesClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsSsm(string $environment = null)
+    protected function awsSsm(string $environment = null): SsmClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
 
         return new SsmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsRds(string $environment = null)
+    protected function awsRds(string $environment = null): RdsClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
 
         return new RdsClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsEcr(string $environment = null, string $aws_region = null)
+    protected function awsEcr(string $environment = null, string $aws_region = null): EcrClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
 
         return new EcrClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsIam()
+    protected function awsIam(): IamClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
 
         return new IamClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
-    protected function awsEcs(string $environment = null, string $aws_region = null)
+    protected function awsEcs(string $environment = null, string $aws_region = null): EcsClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
 

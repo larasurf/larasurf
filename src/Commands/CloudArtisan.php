@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 
@@ -33,6 +34,12 @@ class CloudArtisan extends Command
 
         $cloudformation = $this->awsCloudFormation($env, $aws_region);
 
+        if (!$cloudformation->stackStatus()) {
+            $this->error("Failed to determine stack status for the '$env' environment, has the stack been created?");
+
+            return 1;
+        }
+
         $outputs = $cloudformation->stackOutput([
             'ContainerClusterArn',
             'DBSecurityGroupId',
@@ -60,6 +67,35 @@ class CloudArtisan extends Command
         }
 
         $this->info('Started ECS task to run artisan command successfully');
+
+        $ecs->waitForTaskFinish(
+            $outputs['ContainerClusterArn'],
+            $task_arn,
+            $this->getOutput(),
+            'Task has not completed yet, checking again soon...'
+        );
+
+        $log_group = $cloudformation->stackOutput('ArtisanLogGroupName');
+
+        if (!$log_group) {
+            $this->error("Failed to find artisan log group for '$env' environment");
+
+            return 1;
+        }
+
+        $logs = $this->awsCloudWatchLogs($env, $aws_region)->listLogStream(
+            $log_group,
+            'artisan/artisan/' . Str::afterLast($task_arn, '/'),
+        );
+
+        if (!$logs) {
+            $this->error("Failed to get events from artisan log group for '$env' environment");
+
+            return 1;
+        }
+
+        $this->info('Task output:');
+        $this->getOutput()->writeln(implode(PHP_EOL, $logs));
 
         return 0;
     }

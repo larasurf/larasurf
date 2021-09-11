@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
+use LaraSurf\LaraSurf\AwsClients\CloudWatchLogsClient;
 use LaraSurf\LaraSurf\AwsClients\Ec2Client;
 use LaraSurf\LaraSurf\AwsClients\EcrClient;
 use LaraSurf\LaraSurf\AwsClients\EcsClient;
@@ -214,5 +215,15 @@ class TestCase extends \Orchestra\Testbench\TestCase
     protected function mockAwsEcsClient(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . \Aws\Ecs\EcsClient::class);
+    }
+
+    protected function cloudWatchLogsClient(?string $environment = Cloud::ENVIRONMENT_PRODUCTION): CloudWatchLogsClient
+    {
+        return $this->awsClient(CloudWatchLogsClient::class, $environment);
+    }
+
+    protected function mockAwsCloudWatchLogsClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . \Aws\CloudWatchLogs\CloudWatchLogsClient::class);
     }
 }
