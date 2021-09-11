@@ -290,6 +290,8 @@ EOF;
 
         $contents = preg_replace('/^\s*public function boot\(\)\s*{\s*}/m', $replace, $contents);
 
+        $this->info('Updated Contents are: ' . $contents);
+
         File::put($path, $contents);
 
         $this->info('Published app service provider changes successfully');
