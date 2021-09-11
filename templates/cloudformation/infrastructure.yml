@@ -503,9 +503,9 @@ Resources:
       TargetTrackingScalingPolicyConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ECSServiceAverageCPUUtilization
-        ScaleInCooldown: 10
-        ScaleOutCooldown: 10
-        TargetValue: 75
+        ScaleInCooldown: !Ref AutoScalingScaleInCooldown
+        ScaleOutCooldown: !Ref AutoScalingScaleOutCooldown
+        TargetValue: !Ref AutoScalingCpuValue
   ContainerQueueTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -780,6 +780,15 @@ Parameters:
   DatabasePrefixListId:
     Type: String
     Description: The ID of the database prefix list.
+  AutoScalingScaleInCooldown:
+    Type: Number
+    Description: The scale in cooldown value for AutoScaling.
+  AutoScalingScaleOutCooldown:
+    Type: Number
+    Description: The scale out cooldown value for AutoScaling.
+  AutoScalingCpuValue:
+    Type: Number
+    Description: The AutoScaling target value for CPU.
 
 Conditions:
   IsProduction: !Equals [!Ref EnvironmentName, production]

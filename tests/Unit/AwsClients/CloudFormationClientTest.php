@@ -49,7 +49,10 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             Str::random(),
-            Str::random()
+            Str::random(),
+            random_int(1, 100),
+            random_int(1, 100),
+            random_int(1, 100)
         );
     }
 
@@ -82,7 +85,10 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             Str::random(),
-            Str::random()
+            Str::random(),
+            random_int(1, 100),
+            random_int(1, 100),
+            random_int(1, 100)
         );
     }
 
@@ -109,7 +115,10 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             Str::random(),
             Str::random(),
-            Str::random()
+            Str::random(),
+            random_int(1, 100),
+            random_int(1, 100),
+            random_int(1, 100)
         );
     }
 

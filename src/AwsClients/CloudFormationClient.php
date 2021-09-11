@@ -33,7 +33,10 @@ class CloudFormationClient extends Client
         string $task_cpu,
         string $task_memory,
         string $database_prefix_list_id,
-        string $application_prefix_list_id
+        string $application_prefix_list_id,
+        int $scale_out_cooldown,
+        int $scale_in_cooldown,
+        int $scale_target_value_cpu
     )
     {
         $this->validateEnvironmentIsSet();
@@ -126,6 +129,18 @@ class CloudFormationClient extends Client
                     'ParameterKey' => 'DatabasePrefixListId',
                     'ParameterValue' => $database_prefix_list_id,
                 ],
+                [
+                    'ParameterKey' => 'AutoScalingScaleInCooldown',
+                    'ParameterValue' => $scale_in_cooldown,
+                ],
+                [
+                    'ParameterKey' => 'AutoScalingScaleOutCooldown',
+                    'ParameterValue' => $scale_out_cooldown,
+                ],
+                [
+                    'ParameterKey' => 'AutoScalingCpuValue',
+                    'ParameterValue' => $scale_target_value_cpu,
+                ],
             ],
             'Tags' => $this->resourceTags(),
             'TemplateBody' => $this->template(),
@@ -143,22 +158,28 @@ class CloudFormationClient extends Client
         ?string $db_instance_class = null,
         ?string $cache_node_type = null,
         ?string $task_cpu = null,
-        ?string $task_memory = null
+        ?string $task_memory = null,
+        ?int $scale_out_cooldown = null,
+        ?int $scale_in_cooldown = null,
+        ?int $scale_target_value_cpu = null
     )
     {
         $update_params = [];
 
         foreach ([
-                     'Enabled' => $is_enabled ? 'true' : 'false',
-                     'DomainName' => $domain,
-                     'RootDomainName' => $root_domain,
-                     'HostedZoneId' => $hosted_zone_id,
-                     'CertificateArn' => $certificate_arn,
-                     'DBStorageSize' => $db_storage_size,
-                     'DBInstanceClass' => $db_instance_class,
-                     'CacheNodeType' => $cache_node_type,
-                     'TaskDefinitionCpu' => $task_cpu,
-                     'TaskDefinitionMemory' => $task_memory,
+            'Enabled' => $is_enabled ? 'true' : 'false',
+            'DomainName' => $domain,
+            'RootDomainName' => $root_domain,
+            'HostedZoneId' => $hosted_zone_id,
+            'CertificateArn' => $certificate_arn,
+            'DBStorageSize' => $db_storage_size,
+            'DBInstanceClass' => $db_instance_class,
+            'CacheNodeType' => $cache_node_type,
+            'TaskDefinitionCpu' => $task_cpu,
+            'TaskDefinitionMemory' => $task_memory,
+            'AutoScalingScaleInCooldown' => $scale_in_cooldown,
+            'AutoScalingScaleOutCooldown' => $scale_out_cooldown,
+            'AutoScalingCpuValue' => $scale_target_value_cpu,
                  ] as $key => $value) {
             if ($value !== null) {
                 $update_params[] = [

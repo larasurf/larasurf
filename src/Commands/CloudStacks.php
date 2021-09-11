@@ -168,6 +168,10 @@ class CloudStacks extends Command
 
         $memory = $this->askTaskDefinitionMemory($cpu);
 
+        $scale_target_cpu = $this->askScalingTargetCpu();
+        $scale_out_cooldown = $this->askScaleOutCooldown();
+        $scale_in_cooldown = $this->askScaleInCooldown();
+
         $domain = $this->ask('Fully qualified domain name?');
 
         $route53 = $this->awsRoute53();
@@ -221,7 +225,10 @@ class CloudStacks extends Command
             $cpu,
             $memory,
             $database_prefix_list_id,
-            $application_prefix_list_id
+            $application_prefix_list_id,
+            $scale_out_cooldown,
+            $scale_in_cooldown,
+            $scale_target_cpu
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created', false);
@@ -439,6 +446,9 @@ class CloudStacks extends Command
                 'Database storage size',
                 'Cache node type',
                 'Task definition CPU + Memory',
+                'AutoScaling target CPU percent',
+                'AutoScaling scale out cooldown',
+                'AutoScaling scale in cooldown',
             ],
             0,
             null,
@@ -453,6 +463,9 @@ class CloudStacks extends Command
         $new_cache_node_type = null;
         $new_cpu = null;
         $new_memory = null;
+        $new_scale_cpu = null;
+        $new_scale_out_cooldown = null;
+        $new_scale_in_cooldown = null;
 
         $route53 = $this->awsRoute53();
 
@@ -506,6 +519,21 @@ class CloudStacks extends Command
 
                     break;
                 }
+                case 'AutoScaling target CPU percent': {
+                    $new_scale_cpu = $this->askScalingTargetCpu();
+
+                    break;
+                }
+                case 'AutoScaling scale out cooldown': {
+                    $new_scale_out_cooldown = $this->askScaleOutCooldown();
+
+                    break;
+                }
+                case 'AutoScaling scale in cooldown': {
+                    $new_scale_in_cooldown = $this->askScaleInCooldown();
+
+                    break;
+                }
             }
         }
 
@@ -522,7 +550,10 @@ class CloudStacks extends Command
             $new_db_instance_type,
             $new_cache_node_type,
             $new_cpu,
-            $new_memory
+            $new_memory,
+            $new_scale_out_cooldown,
+            $new_scale_in_cooldown,
+            $new_scale_cpu
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
@@ -660,6 +691,30 @@ class CloudStacks extends Command
     protected function askTaskDefinitionMemory(string $cpu): string
     {
         return $this->choice('Task definition memory?', Cloud::FARGATE_CPU_MEMORY_VALUES_MAP[$cpu] ?? [], 0);
+    }
+
+    protected function askScalingTargetCpu(): int
+    {
+        do {
+            $db_storage = (int) $this->ask('Auto Scaling target CPU percent?', 50);
+            $valid = $db_storage <= 100 && $db_storage >=10;
+
+            if (!$valid) {
+                $this->error('Invalid Auto Scaling target CPU percent');
+            }
+        } while (!$valid);
+
+        return $db_storage;
+    }
+
+    protected function askScaleOutCooldown(): int
+    {
+        return (int) $this->ask('Auto Scaling scale out cooldown (seconds)?', 10);
+    }
+
+    protected function askScaleInCooldown(): int
+    {
+        return (int) $this->ask('Auto Scaling scale in cooldown (seconds)?', 10);
     }
 
     protected function askDatabaseStorage(): string
