@@ -288,7 +288,7 @@ EOF;
     }
 EOF;
 
-        $contents = preg_replace('/^\s*public function boot\(\)\s*{\s*}/m', $replace, $contents);
+        $contents = preg_replace('/^\s*public function boot\(\)\s*{\s*(?:\/\/)?\s*}/m', $replace, $contents);
 
         $this->info('Updated Contents are: ' . $contents);
 
