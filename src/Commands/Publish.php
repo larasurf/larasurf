@@ -13,7 +13,7 @@ class Publish extends Command
     use DerivesAppUrl;
     use InteractsWithLaraSurfConfig;
 
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--app-service-provider}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
 
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
@@ -27,7 +27,7 @@ class Publish extends Command
                      'cloudformation' => [$this, 'publishCloudFormation'],
                      'gitignore' => [$this, 'publishGitIgnore'],
                      'healthcheck' => [$this, 'publishHealthCheck'],
-                     'app-service-provider' => [$this, 'publishAppServiceProvider']
+                     'proxies' => [$this, 'publishProxies']
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -273,27 +273,16 @@ EOF;
         $this->info('Published health check feature test successfully');
     }
 
-    protected function publishAppServiceProvider()
+    protected function publishProxies()
     {
-        $path = app_path('Providers/AppServiceProvider.php');
+        $path = app_path('Http/Middleware/TrustProxies.php');
 
         $contents = File::get($path);
 
-        $replace = <<<EOF
-    public function boot()
-    {
-        if (\App::environment(['stage', 'production'])) {
-            \URL::forceScheme('https');
-        }
-    }
-EOF;
-
-        $contents = preg_replace('/^\s*public function boot\(\)\s*{\s*(?:\/\/)?\s*}/m', $replace, $contents);
-
-        $this->info('Updated Contents are: ' . $contents);
+        $contents = Str::replace('protected $proxies;', "protected \$proxies = '*'", $contents);
 
         File::put($path, $contents);
 
-        $this->info('Published app service provider changes successfully');
+        $this->info('Published trusted proxy changes successfully');
     }
 }
