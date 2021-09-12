@@ -321,6 +321,9 @@ Resources:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Sub 'larasurf-${ProjectId}-${EnvironmentName}'
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: DEFAULT
   ContainerExecutionRole:
     Type: AWS::IAM::Role
     Properties:

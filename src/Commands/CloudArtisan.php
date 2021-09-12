@@ -14,8 +14,8 @@ class CloudArtisan extends Command
     use HasEnvironmentOption;
 
     protected $signature = 'larasurf:cloud-artisan
-                            {command : The full artisan command to run, in quotes}
-                            {--environment : The environment to run the artisan command on; \'stage\' or \'production\'}';
+                            {cmd : The full artisan command to run, in quotes}
+                            {--environment= : The environment to run the artisan command on; \'stage\' or \'production\'}';
 
     protected $description = 'Run artisan commands on cloud environments';
 
@@ -39,7 +39,7 @@ class CloudArtisan extends Command
             return 1;
         }
 
-        $artisan_command = $this->argument('command');
+        $artisan_command = $this->argument('cmd');
 
         if ($artisan_command === 'tinker') {
             return $this->tinker($cloudformation, $env, $aws_region) ? 0 : 1;

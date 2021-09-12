@@ -32,7 +32,7 @@ elif [[ "$1" == 'yarn' ]]; then
   cd $(pwd)
   docker-compose run --rm --no-deps laravel yarn "${@:2}"
 elif [[ "$1" == 'aws' ]]; then
-  docker run --rm -it -v ~/.aws:/root/.aws amazon/aws-cli:2.0.6 "${@:2}"
+  docker-compose run --rm awscliv2 "${@:2}"
 elif [[ "$1" == 'awslocal' ]]; then
   exit_if_containers_not_running
 
@@ -94,6 +94,11 @@ elif [[ "$1" == 'cloud-users' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
+elif [[ "$1" == 'cloud-artisan' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-artisan "${@:2}"
 elif [[ "$1" == 'circleci' ]]; then
   exit_if_containers_not_running
 
