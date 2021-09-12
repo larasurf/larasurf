@@ -279,7 +279,7 @@ EOF;
 
         $contents = File::get($path);
 
-        $contents = Str::replace('protected $proxies;', "protected \$proxies = '*'", $contents);
+        $contents = Str::replace('protected $proxies;', "protected \$proxies = '*';", $contents);
 
         File::put($path, $contents);
 
