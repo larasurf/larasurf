@@ -9,6 +9,30 @@ use LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException;
 
 class EcsClient extends Client
 {
+    public function listRunningTasks(string $cluster_arn): array|false
+    {
+        // todo: support more than 100 tasks
+
+        $result = $this->client->listTasks([
+            'cluster' => $cluster_arn,
+            'desiredStatus' => 'RUNNING',
+            'launchType' => 'FARGATE',
+        ]);
+
+        return $result['taskArns'] ?? false;
+    }
+
+    public function executeCommand(string $cluster_arn, string $task_arn, string $container, string $command, bool $interactive)
+    {
+        $this->client->executeCommand([
+            'cluster' => $cluster_arn,
+            'command' => $command,
+            'container' => $container,
+            'interactive' => $interactive,
+            'task' => $task_arn,
+        ]);
+    }
+    
     public function runTask(string $cluster_arn, array $security_groups, array $subnets, array $command, string $task_definition, string $container_name = 'artisan'): string|false
     {
         $result = $this->client->runTask([

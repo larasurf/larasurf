@@ -4,6 +4,7 @@ namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
+use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 
@@ -20,8 +21,6 @@ class CloudArtisan extends Command
 
     public function handle()
     {
-        $command = ['php', 'artisan', ...explode(' ', $this->argument('command'))];
-
         $env = $this->environmentOption();
 
         $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
@@ -39,6 +38,38 @@ class CloudArtisan extends Command
 
             return 1;
         }
+
+        $artisan_command = $this->argument('command');
+
+        if ($artisan_command === 'tinker') {
+            return $this->tinker($cloudformation, $env, $aws_region) ? 0 : 1;
+        }
+
+        return $this->artisanCommand($cloudformation, $env, $aws_region, $artisan_command) ? 0 : 1;
+    }
+
+    protected function tinker(CloudFormationClient $cloudformation, string $env, string $aws_region): bool
+    {
+        $cluster_arn = $cloudformation->stackOutput('ContainerClusterArn');
+
+        $ecs = $this->awsEcs($env, $aws_region);
+
+        $tasks = $ecs->listRunningTasks($cluster_arn);
+
+        if (empty($tasks[0])) {
+            $this->error("No tasks running for the '$env' environment");
+
+            return false;
+        }
+
+        $this->awsEcs($env, $aws_region)->executeCommand($cluster_arn, $tasks[0], 'app', 'php artisan tinker', true);
+
+        return true;
+    }
+
+    protected function artisanCommand(CloudFormationClient $cloudformation, string $env, string $aws_region, string $command): bool
+    {
+        $command = ['php', 'artisan', ...explode(' ', $command)];
 
         $outputs = $cloudformation->stackOutput([
             'ContainerClusterArn',
@@ -63,7 +94,7 @@ class CloudArtisan extends Command
         if (!$task_arn) {
             $this->error('Failed to start ECS task to run artisan command');
 
-            return 1;
+            return false;
         }
 
         $this->info('Started ECS task to run artisan command successfully');
@@ -80,7 +111,7 @@ class CloudArtisan extends Command
         if (!$log_group) {
             $this->error("Failed to find artisan log group for '$env' environment");
 
-            return 1;
+            return false;
         }
 
         $logs = $this->awsCloudWatchLogs($env, $aws_region)->listLogStream(
@@ -91,12 +122,12 @@ class CloudArtisan extends Command
         if (!$logs) {
             $this->error("Failed to get events from artisan log group for '$env' environment");
 
-            return 1;
+            return false;
         }
 
         $this->info('Task output:');
         $this->getOutput()->writeln(implode(PHP_EOL, $logs));
 
-        return 0;
+        return true;
     }
 }

@@ -16,6 +16,31 @@ class EcsClientTest extends TestCase
         $this->ecsClient()->runTask(Str::random(), [], [], [], Str::random());
     }
 
+    public function testListRunningTasks()
+    {
+        $arn1 = Str::random();
+        $arn2 = Str::random();
+
+        $this->mockAwsEcsClient()
+            ->shouldReceive('listTasks')
+            ->andReturn([
+                'taskArns' => [$arn1, $arn2],
+            ]);
+
+        $results = $this->ecsClient()->listRunningTasks(Str::random());
+
+        $this->assertEquals([$arn1, $arn2], $results);
+    }
+
+    public function testExecuteCommand()
+    {
+        $this->mockAwsEcsClient()
+            ->shouldReceive('executeCommand')
+            ->andReturn();
+
+        $this->ecsClient()->executeCommand(Str::random(), Str::random(), $this->faker->word, $this->faker->word, $this->faker->boolean);
+    }
+
     public function testWaitForTaskFinish()
     {
         $this->mockAwsEcsClient()
