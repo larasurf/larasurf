@@ -64,6 +64,9 @@ class CloudTasks extends Command
         $command = ['/bin/bash', '-c', 'trap : TERM INT; sleep infinity & wait'];
 
         $ecs = $this->awsEcs($env, $aws_region);
+
+        $this->info('Starting ECS task to run artisan command...');
+
         $task_arn = $ecs->runTask($outputs['ContainerClusterArn'], $security_groups, $subnets, $command, $outputs['ArtisanTaskDefinitionArn'], 'artisan', true);
 
         if (!$task_arn) {
@@ -99,13 +102,15 @@ class CloudTasks extends Command
             return 1;
         }
 
+        $this->info('Stopping ECS task...');
+
         $cluster = $this->awsCloudFormation($env, $aws_region)->stackOutput('ContainerClusterArn');
 
 
         $ecs = $this->awsEcs($env, $aws_region);
         $ecs->stopTask($cluster, $task);
 
-        $this->info('Singled task to stop successfully');
+        $this->info('Signaled task to stop successfully');
 
         return 0;
     }
