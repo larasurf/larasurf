@@ -23,6 +23,10 @@ class CloudArtisan extends Command
     {
         $env = $this->environmentOption();
 
+        if (!$env) {
+            return 1;
+        }
+
         $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
 
         if (!$aws_region) {

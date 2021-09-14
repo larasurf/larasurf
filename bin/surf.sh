@@ -94,8 +94,8 @@ elif [[ "$1" == 'cloud-users' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
-elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]] && [[ "$3" == '--environment' ]] && [[ -n "$4" ]]; then
-  if [[ "$4" != 'stage' ]] && [[ "$4" != 'production' ]]; then
+elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]]; then
+  if [[ "$3" != '--environment' ]] || [[ "$4" != 'stage' ]] && [[ "$4" != 'production' ]]; then
     echo -e "${ERROR}Invalid environment${RESET}"
 
     exit 1
@@ -103,8 +103,15 @@ elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]] && [[ "$3" == '--en
 
   exit_if_containers_not_running
 
+  echo "Waiting for task to start..."
+
   cd $(pwd)
   TASK=$(docker-compose exec laravel php artisan larasurf:cloud-tasks run-for-exec --environment "$4")
+  PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
+  PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
+  CLUSTER_NAME="larasurf-${PROJECT_ID}-$4"
+
+  echo "$TASK"
 
   cd $(pwd)
   docker-compose run --rm awscliv2 ecs execute-command \

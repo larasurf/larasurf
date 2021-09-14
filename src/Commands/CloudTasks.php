@@ -65,17 +65,17 @@ class CloudTasks extends Command
 
         $ecs = $this->awsEcs($env, $aws_region);
 
-        $this->info('Starting ECS task...');
-
         $task_arn = $ecs->runTask($outputs['ContainerClusterArn'], $security_groups, $subnets, $command, $outputs['ArtisanTaskDefinitionArn'], 'artisan', true);
 
         if (!$task_arn) {
             $this->error('Failed to start ECS task');
 
-            return false;
+            return 1;
         }
 
-        $this->getOutput()->writeln($task_arn);
+        $ecs->waitForTaskRunning($outputs['ContainerClusterArn'], $task_arn);
+
+        $this->getOutput()->write($task_arn);
 
         return 0;
     }
@@ -110,7 +110,7 @@ class CloudTasks extends Command
         $ecs = $this->awsEcs($env, $aws_region);
         $ecs->stopTask($cluster, $task);
 
-        $this->info('Signaled task to stop successfully');
+        $this->info('Task stopped successfully');
 
         return 0;
     }

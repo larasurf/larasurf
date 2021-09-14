@@ -32,7 +32,7 @@ class EcsClient extends Client
             'task' => $task_arn,
         ]);
     }
-    
+
     public function runTask(string $cluster_arn, array $security_groups, array $subnets, array $command, string $task_definition, string $container_name = 'artisan', bool $enabled_execute_command = false): string|false
     {
         $result = $this->client->runTask([
@@ -81,6 +81,31 @@ class EcsClient extends Client
             if (isset($result['tasks'][0]['lastStatus'])) {
                 $status = $result['tasks'][0]['lastStatus'];
                 $finished = $status === 'STOPPED';
+
+                if ($finished) {
+                    $success = true;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }, $output, $wait_message);
+    }
+
+    public function waitForTaskRunning(string $cluster_arn, string $task_arn, OutputStyle $output = null, $wait_message = '')
+    {
+        $client = $this->client;
+
+        $this->waitForFinish(60, 60, function (&$success) use ($client, $cluster_arn, $task_arn) {
+            $result = $client->describeTasks([
+                'cluster' => $cluster_arn,
+                'tasks' => [$task_arn],
+            ]);
+
+            if (isset($result['tasks'][0]['lastStatus'])) {
+                $status = $result['tasks'][0]['lastStatus'];
+                $finished = $status === 'RUNNING';
 
                 if ($finished) {
                     $success = true;

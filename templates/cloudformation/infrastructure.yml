@@ -396,6 +396,17 @@ Resources:
                   - s3:PutObject
                   - s3:PutObjectAcl
                 Resource: !Sub '${Bucket.Arn}/*'
+        - PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-exec'
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssmmessages:CreateControlChannel
+                  - ssmmessages:CreateDataChannel
+                  - ssmmessages:OpenControlChannel
+                  - ssmmessages:OpenDataChannel
+                Resource: '*'
   ContainerAutoScalingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -570,6 +581,7 @@ Resources:
           Name: artisan
           Essential: true
           Command: [ 'php', 'artisan', 'schedule:run' ]
+          ReadonlyRootFilesystem: false
           LogConfiguration:
             LogDriver: awslogs
             Options:
