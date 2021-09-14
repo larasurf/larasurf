@@ -72,6 +72,33 @@ jobs:
                 command: |
                   docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}"
                   docker push "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}"
+  scan:
+    parameters:
+      environment:
+        type: string
+      var_name_regon:
+        type: env_var_name
+      var_name_ecr_url_prefix:
+        type: env_var_name
+    steps:
+      - run:
+        name: Install Trivy
+        command: |
+          VERSION=$(
+              curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | \
+              grep '"tag_name":' | \
+              sed -E 's/.*"v([^"]+)".*/\1/'
+          )
+
+          wget https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_Linux-64bit.tar.gz
+          tar zxvf trivy_${VERSION}_Linux-64bit.tar.gz
+          sudo mv trivy /usr/local/bin
+      - run:
+        name: Scan Application Image for Vulnerabilities
+        command: trivy --exit-code 1 --no-progress ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}
+      - run:
+        name: Scan Webserver Image for Vulnerabilities
+        command: trivy --exit-code 1 --no-progress ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}
   deploy:
     parameters:
       environment:
@@ -145,7 +172,7 @@ workflows:
   test-workflow:
     when:
       not:
-        equal: [ main, << pipeline.git.branch >> ]
+        equal: [ stage, << pipeline.git.branch >> ]
     jobs:
       - test:
           should_publish_images: false
@@ -161,6 +188,12 @@ workflows:
           environment: production
           var_name_region: AWS_REGION_PRODUCTION
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
+      - scan:
+          environment: production
+          var_name_region: AWS_REGION_PRODUCTION
+          var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
+          requires:
+            - test
       - deploy:
           environment: production
           var_name_region: AWS_REGION_PRODUCTION
