@@ -65,12 +65,12 @@ class CloudTasks extends Command
 
         $ecs = $this->awsEcs($env, $aws_region);
 
-        $this->info('Starting ECS task to run artisan command...');
+        $this->info('Starting ECS task...');
 
         $task_arn = $ecs->runTask($outputs['ContainerClusterArn'], $security_groups, $subnets, $command, $outputs['ArtisanTaskDefinitionArn'], 'artisan', true);
 
         if (!$task_arn) {
-            $this->error('Failed to start ECS task to run artisan command');
+            $this->error('Failed to start ECS task');
 
             return false;
         }
