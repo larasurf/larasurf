@@ -29,9 +29,11 @@ class CloudStacks extends Command
     const COMMAND_UPDATE = 'update';
     const COMMAND_DELETE = 'delete';
     const COMMAND_WAIT = 'wait';
+    const COMMAND_OUTPUT = 'output';
 
     protected $signature = 'larasurf:cloud-stacks
                             {--environment=null : The environment: \'stage\' or \'production\'}
+                            {--key=null : The key for the output command}
                             {subcommand : The subcommand to run: \'status\', \'create\', \'update\', \'delete\', or \'wait\'}';
 
     protected $description = 'Manage application environment variables in cloud environments';
@@ -42,6 +44,7 @@ class CloudStacks extends Command
         self::COMMAND_UPDATE => 'handleUpdate',
         self::COMMAND_DELETE => 'handleDelete',
         self::COMMAND_WAIT => 'handleWait',
+        self::COMMAND_OUTPUT => 'handleOutput',
     ];
 
     public function handleStatus()
@@ -56,9 +59,54 @@ class CloudStacks extends Command
 
         if (!$status) {
             $this->warn("Stack for '$env' environment does not exist");
-        } else {
-            $this->getOutput()->writeln("<info>Status:</info> $status");
+
+            return 1;
         }
+
+        $this->getOutput()->writeln("<info>Status:</info> $status");
+
+        return 0;
+    }
+
+    public function handleOutput()
+    {
+        $env = $this->environmentOption();
+
+        if (!$env) {
+            return 1;
+        }
+
+        $key = $this->option('key');
+
+        if (!$key || $key === 'null') {
+            $this->error('The --key option is required for stack output');
+        }
+
+        $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
+
+        if (!$aws_region) {
+            $this->error("AWS region is not set for the '$env' environment; create image repositories first");
+
+            return 1;
+        }
+
+        $cloudformation = $this->awsCloudFormation($env, $aws_region);
+
+        if (!$cloudformation->stackStatus()) {
+            $this->error("Stack doesn't exist yet for the '$env' environment");
+
+            return 1;
+        }
+
+        $output = $this->awsCloudFormation()->stackOutput($key);
+
+        if (!$output) {
+            $this->error("Failed to get output for key '$key'");
+
+            return 1;
+        }
+
+        $this->getOutput()->writeln($output);
 
         return 0;
     }

@@ -33,10 +33,11 @@ class EcsClient extends Client
         ]);
     }
     
-    public function runTask(string $cluster_arn, array $security_groups, array $subnets, array $command, string $task_definition, string $container_name = 'artisan'): string|false
+    public function runTask(string $cluster_arn, array $security_groups, array $subnets, array $command, string $task_definition, string $container_name = 'artisan', bool $enabled_execute_command = false): string|false
     {
         $result = $this->client->runTask([
             'cluster' => $cluster_arn,
+            'enableExecuteCommand' => $enabled_execute_command,
             'launchType' => 'FARGATE',
             'networkConfiguration' => [
                 'awsvpcConfiguration' => [
@@ -57,6 +58,14 @@ class EcsClient extends Client
         ]);
 
         return $result['tasks'][0]['taskArn'] ?? false;
+    }
+
+    public function stopTask(string $cluster_arn, string $task)
+    {
+        $this->client->stopTask([
+            'cluster' => $cluster_arn,
+            'task' => $task,
+        ]);
     }
 
     public function waitForTaskFinish(string $cluster_arn, string $task_arn, OutputStyle $output = null, $wait_message = '')

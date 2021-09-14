@@ -16,6 +16,15 @@ class EcsClientTest extends TestCase
         $this->ecsClient()->runTask(Str::random(), [], [], [], Str::random());
     }
 
+    public function testStopTask()
+    {
+        $this->mockAwsEcsClient()
+            ->shouldReceive('stopTask')
+            ->andReturn();
+
+        $this->ecsClient()->stopTask(Str::random(), Str::random());
+    }
+
     public function testListRunningTasks()
     {
         $arn1 = Str::random();

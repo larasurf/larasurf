@@ -10,6 +10,7 @@ use LaraSurf\LaraSurf\Commands\CloudEmails;
 use LaraSurf\LaraSurf\Commands\CloudImages;
 use LaraSurf\LaraSurf\Commands\CloudIngress;
 use LaraSurf\LaraSurf\Commands\CloudStacks;
+use LaraSurf\LaraSurf\Commands\CloudTasks;
 use LaraSurf\LaraSurf\Commands\CloudUsers;
 use LaraSurf\LaraSurf\Commands\CloudVars;
 use LaraSurf\LaraSurf\Commands\Config;
@@ -39,6 +40,7 @@ class LaraSurfServiceProvider extends ServiceProvider
                 CloudImages::class,
                 CloudUsers::class,
                 CloudArtisan::class,
+                CloudTasks::class,
             ]);
         }
     }

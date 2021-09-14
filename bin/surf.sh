@@ -94,6 +94,28 @@ elif [[ "$1" == 'cloud-users' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
+elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]] && [[ "$3" == '--environment' ]] && [[ -n "$4" ]]; then
+  if [[ "$4" != 'stage' ]] && [[ "$4" != 'production' ]]; then
+    echo -e "${ERROR}Invalid environment${RESET}"
+
+    exit 1
+  fi
+
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  TASK=$(docker-compose exec laravel php artisan larasurf:cloud-tasks run-for-exec --environment "$4")
+
+  cd $(pwd)
+  docker-compose run --rm awscliv2 ecs execute-command \
+    --cluster ${CLUSTER_NAME} \
+    --container app \
+    --command "php artisan tinker" \
+    --interactive \
+    --task ${TASK}
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:cloud-tasks stop --environment "$4" --task "${TASK}"
 elif [[ "$1" == 'cloud-artisan' ]]; then
   exit_if_containers_not_running
 
