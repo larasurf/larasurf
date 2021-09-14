@@ -45,30 +45,7 @@ class CloudArtisan extends Command
 
         $artisan_command = $this->argument('cmd');
 
-        if ($artisan_command === 'tinker') {
-            return $this->tinker($cloudformation, $env, $aws_region) ? 0 : 1;
-        }
-
         return $this->artisanCommand($cloudformation, $env, $aws_region, $artisan_command) ? 0 : 1;
-    }
-
-    protected function tinker(CloudFormationClient $cloudformation, string $env, string $aws_region): bool
-    {
-        $cluster_arn = $cloudformation->stackOutput('ContainerClusterArn');
-
-        $ecs = $this->awsEcs($env, $aws_region);
-
-        $tasks = $ecs->listRunningTasks($cluster_arn);
-
-        if (empty($tasks[0])) {
-            $this->error("No tasks running for the '$env' environment");
-
-            return false;
-        }
-
-        $this->awsEcs($env, $aws_region)->executeCommand($cluster_arn, $tasks[0], 'app', 'php artisan tinker', true);
-
-        return true;
     }
 
     protected function artisanCommand(CloudFormationClient $cloudformation, string $env, string $aws_region, string $command): bool
@@ -91,6 +68,8 @@ class CloudArtisan extends Command
         ];
 
         $subnets = [$outputs['Subnet1Id']];
+
+        $this->info('Running ECS task...');
 
         $ecs = $this->awsEcs($env, $aws_region);
         $task_arn = $ecs->runTask($outputs['ContainerClusterArn'], $security_groups, $subnets, $command, $outputs['ArtisanTaskDefinitionArn']);

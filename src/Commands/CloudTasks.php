@@ -102,13 +102,11 @@ class CloudTasks extends Command
             return 1;
         }
 
-        $this->info('Stopping ECS task...');
+        $this->getOutput()->writeln('Stopping ECS task...');
 
         $cluster = $this->awsCloudFormation($env, $aws_region)->stackOutput('ContainerClusterArn');
 
-
-        $ecs = $this->awsEcs($env, $aws_region);
-        $ecs->stopTask($cluster, $task);
+        $this->awsEcs($env, $aws_region)->stopTask($cluster, $task);
 
         $this->info('Task stopped successfully');
 
