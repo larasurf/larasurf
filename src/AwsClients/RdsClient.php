@@ -2,13 +2,19 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
+use Aws\Exception\AwsException;
+
 class RdsClient extends Client
 {
     public function checkDeletionProtection(string $database_id): bool
     {
-        $result = $this->client->describeDBInstances([
-            'DBInstanceIdentifier' => $database_id,
-        ]);
+        try {
+            $result = $this->client->describeDBInstances([
+                'DBInstanceIdentifier' => $database_id,
+            ]);
+        } catch (AwsException $e) {
+            return false;
+        }
 
         return $result['DBInstances'][0]['DeletionProtection'] ?? false;
     }
