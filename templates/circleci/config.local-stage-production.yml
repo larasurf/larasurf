@@ -83,6 +83,10 @@ jobs:
     docker:
       - image: cimg/base:2021.04
     steps:
+      - setup_remote_docker
+      - aws-ecr/ecr-login:
+          account-url: << parameters.var_name_ecr_url_prefix >>
+          region: << parameters.var_name_region >>
       - run:
           name: Install Trivy
           command: |
