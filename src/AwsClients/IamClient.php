@@ -24,7 +24,12 @@ class IamClient extends Client
     {
         $this->client->createUser([
             'UserName' => $user_name,
-            'Tags' => $this->resourceTags(),
+            'Tags' => [
+                [
+                    'Key' => 'Project',
+                    'Value' => $this->project_name . '-' . $this->project_id,
+                ],
+            ],
         ]);
     }
 
