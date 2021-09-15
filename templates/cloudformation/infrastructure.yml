@@ -444,10 +444,14 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:ListBucket
+                Resource: !Sub '${Bucket.Arn}'
+              - Effect: Allow
+                Action:
                   - s3:GetObject
                   - s3:GetObjectAcl
                   - s3:PutObject
                   - s3:PutObjectAcl
+                  - s3:DeleteObject
                 Resource: !Sub '${Bucket.Arn}/*'
         - PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-exec'
           PolicyDocument:
@@ -720,8 +724,8 @@ Resources:
   ContainerArtisanScheduleRule:
     Type: AWS::Events::Rule
     Properties:
-      Description: Invoke the artisan scheduler task definition every 15 minutes.
-      ScheduleExpression: 'rate(15 minutes)'
+      Description: Invoke the artisan scheduler task definition every 5 minutes.
+      ScheduleExpression: 'rate(5 minutes)'
       State: !If [ IsEnabled, ENABLED, DISABLED ]
       Targets:
         - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ProjectId}-${EnvironmentName}'

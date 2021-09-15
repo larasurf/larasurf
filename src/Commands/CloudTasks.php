@@ -61,7 +61,7 @@ class CloudTasks extends Command
 
         $subnets = [$outputs['Subnet1Id']];
 
-        $command = ['/bin/bash', '-c', 'trap : TERM INT; sleep infinity & wait'];
+        $command = ['/bin/bash', '-c', 'trap : TERM INT; sleep 12h & wait'];
 
         $ecs = $this->awsEcs($env, $aws_region);
 

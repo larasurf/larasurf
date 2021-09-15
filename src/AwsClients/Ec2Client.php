@@ -15,11 +15,6 @@ class Ec2Client extends Client
             'AddressFamily' => 'IPv4',
             'MaxEntries' => 25,
             'PrefixListName' => "{$this->project_name}-{$this->project_id}-{$this->environment}-$type",
-            'TagSpecifications' => [
-                [
-                    'Tags' => $this->resourceTags(),
-                ],
-            ],
         ];
 
         if ($default_ip) {
@@ -135,7 +130,7 @@ class Ec2Client extends Client
     protected function cidrWithDescriptionFromIpArgument($ip): array
     {
         if ($ip === 'me') {
-            $response = Http::retry(50, 100)->get('https://checkip.amazonaws.com');
+            $response = Http::retry(1000, 100)->get('https://checkip.amazonaws.com');
             $my_ip = trim($response->body());
             $cidr = "$my_ip/32";
             $description = 'Private Access';

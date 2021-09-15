@@ -220,7 +220,7 @@ class CloudStacks extends Command
         $scale_out_cooldown = $this->askScaleOutCooldown();
         $scale_in_cooldown = $this->askScaleInCooldown();
 
-        $domain = $this->ask('Fully qualified domain name?');
+        $domain = $this->askDomain();
 
         $route53 = $this->awsRoute53();
 
@@ -728,6 +728,15 @@ class CloudStacks extends Command
         } while (!$valid);
 
         return $acm_arn;
+    }
+
+    protected function askDomain(): string
+    {
+        do {
+            $domain = $this->ask('Fully qualified domain name?');
+        } while (!$domain);
+
+        return $domain;
     }
 
     protected function askDatabaseInstanceType(): string

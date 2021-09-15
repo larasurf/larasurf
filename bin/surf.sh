@@ -111,12 +111,12 @@ elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]]; then
   PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
   CLUSTER_NAME="larasurf-${PROJECT_ID}-$4"
 
-  echo "$TASK"
+  sleep 5
 
   cd $(pwd)
   docker-compose run --rm awscliv2 ecs execute-command \
     --cluster ${CLUSTER_NAME} \
-    --container app \
+    --container artisan \
     --command "php artisan tinker" \
     --interactive \
     --task ${TASK}
