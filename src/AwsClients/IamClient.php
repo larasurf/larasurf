@@ -24,6 +24,7 @@ class IamClient extends Client
     {
         $this->client->createUser([
             'UserName' => $user_name,
+            'Tags' => $this->resourceTags(),
         ]);
     }
 

@@ -19,8 +19,19 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref Vpc
+      Tags:
+        - Key: Project
+          Value: !Join [ '-', [ !Ref ProjectName, !Ref ProjectId ] ]
+        - Key: Environment
+          Value: !Ref EnvironmentName
   InternetGateway:
     Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Project
+          Value: !Join [ '-', [ !Ref ProjectName, !Ref ProjectId ] ]
+        - Key: Environment
+          Value: !Ref EnvironmentName
   VpcGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -42,9 +53,9 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet-1'
+          Value: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-subnet1'
         - Key: Project
-          Value: !Sub '${ProjectName}-${ProjectId}'
+          Value: !Join [ '-', [ !Ref ProjectName, !Ref ProjectId ] ]
         - Key: Environment
           Value: !Ref EnvironmentName
   Subnet1RouteTableAssociation:
@@ -151,11 +162,21 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   DBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: A security group that references itself to allow for database access.
       VpcId: !Ref Vpc
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   DBSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -169,6 +190,11 @@ Resources:
     Properties:
       GroupDescription: A security group to allow admins database access.
       VpcId: !Ref Vpc
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   DBAdminAccessSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -191,6 +217,11 @@ Resources:
       SnapshotRetentionLimit: 0
       VpcSecurityGroupIds:
         - !GetAtt CacheSecurityGroup.GroupId
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   CacheSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
     Properties:
@@ -199,11 +230,21 @@ Resources:
         - !Ref Subnet1
         - !Ref Subnet2
         - !Ref Subnet3
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   CacheSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: A self-referencing security group for the cache cluster and all agents that require access.
       VpcId: !Ref Vpc
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   CacheSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -219,6 +260,11 @@ Resources:
     Properties:
       GroupDescription: A security group to allow ingress through the load balancer.
       VpcId: !Ref Vpc
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   LoadBalancerSecurityGroupIngressHttp:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -247,6 +293,11 @@ Resources:
         - !Ref LoadBalancerSecurityGroup
       Type: application
       IpAddressType: ipv4
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   LoadBalancerHttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -304,6 +355,11 @@ Resources:
           Value: 60
       TargetType: ip
       VpcId: !Ref Vpc
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
 
   # Logs
   ApplicationLogGroup:
@@ -323,6 +379,11 @@ Resources:
       Configuration:
         ExecuteCommandConfiguration:
           Logging: DEFAULT
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -346,6 +407,11 @@ Resources:
                   - ssm:DescribeParameters
                   - ssm:GetParameters
                 Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}-${ProjectId}/${EnvironmentName}/*'
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerTaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -394,6 +460,11 @@ Resources:
                   - ssmmessages:OpenControlChannel
                   - ssmmessages:OpenDataChannel
                 Resource: '*'
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerAutoScalingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -406,6 +477,11 @@ Resources:
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -416,6 +492,11 @@ Resources:
           FromPort: 80
           ToPort: 80
           SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerAppTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -456,6 +537,11 @@ Resources:
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: app
           Secrets: #LARASURF_SECRETS#
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerService:
     DependsOn:
       - LoadBalancerListenerRule
@@ -484,6 +570,11 @@ Resources:
         - ContainerName: nginx
           ContainerPort: 80
           TargetGroupArn: !Ref LoadBalancerTargetGroup
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerAutoScalingTarget:
     Condition: IsEnabled
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -530,6 +621,11 @@ Resources:
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: queue
           Secrets: #LARASURF_SECRETS#
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerQueueService:
     DependsOn: ContainerTaskRole
     Type: AWS::ECS::Service
@@ -552,6 +648,11 @@ Resources:
             - !Ref ContainerSecurityGroup
             - !Ref DBSecurityGroup
             - !Ref CacheSecurityGroup
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerArtisanTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -576,6 +677,11 @@ Resources:
               awslogs-region: !Ref 'AWS::Region'
               awslogs-stream-prefix: artisan
           Secrets: #LARASURF_SECRETS#
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerArtisanScheduleRuleRole:
     Type: AWS::IAM::Role
     Properties:
@@ -606,6 +712,11 @@ Resources:
                 Condition:
                   StringLike:
                     iam:PassedToService: ecs-tasks.amazonaws.com
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
   ContainerArtisanScheduleRule:
     Type: AWS::Events::Rule
     Properties:
@@ -638,6 +749,11 @@ Resources:
       MessageRetentionPeriod: 345600
       ReceiveMessageWaitTimeSeconds: 20
       VisibilityTimeout: 30
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
 
   # Bucket
   Bucket:
@@ -655,6 +771,11 @@ Resources:
             AllowedOrigins:
               - !Sub 'https://${DomainName}'
             MaxAge: '3600'
+      Tags:
+        - Key: Project
+          Value: !Sub '${ProjectName}-${ProjectId}'
+        - Key: Environment
+          Value: !Ref EnvironmentName
 
   # DNS
   DNSRecord:

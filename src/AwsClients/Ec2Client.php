@@ -15,6 +15,11 @@ class Ec2Client extends Client
             'AddressFamily' => 'IPv4',
             'MaxEntries' => 25,
             'PrefixListName' => "{$this->project_name}-{$this->project_id}-{$this->environment}-$type",
+            'TagSpecifications' => [
+                [
+                    'Tags' => $this->resourceTags(),
+                ],
+            ],
         ];
 
         if ($default_ip) {
