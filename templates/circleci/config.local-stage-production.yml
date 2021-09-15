@@ -76,7 +76,7 @@ jobs:
     parameters:
       environment:
         type: string
-      var_name_regon:
+      var_name_region:
         type: env_var_name
       var_name_ecr_url_prefix:
         type: env_var_name
