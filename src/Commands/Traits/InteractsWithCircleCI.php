@@ -47,10 +47,10 @@ trait InteractsWithCircleCI
 
             $circleci = static::circleCI($circleci_api_key, $circleci_project);
 
-            $this->info('Checking CircleCI project is enabled...');
+            $this->line('Checking CircleCI project is enabled...');
 
             if ($circleci->projectExists()) {
-                $this->info('Checking CircleCI environment variables...');
+                $this->line('Checking CircleCI environment variables...');
 
                 $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, $variables);
 
@@ -59,7 +59,7 @@ trait InteractsWithCircleCI
                 }
 
                 if ($circleci_existing_vars) {
-                    $this->info('Deleting CircleCI environment variables...');
+                    $this->line('Deleting CircleCI environment variables...');
 
                     foreach ($circleci_existing_vars as $name) {
                         $circleci->deleteEnvironmentVariable($name);

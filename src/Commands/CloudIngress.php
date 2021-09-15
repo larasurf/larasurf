@@ -153,7 +153,7 @@ class CloudIngress extends Command
             $cidr = $result->getCidr();
             $description = $result->getDescription();
 
-            $this->getOutput()->writeln("<info>$cidr:</info> $description");
+            $this->line("<info>$cidr:</info> $description");
         }
 
         return 0;

@@ -215,8 +215,6 @@ class Publish extends Command
                 $this->error('Failed to publish infrastructure CloudFormation template');
             }
         }
-
-        // todo: publish app template file?
     }
 
     protected function publishGitIgnore()

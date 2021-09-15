@@ -25,6 +25,6 @@ trait HasTimer
         $end_time = Carbon::createFromTimestamp($this->end_time);
         $diff = $end_time->diffInSeconds($start_time);
 
-        $this->getOutput()->writeln("<info>Done in:</info> {$diff}s");
+        $this->line("<info>Done in:</info> {$diff}s");
     }
 }

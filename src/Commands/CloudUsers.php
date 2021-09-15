@@ -54,7 +54,7 @@ class CloudUsers extends Command
 
         $circleci = static::circleCI($circleci_api_key, $circleci_project);
 
-        $this->info('Checking CircleCI project is enabled...');
+        $this->line('Checking CircleCI project is enabled...');
 
         if (!$circleci->projectExists()) {
             $this->error('CircleCI project has not yet been enabled through the web console');
@@ -62,7 +62,7 @@ class CloudUsers extends Command
             return 1;
         }
 
-        $this->info('Checking CircleCI environment variables...');
+        $this->line('Checking CircleCI environment variables...');
 
         $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, [
             'AWS_ACCESS_KEY_ID',
@@ -74,7 +74,7 @@ class CloudUsers extends Command
         }
 
         if ($circleci_existing_vars) {
-            $this->info('Deleting CircleCI environment variables...');
+            $this->line('Deleting CircleCI environment variables...');
 
             foreach ($circleci_existing_vars as $name) {
                 $circleci->deleteEnvironmentVariable($name);
@@ -91,21 +91,21 @@ class CloudUsers extends Command
             return 1;
         }
 
-        $this->info("Creating user '$iam_user'...");
+        $this->line("Creating user '$iam_user'...");
 
         $iam->createUser($iam_user);
 
-        $this->info("Assigning permissions...");
+        $this->line("Assigning permissions...");
 
         // todo: create policy, assign that instead of admin access
 
         $iam->attachUserPolicy($iam_user, self::IAM_POLICY_ARN_ADMIN_ACCESS);
 
-        $this->info("Creating access keys...");
+        $this->line("Creating access keys...");
 
         $access_keys = $iam->createAccessKey($iam_user);
 
-        $this->info("Updating CircleCI environment variables...");
+        $this->line("Updating CircleCI environment variables...");
 
         foreach ([
             'AWS_ACCESS_KEY_ID' => $access_keys->getId(),
@@ -137,11 +137,11 @@ class CloudUsers extends Command
             return 0;
         }
 
-        $this->info('Detaching user policies...');
+        $this->line('Detaching user policies...');
 
         $iam->detachUserPolicy($iam_user, self::IAM_POLICY_ARN_ADMIN_ACCESS);
 
-        $this->info('Deleting access keys...');
+        $this->line('Deleting access keys...');
 
         $access_keys = $iam->listAccessKeys($iam_user);
 
@@ -149,7 +149,7 @@ class CloudUsers extends Command
             $iam->deleteAccessKey($iam_user, $access_key_id);
         }
 
-        $this->info("Deleting user '$iam_user'...");
+        $this->line("Deleting user '$iam_user'...");
 
         $iam->deleteUser($iam_user);
 

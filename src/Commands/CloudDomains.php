@@ -38,7 +38,7 @@ class CloudDomains extends Command
         if (!$id) {
             $this->warn("Hosted zone not found for domain '$domain'");
         } else {
-            $this->getOutput()->writeln("<info>Hosted zone exists with ID:</info> $id");
+            $this->line("<info>Hosted zone exists with ID:</info> $id");
         }
 
         return 0;
@@ -52,7 +52,7 @@ class CloudDomains extends Command
 
         $id = $this->awsRoute53()->createHostedZone($root_domain);
 
-        $this->getOutput()->writeln("<info>Hosted zone created with ID:</info> $id");
+        $this->line("<info>Hosted zone created with ID:</info> $id");
     }
 
     public function handleNameServers()
@@ -71,7 +71,7 @@ class CloudDomains extends Command
 
         $nameservers = $route53->hostedZoneNameServers($id);
 
-        $this->info(implode(PHP_EOL, $nameservers));
+        $this->line(implode(PHP_EOL, $nameservers));
     }
 
     protected function domainOption(): string

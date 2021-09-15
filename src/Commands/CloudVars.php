@@ -79,7 +79,7 @@ class CloudVars extends Command
             $this->warn("Variable '$key' does not exist in the '$env' environment");
         }
 
-        $this->getOutput()->writeln("<info>$key:</info> $value");
+        $this->line("<info>$key:</info> $value");
 
         return 0;
     }
@@ -144,11 +144,11 @@ class CloudVars extends Command
 
         if ($show_values) {
             foreach ($values as $key => $value) {
-                $this->getOutput()->writeln("<info>$key:</info> $value");
+                $this->line("<info>$key:</info> $value");
             }
         } else {
             foreach ($values as $key) {
-                $this->info($key);
+                $this->line($key);
             }
         }
 

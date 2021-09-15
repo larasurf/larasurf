@@ -65,7 +65,7 @@ class CloudImages extends Command
 
         $circleci = static::circleCI($circleci_api_key, $circleci_project);
 
-        $this->info('Checking CircleCI project is enabled...');
+        $this->line('Checking CircleCI project is enabled...');
 
         if (!$circleci->projectExists()) {
             $this->error('CircleCI project has not yet been enabled through the web console');
@@ -73,7 +73,7 @@ class CloudImages extends Command
             return 1;
         }
 
-        $this->info('Checking CircleCI environment variables...');
+        $this->line('Checking CircleCI environment variables...');
 
         $suffix = strtoupper($env);
 
@@ -89,7 +89,7 @@ class CloudImages extends Command
         $aws_region = $this->choice('In which region will this project be deployed?', Cloud::AWS_REGIONS, 0);
 
         if ($circleci_existing_vars) {
-            $this->info('Deleting CircleCI environment variables...');
+            $this->line('Deleting CircleCI environment variables...');
 
             foreach ($circleci_existing_vars as $name) {
                 $circleci->deleteEnvironmentVariable($name);
@@ -98,13 +98,13 @@ class CloudImages extends Command
 
         $ecr = $this->awsEcr($env, $aws_region);
 
-        $this->info('Creating image repositories...');
+        $this->line('Creating image repositories...');
 
         $uri_application = $ecr->createRepository($this->awsEcrRepositoryName($env, self::REPOSITORY_TYPE_APPLICATION));
         $ecr->createRepository($this->awsEcrRepositoryName($env, self::REPOSITORY_TYPE_WEBSERVER));
 
         $this->info('Repositories created successfully');
-        $this->info('Updating LaraSurf configuration...');
+        $this->line('Updating LaraSurf configuration...');
 
         static::larasurfConfig()->set("environments.$env.aws-region", $aws_region);
 
@@ -116,7 +116,7 @@ class CloudImages extends Command
 
         $this->info('Updated LaraSurf configuration successfully');
 
-        $this->info('Updating CircleCI environment variables...');
+        $this->line('Updating CircleCI environment variables...');
 
         foreach ([
             'AWS_REGION_' . $suffix => $aws_region,

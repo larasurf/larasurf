@@ -35,8 +35,8 @@ class CircleCI extends Command
         }
 
         $api_token = $this->secret('Enter your CircleCI API token:');
-        
-        $this->info('Verifying API token...');
+
+        $this->line('Verifying API token...');
         
         $client = new Client($api_token, $origin);
 

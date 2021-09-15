@@ -69,7 +69,7 @@ class CloudArtisan extends Command
 
         $subnets = [$outputs['Subnet1Id']];
 
-        $this->info('Running ECS task...');
+        $this->line('Running ECS task...');
 
         $ecs = $this->awsEcs($env, $aws_region);
         $task_arn = $ecs->runTask($outputs['ContainerClusterArn'], $security_groups, $subnets, $command, $outputs['ArtisanTaskDefinitionArn']);
@@ -109,7 +109,7 @@ class CloudArtisan extends Command
         }
 
         $this->info('Task output:');
-        $this->getOutput()->writeln(implode(PHP_EOL, $logs));
+        $this->line(implode(PHP_EOL, $logs));
 
         return true;
     }

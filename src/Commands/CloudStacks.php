@@ -63,7 +63,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $this->getOutput()->writeln("<info>Status:</info> $status");
+        $this->line($status);
 
         return 0;
     }
@@ -106,7 +106,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $this->getOutput()->writeln($output);
+        $this->line($output);
 
         return 0;
     }
@@ -157,11 +157,11 @@ class CloudStacks extends Command
         $application_repo_name = $this->awsEcrRepositoryName($env, 'application');
         $webserver_repo_name = $this->awsEcrRepositoryName($env, 'webserver');
 
-        $this->info("Checking if application and webserver images exist...");
+        $this->line("Checking if application and webserver images exist...");
 
         if (!$ecr->imageTagExists($application_repo_name, $application_image_tag)) {
             $this->error("Failed to find tag '$application_image_tag' in ECR repository '$application_repo_name'");
-            $this->info('Is CircleCI finished building and publishing the images?');
+            $this->line('Is CircleCI finished building and publishing the images?');
 
             return 1;
         }
@@ -185,15 +185,15 @@ class CloudStacks extends Command
         $existing_parameters = $ssm->listParameters();
 
         if ($existing_parameters) {
-            $this->info("The following variables exist for the '$env' environment:");
-            $this->getOutput()->writeln(implode(PHP_EOL, $existing_parameters));
+            $this->line("The following variables exist for the '$env' environment:");
+            $this->line(implode(PHP_EOL, $existing_parameters));
             $delete_params = $this->confirm('Are you sure you\'d like to delete these variables?', false);
 
             if (!$delete_params) {
                 return 0;
             }
 
-            $this->info('Deleting cloud variables...');
+            $this->line('Deleting cloud variables...');
 
             $this->withProgressBar($existing_parameters, function ($parameter) use ($ssm) {
                 $ssm->deleteParameter($parameter);
@@ -205,8 +205,8 @@ class CloudStacks extends Command
 
         $db_instance_type = $this->askDatabaseInstanceType();
 
-        $this->getOutput()->writeln('<info>Minimum database storage (GB):</info> ' . Cloud::DB_STORAGE_MIN_GB);
-        $this->getOutput()->writeln('<info>Maximum database storage (GB):</info> ' . Cloud::DB_STORAGE_MAX_GB);
+        $this->line('<info>Minimum database storage (GB):</info> ' . Cloud::DB_STORAGE_MIN_GB);
+        $this->line('<info>Maximum database storage (GB):</info> ' . Cloud::DB_STORAGE_MAX_GB);
 
         $db_storage = $this->askDatabaseStorage();
 
@@ -224,7 +224,7 @@ class CloudStacks extends Command
 
         $route53 = $this->awsRoute53();
 
-        $this->info('Finding hosted zone from domain...');
+        $this->line('Finding hosted zone from domain...');
 
         $root_domain = $this->rootDomainFromFullDomain($domain);
 
@@ -236,20 +236,20 @@ class CloudStacks extends Command
             return 0;
         }
 
-        $this->info("Hosted zone found with ID '$hosted_zone_id'");
+        $this->line("<info>Hosted zone found with ID:</info> $hosted_zone_id");
 
         $acm_arn = $this->findOrCreateAcmCertificateArn($env, $domain, $hosted_zone_id);
 
         $ec2 = $this->awsEc2($env);
 
-        $this->info('Creating prefix lists...');
+        $this->line('Creating prefix lists...');
 
         $database_prefix_list_id = $ec2->createPrefixList('database', 'me');
         $application_prefix_list_id = $ec2->createPrefixList('application', 'me');
 
         $this->startTimer();
 
-        $this->info("Creating stack for '$env' environment...");
+        $this->line("Creating stack for '$env' environment...");
 
         $db_username = Str::substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 1) . Str::random(random_int(10, 15));
         $db_password = Str::random(random_int(32, 40));
@@ -321,7 +321,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $this->info('Creating database schema...');
+        $this->line('Creating database schema...');
 
         $database_name = $this->createDatabaseSchema(
             static::larasurfConfig()->get('project-name'),
@@ -331,6 +331,15 @@ class CloudStacks extends Command
             $db_username,
             $db_password,
         );
+
+        if (!$database_name) {
+            $this->error("Failed to create database schema '$database_name'");
+
+            return 1;
+        }
+
+        $this->info("Created database schema '$database_name' successfully");
+
 
         $parameters = [
             'APP_ENV' => $env,
@@ -353,7 +362,7 @@ class CloudStacks extends Command
             'AWS_BUCKET' => $outputs['BucketName'],
         ];
 
-        $this->info('Creating cloud variables...');
+        $this->line('Creating cloud variables...');
 
         $ssm = $this->awsSsm($env);
 
@@ -361,10 +370,10 @@ class CloudStacks extends Command
             $ssm->putParameter($name, $value);
             sleep(1);
 
-            $this->info("Successfully created cloud variable '$name'");
+            $this->line("<info>Successfully created cloud variable:</info> $name");
         }
 
-        $this->info('Waiting to list cloud variables...');
+        $this->line('Waiting to list cloud variables...');
 
         do {
             $secrets = $ssm->listParameterArns(true);
@@ -380,12 +389,12 @@ class CloudStacks extends Command
             }
 
             if (!$has_all) {
-                $this->info('Cloud variables still creating, checking again soon...');
+                $this->line('Cloud variables still creating, checking again soon...');
                 sleep(5);
             }
         } while (!$has_all);
 
-        $this->info('Updating stack with cloud variables...');
+        $this->line('Updating stack with cloud variables...');
 
         $cloudformation->updateStack(true, $secrets);
 
@@ -409,7 +418,7 @@ class CloudStacks extends Command
                 ]) ?? null;
 
             if (empty($updated_outputs)) {
-                $this->info('Stack outputs are not yet updated, checking again soon...');
+                $this->line('Stack outputs are not yet updated, checking again soon...');
                 sleep(5);
             }
         } while ($tries < $limit && (empty($updated_outputs) || $updated_outputs['ArtisanTaskDefinitionArn'] === $outputs['ArtisanTaskDefinitionArn']));
@@ -428,7 +437,7 @@ class CloudStacks extends Command
 
         $subnets = [$outputs['Subnet1Id']];
 
-        $this->info('Starting ECS task to run migrations...');
+        $this->line('Starting ECS task to run migrations...');
 
         $ecs = $this->awsEcs($env, $aws_region);
         $task_arn = $ecs->runTask($updated_outputs['ContainerClusterArn'], $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $updated_outputs['ArtisanTaskDefinitionArn']);
@@ -448,12 +457,12 @@ class CloudStacks extends Command
             'Task has not completed yet, checking again soon...'
         );
 
-        $this->info('Updating application prefix list to allow ingress from this IP...');
+        $this->line('Updating application prefix list to allow ingress from this IP...');
 
         $this->stopTimer();
         $this->displayTimeElapsed();
 
-        $this->getOutput()->writeln("<info>Visit</info> https://$domain <info>to see your application</info>");
+        $this->line("<info>Visit</info> https://$domain <info>to see your application</info>");
 
         return 0;
     }
@@ -638,7 +647,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $this->info('Checking database for deletion protection...');
+        $this->line('Checking database for deletion protection...');
 
         $outputs = $cloudformation->stackOutput([
             'DBId',
@@ -657,14 +666,14 @@ class CloudStacks extends Command
                     return 0;
                 }
 
-                $this->info('Disabling database deletion protection...');
+                $this->line('Disabling database deletion protection...');
 
                 $rds->modifyDeletionProtection($outputs['DBId'], false);
 
                 $this->info('Deletion protection disabled successfully');
             }
 
-            $this->info('Deleting prefix lists...');
+            $this->line('Deleting prefix lists...');
 
             $ec2->deletePrefixList($outputs['DBAdminAccessPrefixListId']);
             $ec2->deletePrefixList($outputs['AppAccessPrefixListId']);
@@ -702,7 +711,7 @@ class CloudStacks extends Command
 
         $result = $this->awsCloudFormation($env)->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'changed');
 
-        $this->getOutput()->writeln("<info>Stack operation finished with status:</info> {$result['status']}");
+        $this->line("<info>Stack operation finished with status:</info> {$result['status']}");
 
         return 0;
     }
@@ -784,7 +793,7 @@ class CloudStacks extends Command
         if ($this->confirm('Is there a preexisting ACM certificate you\'d like to use?', false)) {
             $acm_arn = $this->askAcmCertificateArn();
         } else {
-            $this->info('Creating ACM certificate...');
+            $this->line('Creating ACM certificate...');
 
             $acm = $this->awsAcm($env);
             $acm_arn = null;
@@ -797,8 +806,8 @@ class CloudStacks extends Command
                 'Certificate is still being created, checking again soon...'
             );
 
-            $this->getOutput()->writeln('');
-            $this->info('Verifying ACM certificate via DNS record...');
+            $this->line('');
+            $this->line('Verifying ACM certificate via DNS record...');
 
             $route53 = $this->awsRoute53();
 
@@ -837,12 +846,8 @@ class CloudStacks extends Command
         ));
 
         if ($result === false) {
-            $this->error("Failed to create database schema '$database_name'");
-
             return false;
         }
-
-        $this->info("Created database schema '$database_name' successfully");
 
         return $database_name;
     }
