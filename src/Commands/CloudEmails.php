@@ -16,17 +16,31 @@ class CloudEmails extends Command
     use HasTimer;
     use InteractsWithAws;
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_VERIFY_DOMAIN = 'verify-domain';
     const COMMAND_CHECK_VERIFICATION = 'check-verification';
     const COMMAND_ENABLE_SENDING = 'enable-sending';
     const COMMAND_CHECK_SENDING = 'check-sending';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-emails
                             {--environment=null : The environment: \'stage\' or \'production\'}
                             {subcommand : The subcommand to run: \'verify-domain\', \'check-verification\', \'enable-sending\', or \'check-sending\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage email sending capabilities in cloud environments';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
         self::COMMAND_VERIFY_DOMAIN => 'handleVerifyDomain',
         self::COMMAND_CHECK_VERIFICATION => 'handleCheckVerification',
@@ -34,6 +48,12 @@ class CloudEmails extends Command
         self::COMMAND_CHECK_SENDING => 'handleCheckSending',
     ];
 
+    /**
+     * Verifies the configured domain name for email sending, including DKIM.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException
+     */
     protected function handleVerifyDomain()
     {
         $env = $this->environmentOption();
@@ -116,6 +136,11 @@ class CloudEmails extends Command
         return 0;
     }
 
+    /**
+     * Checks the configured domain for email sending, including DKIM.
+     *
+     * @return int
+     */
     protected function handleCheckVerification()
     {
         $env = $this->environmentOption();
@@ -142,8 +167,11 @@ class CloudEmails extends Command
 
         $verified = $ses->checkDomainVerification($domain);
 
+        $status = 0;
+
         if (!$verified) {
             $this->warn("Domain '$domain' is not verified for email sending");
+            $status = 1;
         } else {
             $this->info("Domain '$domain' is verified for email sending");
         }
@@ -152,13 +180,19 @@ class CloudEmails extends Command
 
         if (!$verified_dkim) {
             $this->warn("Domain '$domain' is not verified for DKIM");
+            $status = 1;
         } else {
             $this->info("Domain '$domain' is verified for DKIM");
         }
 
-        return 0;
+        return $status;
     }
 
+    /**
+     * Requests to enable live email sending within SES for the AWS account.
+     *
+     * @return int
+     */
     protected function handleEnableSending()
     {
         $cloudformation = $this->awsCloudFormation(Cloud::ENVIRONMENT_PRODUCTION);
@@ -188,18 +222,23 @@ class CloudEmails extends Command
 
         $ses->enableEmailSending($website, $description);
 
-        $this->info('Requested live email sending successfully.');
+        $this->info('Requested live email sending successfully');
         $this->warn('Response from AWS may take up to 24 hours');
 
         return 0;
     }
 
+    /**
+     * Checks if live email sending for the AWS account is enabled within SES.
+     *
+     * @return int
+     */
     protected function handleCheckSending()
     {
         if (!$this->awsSes()->checkEmailSending()) {
-            $this->warn('Live email sending not enabled');
+            $this->warn('Live email sending is not enabled');
 
-            return 0;
+            return 1;
         }
 
         $this->info('Live email sending is enabled');
@@ -207,6 +246,12 @@ class CloudEmails extends Command
         return 0;
     }
 
+    /**
+     * Returns the configured domain name for the given environment or false if not found.
+     *
+     * @param string $env
+     * @return string|false
+     */
     protected function domain(string $env): string|false
     {
         $domain = $this->awsCloudFormation($env)->stackOutput('DomainName');
@@ -220,6 +265,12 @@ class CloudEmails extends Command
         return $domain;
     }
 
+    /**
+     * Returns the hosted zone ID for the given environment or false if not found.
+     *
+     * @param string $env
+     * @return string|false
+     */
     protected function hostedZoneId(string $env)
     {
         $hosted_zone_id = $this->awsCloudFormation($env)->stackOutput('HostedZoneId');

@@ -307,4 +307,9 @@ EOF;
     {
         return Mockery::mock('overload:' . Route53Client::class);
     }
+
+    protected function mockLaraSurfSesClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . SesClient::class);
+    }
 }
