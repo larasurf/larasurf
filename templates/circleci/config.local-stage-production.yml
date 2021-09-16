@@ -198,13 +198,13 @@ workflows:
           environment: stage
           var_name_region: AWS_REGION_STAGE
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_STAGE
-      - scan:
+      - deploy:
           environment: stage
           var_name_region: AWS_REGION_STAGE
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_STAGE
           requires:
             - test
-      - deploy:
+      - scan:
           environment: stage
           var_name_region: AWS_REGION_STAGE
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_STAGE
@@ -219,13 +219,13 @@ workflows:
           environment: production
           var_name_region: AWS_REGION_PRODUCTION
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
-      - scan:
+      - deploy:
           environment: production
           var_name_region: AWS_REGION_PRODUCTION
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
           requires:
             - test
-      - deploy:
+      - scan:
           environment: production
           var_name_region: AWS_REGION_PRODUCTION
           var_name_ecr_url_prefix: AWS_ECR_URL_PREFIX_PRODUCTION
