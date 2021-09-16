@@ -728,7 +728,7 @@ Resources:
       ScheduleExpression: 'rate(5 minutes)'
       State: !If [ IsEnabled, ENABLED, DISABLED ]
       Targets:
-        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${ProjectId}-${EnvironmentName}'
+        - Arn: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/larasurf-${ProjectId}-${EnvironmentName}'
           EcsParameters:
             TaskDefinitionArn: !Ref ContainerArtisanTaskDefinition
             LaunchType: FARGATE
