@@ -11,15 +11,6 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class LaraSurfConfigTest extends TestCase
 {
-    public function tearDown(): void
-    {
-        parent::tearDown();
-
-        if (File::exists($this->config_path)) {
-            File::delete($this->config_path);
-        }
-    }
-
     public function testExistsLocal()
     {
         $this->createValidLaraSurfConfig('local');

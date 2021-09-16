@@ -13,24 +13,43 @@ class CloudIngress extends Command
     use HasEnvironmentOption;
     use InteractsWithAws;
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_ALLOW = 'allow';
     const COMMAND_REVOKE = 'revoke';
     const COMMAND_LIST = 'list';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-ingress
                             {--environment=null : The environment: \'stage\' or \'production\'}
                             {--type=null : The resource type for ingress: \'application\' or \'database\'}
                             {--source=null : The source to allow ingress from: \'me\', \'public\', or an IP (X.X.X.X)}
                             {subcommand : The subcommand to run: \'allow\', \'revoke\', or \'list\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage ingress to the application or database in cloud environments';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
         self::COMMAND_ALLOW => 'handleAllow',
         self::COMMAND_REVOKE => 'handleRevoke',
         self::COMMAND_LIST => 'handleList',
     ];
 
+    /**
+     * Allow ingress for the specified type from the specified source for the specified environment.
+     *
+     * @return int
+     */
     protected function handleAllow()
     {
         $env = $this->environmentOption();
@@ -76,6 +95,11 @@ class CloudIngress extends Command
         return 0;
     }
 
+    /**
+     * Revoke ingress for the specified type from the specified source for the specified environment.
+     *
+     * @return int
+     */
     protected function handleRevoke()
     {
         $env = $this->environmentOption();
@@ -121,6 +145,11 @@ class CloudIngress extends Command
         return 0;
     }
 
+    /**
+     * List ingress for the specified type for the specified environment.
+     *
+     * @return int
+     */
     public function handleList()
     {
         $env = $this->environmentOption();
@@ -159,6 +188,11 @@ class CloudIngress extends Command
         return 0;
     }
 
+    /**
+     * Returns the valid type option or false.
+     *
+     * @return string|false
+     */
     protected function typeOption(): string|false
     {
         $type = $this->option('type');
@@ -178,6 +212,11 @@ class CloudIngress extends Command
         return $type;
     }
 
+    /**
+     * Returns the source option or false if not found.
+     *
+     * @return string|false
+     */
     protected function sourceOption(): string|false
     {
         $source = $this->option('source');
@@ -191,6 +230,13 @@ class CloudIngress extends Command
         return $source;
     }
 
+    /**
+     * Returns the prefix list ID for the specified environment and type or false if not found.
+     *
+     * @param string $env
+     * @param string $type
+     * @return string|false
+     */
     protected function prefixListId(string $env, string $type): string|false
     {
         $key = $type === 'database' ? 'DBAdminAccessPrefixListId' : 'AppAccessPrefixListId';

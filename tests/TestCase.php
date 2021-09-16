@@ -18,6 +18,7 @@ use LaraSurf\LaraSurf\AwsClients\RdsClient;
 use LaraSurf\LaraSurf\AwsClients\Route53Client;
 use LaraSurf\LaraSurf\AwsClients\SesClient;
 use LaraSurf\LaraSurf\AwsClients\SsmClient;
+use LaraSurf\LaraSurf\CircleCI\Client;
 use LaraSurf\LaraSurf\Constants\Cloud;
 use LaraSurf\LaraSurf\LaraSurfServiceProvider;
 use Mockery;
@@ -57,31 +58,6 @@ class TestCase extends \Orchestra\Testbench\TestCase
         }
     }
 
-    public function tearDown(): void
-    {
-        parent::tearDown();
-
-        foreach ([
-                     '.circleci/api-key.txt',
-                     '.git/config',
-                     '.git/HEAD',
-                     '.circleci/api-key.txt',
-                 ] as $file) {
-            if (File::exists(base_path($file))) {
-                File::delete(base_path($file));
-            }
-        }
-
-        foreach ([
-                     '.git',
-                     '.circleci',
-                 ] as $directory) {
-            if (File::isDirectory(base_path($directory))) {
-                File::deleteDirectory(base_path($directory));
-            }
-        }
-    }
-
     protected function getPackageProviders($app)
     {
         return [LaraSurfServiceProvider::class];
@@ -106,6 +82,22 @@ class TestCase extends \Orchestra\Testbench\TestCase
 EOF;
 
         File::put(base_path('.git/config'), $contents);
+    }
+
+    protected function createGitHead(string $branch)
+    {
+        if (!File::isDirectory(base_path('.git'))) {
+            File::makeDirectory(base_path('.git'));
+        }
+
+        $contents = "ref: refs/heads/$branch";
+
+        File::put(base_path('.git/HEAD'), $contents);
+    }
+
+    protected function createGitCurrentCommit(string $branch, string $commit)
+    {
+        File::put(base_path(".git/refs/heads/$branch"), $commit);
     }
 
     protected function createCircleCIApiKey(string $key)
@@ -158,7 +150,10 @@ EOF;
 
     protected function createMockCloudformationTemplate()
     {
-        File::makeDirectory($this->cloudformation_directory_path);
+        if (!File::isDirectory($this->cloudformation_directory_path)) {
+            File::makeDirectory($this->cloudformation_directory_path);
+        }
+
         File::put($this->cloudformation_template_path, Str::random());
     }
 
@@ -311,5 +306,20 @@ EOF;
     protected function mockLaraSurfSesClient(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . SesClient::class);
+    }
+
+    protected function mockLaraSurfEcrClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . EcrClient::class);
+    }
+
+    protected function mockLaraSurfEc2Client(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . Ec2Client::class);
+    }
+
+    protected function mockCircleCI(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . Client::class);
     }
 }

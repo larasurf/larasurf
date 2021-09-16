@@ -4,7 +4,6 @@ namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
-use LaraSurf\LaraSurf\CircleCI\Client;
 use LaraSurf\LaraSurf\Commands\Traits\HasEnvironmentOption;
 use LaraSurf\LaraSurf\Commands\Traits\HasSubCommands;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
@@ -18,24 +17,49 @@ class CloudImages extends Command
     use InteractsWithAws;
     use InteractsWithCircleCI;
 
+    /**
+     * The different image repository types.
+     */
     const REPOSITORY_TYPE_APPLICATION = 'application';
     const REPOSITORY_TYPE_WEBSERVER = 'webserver';
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_CREATE_REPOS = 'create-repos';
     const COMMAND_DELETE_REPOS = 'delete-repos';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-images
                             {--environment= : The environment: \'stage\' or \'production\'}
                             {subcommand : The subcommand to run: \'create-repos\' or \'delete-repos\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage images and image repositories in cloud environments';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
-        self::COMMAND_CREATE_REPOS => 'handleCreateRepo',
-        self::COMMAND_DELETE_REPOS => 'handleDeleteRepo',
+        self::COMMAND_CREATE_REPOS => 'handleCreateRepos',
+        self::COMMAND_DELETE_REPOS => 'handleDeleteRepos',
     ];
 
-    public function handleCreateRepo()
+    /**
+     * Creates both an application and webserver image repository on ECS for the given environment.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\CircleCI\RequestFailedException
+     * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException
+     * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigValueException
+     */
+    public function handleCreateRepos()
     {
         $env = $this->environmentOption();
 
@@ -130,7 +154,14 @@ class CloudImages extends Command
         return 0;
     }
 
-    public function handleDeleteRepo()
+    /**
+     * Deletes both the application and webserver image repository on ECS for the given environment.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException
+     * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigValueException
+     */
+    public function handleDeleteRepos()
     {
         $env = $this->environmentOption();
 

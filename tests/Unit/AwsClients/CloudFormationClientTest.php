@@ -13,19 +13,6 @@ use League\Flysystem\FileNotFoundException;
 
 class CloudFormationClientTest extends TestCase
 {
-    public function tearDown(): void
-    {
-        if (File::exists($this->cloudformation_template_path)) {
-            File::delete($this->cloudformation_template_path);
-        }
-
-        if (File::isDirectory($this->cloudformation_directory_path)) {
-            File::deleteDirectory($this->cloudformation_directory_path);
-        }
-
-        parent::tearDown();
-    }
-
     public function testCreateStack()
     {
         $this->mockAwsCloudFormationClient()
@@ -70,36 +57,6 @@ class CloudFormationClientTest extends TestCase
         );
 
         $cloudformation->createStack(
-            false,
-            'test.' . $this->faker->domainName,
-            $this->faker->domainName,
-            Str::random(),
-            Str::random(),
-            random_int(20, 100),
-            Arr::random(Cloud::DB_INSTANCE_TYPES),
-            Str::random(),
-            Str::random(),
-            Arr::random(Cloud::CACHE_NODE_TYPES),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            random_int(1, 100),
-            random_int(1, 100),
-            random_int(1, 100)
-        );
-    }
-
-    public function testCreateStackNoTemplate()
-    {
-        $this->expectException(FileNotFoundException::class);
-
-        $this->mockAwsCloudFormationClient()
-            ->shouldReceive('createStack');
-
-        $this->cloudFormationClient()->createStack(
             false,
             'test.' . $this->faker->domainName,
             $this->faker->domainName,

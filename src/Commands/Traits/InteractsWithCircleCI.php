@@ -42,7 +42,7 @@ trait InteractsWithCircleCI
             $circleci_project = $this->gitOriginProjectName();
 
             if (!$circleci_project) {
-                return 1;
+                return false;
             }
 
             $circleci = static::circleCI($circleci_api_key, $circleci_project);
