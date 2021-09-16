@@ -11,7 +11,7 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class LaraSurfConfigTest extends TestCase
 {
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         parent::tearDown();
 

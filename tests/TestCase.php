@@ -19,6 +19,7 @@ use LaraSurf\LaraSurf\AwsClients\Route53Client;
 use LaraSurf\LaraSurf\AwsClients\SesClient;
 use LaraSurf\LaraSurf\AwsClients\SsmClient;
 use LaraSurf\LaraSurf\Constants\Cloud;
+use LaraSurf\LaraSurf\LaraSurfServiceProvider;
 use Mockery;
 
 class TestCase extends \Orchestra\Testbench\TestCase
@@ -50,6 +51,66 @@ class TestCase extends \Orchestra\Testbench\TestCase
         $this->project_id = $this->faker->numerify('######');
         $this->aws_profile = $this->faker->word;
         $this->aws_region = Arr::random(Cloud::AWS_REGIONS);
+
+        if (!File::isDirectory(base_path('.circleci'))) {
+            File::makeDirectory(base_path('.circleci'));
+        }
+    }
+
+    public function tearDown(): void
+    {
+        parent::tearDown();
+
+        foreach ([
+                     '.circleci/api-key.txt',
+                     '.git/config',
+                     '.git/HEAD',
+                     '.circleci/api-key.txt',
+                 ] as $file) {
+            if (File::exists(base_path($file))) {
+                File::delete(base_path($file));
+            }
+        }
+
+        foreach ([
+                     '.git',
+                     '.circleci',
+                 ] as $directory) {
+            if (File::isDirectory(base_path($directory))) {
+                File::deleteDirectory(base_path($directory));
+            }
+        }
+    }
+
+    protected function getPackageProviders($app)
+    {
+        return [LaraSurfServiceProvider::class];
+    }
+
+    protected function createGitConfig(string $project_name)
+    {
+        if (!File::isDirectory(base_path('.git'))) {
+            File::makeDirectory(base_path('.git'));
+        }
+
+        $contents = <<<EOF
+[core]
+        repositoryformatversion = 0
+        filemode = false
+        bare = false
+        logallrefupdates = true
+        ignorecase = true
+[remote "origin"]
+        url = git@github.com:$project_name.git
+        fetch = +refs/heads/*:refs/remotes/origin/*
+EOF;
+
+        File::put(base_path('.git/config'), $contents);
+    }
+
+    protected function createCircleCIApiKey(string $key)
+    {
+        File::put(base_path('.circleci/api-key.txt'), $key);
     }
 
     protected function createValidLaraSurfConfig(string $environments)

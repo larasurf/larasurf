@@ -23,7 +23,7 @@ class CircleCI extends Command
 
     protected array $commands = [
         self::COMMAND_SET_API_KEY => 'handleSetApiKey',
-        self::COMMAND_CLEAR_API_KEY => 'handleDeleteApiKey',
+        self::COMMAND_CLEAR_API_KEY => 'handleClearApiKey',
     ];
 
     protected function handleSetApiKey()
@@ -50,7 +50,7 @@ class CircleCI extends Command
 
         $path = static::circleCIApiKeyFilePath();
 
-        if (!File::put($path, $api_token)) {
+        if (!File::put(base_path($path), $api_token)) {
             $this->error("Failed to write to file: $path");
 
             return 1;
@@ -61,17 +61,17 @@ class CircleCI extends Command
         return 0;
     }
 
-    protected function handleDeleteApiToken()
+    protected function handleClearApiKey()
     {
         $path = static::circleCIApiKeyFilePath();
 
-        if (!File::exists($path)) {
+        if (!File::exists(base_path($path))) {
             $this->error("No file exists at: $path");
 
             return 1;
         }
 
-        if (!File::delete($path)) {
+        if (!File::delete(base_path($path))) {
             $this->error("Failed to write to file: $path");
 
             return 1;

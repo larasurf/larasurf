@@ -13,7 +13,7 @@ use League\Flysystem\FileNotFoundException;
 
 class CloudFormationClientTest extends TestCase
 {
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         if (File::exists($this->cloudformation_template_path)) {
             File::delete($this->cloudformation_template_path);
