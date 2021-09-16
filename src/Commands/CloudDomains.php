@@ -11,22 +11,41 @@ class CloudDomains extends Command
     use HasSubCommands;
     use InteractsWithAws;
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_HOSTED_ZONE_EXISTS = 'hosted-zone-exists';
     const COMMAND_CREATE_HOSTED_ZONE = 'create-hosted-zone';
     const COMMAND_NAMESERVERS = 'nameservers';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-domains
                             {--domain= : The top level domain name}
                             {subcommand : The subcommand to run: \'hosted-zone-exists\', \'create-hosted-zone\', or \'nameservers\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage hosted zones and nameserver DNS records in the cloud';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
         self::COMMAND_HOSTED_ZONE_EXISTS => 'handleHostedZoneExists',
         self::COMMAND_CREATE_HOSTED_ZONE => 'handleCreateHostedZone',
         self::COMMAND_NAMESERVERS => 'handleNameServers',
     ];
 
+    /**
+     * Determine if a hosted zone exists by domain name.
+     *
+     * @return int
+     */
     public function handleHostedZoneExists()
     {
         $domain = $this->domainOption();
@@ -37,13 +56,18 @@ class CloudDomains extends Command
 
         if (!$id) {
             $this->warn("Hosted zone not found for domain '$domain'");
-        } else {
-            $this->line("<info>Hosted zone exists with ID:</info> $id");
+
+            return 1;
         }
+
+        $this->line("<info>Hosted zone exists with ID:</info> $id");
 
         return 0;
     }
 
+    /**
+     * Create a hosted zone by domain name.
+     */
     public function handleCreateHostedZone()
     {
         $domain = $this->domainOption();
@@ -53,8 +77,13 @@ class CloudDomains extends Command
         $id = $this->awsRoute53()->createHostedZone($root_domain);
 
         $this->line("<info>Hosted zone created with ID:</info> $id");
+
+        return 0;
     }
 
+    /**
+     * List the name servers for a hosted zone by domain name.
+     */
     public function handleNameServers()
     {
         $domain = $this->domainOption();
@@ -67,13 +96,20 @@ class CloudDomains extends Command
 
         if (!$id) {
             $this->error("Hosted zone not found for domain '$domain'");
+
+            return 1;
         }
 
         $nameservers = $route53->hostedZoneNameServers($id);
 
         $this->line(implode(PHP_EOL, $nameservers));
+
+        return 0;
     }
 
+    /**
+     * @return string
+     */
     protected function domainOption(): string
     {
         return $this->option('domain');

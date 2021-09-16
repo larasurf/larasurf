@@ -302,4 +302,9 @@ EOF;
     {
         return Mockery::mock('overload:' . CloudWatchLogsClient::class);
     }
+
+    protected function mockLaraSurfRoute53Client(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . Route53Client::class);
+    }
 }
