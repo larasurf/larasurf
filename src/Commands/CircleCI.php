@@ -13,19 +13,38 @@ class CircleCI extends Command
     use HasSubCommands;
     use InteractsWithCircleCI;
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_SET_API_KEY = 'set-api-key';
     const COMMAND_CLEAR_API_KEY = 'clear-api-key';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:circleci
                             {subcommand : The subcommand to run: \'set-api-key\' or \'clear-api-key\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage CircleCI projects';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
         self::COMMAND_SET_API_KEY => 'handleSetApiKey',
         self::COMMAND_CLEAR_API_KEY => 'handleClearApiKey',
     ];
 
+    /**
+     * Set the CircleCI API key in a file (not checked into source control) for reuse in subsequent commands.
+     *
+     * @return int
+     */
     protected function handleSetApiKey()
     {
         $origin = $this->gitOriginProjectName();
@@ -37,7 +56,8 @@ class CircleCI extends Command
         $api_token = $this->secret('Enter your CircleCI API token:');
 
         $this->line('Verifying API token...');
-        
+
+        // new CircleCI API client
         $client = new Client($api_token, $origin);
 
         if (!$client->checkApiKey()) {
@@ -61,6 +81,11 @@ class CircleCI extends Command
         return 0;
     }
 
+    /**
+     * Clear the CircleCI API key stored in a file.
+     *
+     * @return int
+     */
     protected function handleClearApiKey()
     {
         $path = static::circleCIApiKeyFilePath();

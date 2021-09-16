@@ -13,12 +13,24 @@ class CloudArtisan extends Command
     use InteractsWithAws;
     use HasEnvironmentOption;
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-artisan
                             {cmd : The full artisan command to run, in quotes}
                             {--environment= : The environment to run the artisan command on; \'stage\' or \'production\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Run artisan commands on cloud environments';
 
+    /**
+     * Runs an arbitrary artisan command on a cloud environment by launching an ECS task
+     * using the Artisan task definition. Fetches the logs from CloudWatch Logs and displays them after running.
+     *
+     * @return int
+     */
     public function handle()
     {
         $env = $this->environmentOption();
@@ -45,12 +57,7 @@ class CloudArtisan extends Command
 
         $artisan_command = $this->argument('cmd');
 
-        return $this->artisanCommand($cloudformation, $env, $aws_region, $artisan_command) ? 0 : 1;
-    }
-
-    protected function artisanCommand(CloudFormationClient $cloudformation, string $env, string $aws_region, string $command): bool
-    {
-        $command = ['php', 'artisan', ...explode(' ', $command)];
+        $command = ['php', 'artisan', ...explode(' ', $artisan_command)];
 
         $outputs = $cloudformation->stackOutput([
             'ContainerClusterArn',
@@ -77,7 +84,7 @@ class CloudArtisan extends Command
         if (!$task_arn) {
             $this->error('Failed to start ECS task to run artisan command');
 
-            return false;
+            return 1;
         }
 
         $this->info('Started ECS task to run artisan command successfully');
@@ -94,7 +101,7 @@ class CloudArtisan extends Command
         if (!$log_group) {
             $this->error("Failed to find artisan log group for '$env' environment");
 
-            return false;
+            return 1;
         }
 
         $logs = $this->awsCloudWatchLogs($env, $aws_region)->listLogStream(
@@ -105,12 +112,12 @@ class CloudArtisan extends Command
         if (!$logs) {
             $this->error("Failed to get events from artisan log group for '$env' environment");
 
-            return false;
+            return 1;
         }
 
         $this->info('Task output:');
         $this->line(implode(PHP_EOL, $logs));
 
-        return true;
+        return 0;
     }
 }
