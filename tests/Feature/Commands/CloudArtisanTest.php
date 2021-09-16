@@ -9,6 +9,10 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class CloudArtisanTest extends TestCase
 {
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testHandle()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
