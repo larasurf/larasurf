@@ -287,4 +287,19 @@ EOF;
     {
         return Mockery::mock('overload:' . \Aws\CloudWatchLogs\CloudWatchLogsClient::class);
     }
+
+    protected function mockLaraSurfCloudFormationClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . CloudFormationClient::class);
+    }
+
+    protected function mockLaraSurfEcsClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . EcsClient::class);
+    }
+
+    protected function mockLaraSurfCloudWatchLogsClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . CloudWatchLogsClient::class);
+    }
 }
