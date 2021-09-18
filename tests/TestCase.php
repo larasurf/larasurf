@@ -97,6 +97,10 @@ EOF;
 
     protected function createGitCurrentCommit(string $branch, string $commit)
     {
+        if (!File::isDirectory(base_path('.git/refs/heads'))) {
+            File::makeDirectory(base_path('.git/refs/heads'), 0755, true);
+        }
+
         File::put(base_path(".git/refs/heads/$branch"), $commit);
     }
 
@@ -293,6 +297,11 @@ EOF;
         return Mockery::mock('overload:' . EcsClient::class);
     }
 
+    protected function mockLaraSurfSsmClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . SsmClient::class);
+    }
+
     protected function mockLaraSurfCloudWatchLogsClient(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . CloudWatchLogsClient::class);
@@ -301,6 +310,11 @@ EOF;
     protected function mockLaraSurfRoute53Client(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . Route53Client::class);
+    }
+
+    protected function mockLaraSurfAcmClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . AcmClient::class);
     }
 
     protected function mockLaraSurfSesClient(): Mockery\MockInterface

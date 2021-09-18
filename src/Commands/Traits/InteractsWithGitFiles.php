@@ -27,17 +27,17 @@ trait InteractsWithGitFiles
         return static::$git_config;
     }
 
-    protected static function gitConfigFilePath()
+    protected static function gitConfigFilePath(): string
     {
         return base_path('.git/config');
     }
 
-    protected static function gitHeadFilePath()
+    protected static function gitHeadFilePath(): string
     {
         return base_path('.git/HEAD');
     }
 
-    protected static function gitRefHeadsPath()
+    protected static function gitRefHeadsPath(): string
     {
         return base_path('.git/refs/heads');
     }

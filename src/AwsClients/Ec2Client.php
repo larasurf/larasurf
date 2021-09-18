@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\AwsClients;
 
+use Aws\Exception\AwsException;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -33,11 +34,17 @@ class Ec2Client extends Client
         return $result['PrefixList']['PrefixListId'] ?? false;
     }
 
-    public function deletePrefixList(string $prefix_list_id)
+    public function deletePrefixList(string $prefix_list_id): bool
     {
-        $this->client->deleteManagedPrefixList([
-            'PrefixListId' => $prefix_list_id,
-        ]);
+        try {
+            $this->client->deleteManagedPrefixList([
+                'PrefixListId' => $prefix_list_id,
+            ]);
+        } catch (AwsException $e) {
+            return false;
+        }
+
+        return true;
     }
 
     public function allowIpPrefixList(string $prefix_list_id, string $ip)

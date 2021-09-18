@@ -34,12 +34,12 @@ class AcmClientTest extends TestCase
                 ],
             ]);
 
-        $dns_record = $this->acmClient()->requestCertificate($output_arn, $this->faker->domainName);
+        $dns_record_with_arn = $this->acmClient()->requestCertificate($this->faker->domainName);
 
-        $this->assertEquals($dns_name, $dns_record->getName());
-        $this->assertEquals($dns_value, $dns_record->getValue());
-        $this->assertEquals(DnsRecord::TYPE_CNAME, $dns_record->getType());
-        $this->assertEquals($arn, $output_arn);
+        $this->assertEquals($dns_name, $dns_record_with_arn['dns_record']->getName());
+        $this->assertEquals($dns_value, $dns_record_with_arn['dns_record']->getValue());
+        $this->assertEquals(DnsRecord::TYPE_CNAME, $dns_record_with_arn['dns_record']->getType());
+        $this->assertEquals($arn, $dns_record_with_arn['certificate_arn']);
     }
 
     public function testRequestCertificateInvalidValidationMethod()
@@ -48,7 +48,7 @@ class AcmClientTest extends TestCase
 
         $this->mockAwsAcmClient();
 
-        $this->acmClient()->requestCertificate($output_arn, $this->faker->domainName, $this->faker->word);
+        $this->acmClient()->requestCertificate($this->faker->domainName, $this->faker->word);
     }
 
     public function testWaitForPendingValidation()

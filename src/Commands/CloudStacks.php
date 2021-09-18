@@ -14,6 +14,7 @@ use LaraSurf\LaraSurf\Commands\Traits\HasTimer;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithGitFiles;
 use LaraSurf\LaraSurf\Constants\Cloud;
+use LaraSurf\LaraSurf\SchemaCreator;
 use PDO;
 
 class CloudStacks extends Command
@@ -124,7 +125,7 @@ class CloudStacks extends Command
         if (!$this->gitIsOnBranch($branch)) {
             $this->error("Must be on the $branch branch to create a stack for this environment");
 
-            return 1;
+            return 2;
         }
 
         $path = CloudFormationClient::templatePath();
@@ -132,7 +133,7 @@ class CloudStacks extends Command
         if (!File::exists($path)) {
             $this->error("CloudFormation template does not exist at path '$path'");
 
-            return 1;
+            return 3;
         }
 
         $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
@@ -140,160 +141,74 @@ class CloudStacks extends Command
         if (!$aws_region) {
             $this->error("AWS region is not set for the '$env' environment; create image repositories first");
 
-            return 1;
+            return 4;
         }
 
         $current_commit = $this->gitCurrentCommit($branch);
 
         if (!$current_commit) {
-            return 1;
+            return 5;
         }
 
-        $ecr = $this->awsEcr($env, $aws_region);
+        $image_tags = $this->confirmProjectImagesExist($env, $aws_region, $current_commit);
 
-        $application_image_tag = 'commit-' . $current_commit;
-        $webserver_image_tag = 'commit-' . $current_commit;
-
-        $application_repo_name = $this->awsEcrRepositoryName($env, 'application');
-        $webserver_repo_name = $this->awsEcrRepositoryName($env, 'webserver');
-
-        $this->line("Checking if application and webserver images exist...");
-
-        if (!$ecr->imageTagExists($application_repo_name, $application_image_tag)) {
-            $this->error("Failed to find tag '$application_image_tag' in ECR repository '$application_repo_name'");
-            $this->line('Is CircleCI finished building and publishing the images?');
-
-            return 1;
+        if (!$image_tags) {
+            return 6;
         }
 
-        if (!$ecr->imageTagExists($webserver_repo_name, $webserver_image_tag)) {
-            $this->error("Failed to find tag '$webserver_image_tag' in ECR repository '$webserver_repo_name'");
-
-            return 1;
+        if (!$this->confirmStackDoesntExist($env, $aws_region)) {
+            return 7;
         }
 
-        $cloudformation = $this->awsCloudFormation($env, $aws_region);
-
-        if ($cloudformation->stackStatus()) {
-            $this->error("Stack exists for '$env' environment");
-
-            return 1;
-        }
-
-        $ssm = $this->awsSsm($env);
-
-        $existing_parameters = $ssm->listParameters();
-
-        if ($existing_parameters) {
-            $this->line("The following variables exist for the '$env' environment:");
-            $this->line(implode(PHP_EOL, $existing_parameters));
-            $delete_params = $this->confirm('Are you sure you\'d like to delete these variables?', false);
-
-            if (!$delete_params) {
-                return 0;
-            }
-
-            $this->line('Deleting cloud variables...');
-
-            $this->withProgressBar($existing_parameters, function ($parameter) use ($ssm) {
-                $ssm->deleteParameter($parameter);
-                sleep (1);
-            });
-
-            $this->newLine();
+        if (!$this->maybeDeleteAllCloudVariables($env)) {
+            return 8;
         }
 
         $db_instance_type = $this->askDatabaseInstanceType();
-
-        $this->line('<info>Minimum database storage (GB):</info> ' . Cloud::DB_STORAGE_MIN_GB);
-        $this->line('<info>Maximum database storage (GB):</info> ' . Cloud::DB_STORAGE_MAX_GB);
-
         $db_storage = $this->askDatabaseStorage();
-
         $cache_node_type = $this->askCacheNodeType();
-
         $cpu = $this->askTaskDefinitionCpu();
-
         $memory = $this->askTaskDefinitionMemory($cpu);
-
         $scale_target_cpu = $this->askScalingTargetCpu();
         $scale_out_cooldown = $this->askScaleOutCooldown();
         $scale_in_cooldown = $this->askScaleInCooldown();
-
         $domain = $this->askDomain();
 
-        $route53 = $this->awsRoute53();
-
-        $this->line('Finding hosted zone from domain...');
-
-        $root_domain = $this->rootDomainFromFullDomain($domain);
-
-        $hosted_zone_id = $route53->hostedZoneIdFromRootDomain($root_domain);
-
-        if (!$hosted_zone_id) {
-            $this->error("Hosted zone for domain '$domain' could not be found");
-
-            return 0;
-        }
-
-        $this->line("<info>Hosted zone found with ID:</info> $hosted_zone_id");
-
-        $acm_arn = $this->findOrCreateAcmCertificateArn($env, $domain, $hosted_zone_id);
-
-        $ec2 = $this->awsEc2($env);
-
-        $this->line('Creating prefix lists...');
-
-        $database_prefix_list_id = $ec2->createPrefixList('database', 'me');
-        $application_prefix_list_id = $ec2->createPrefixList('application', 'me');
+        $hosted_zone_id_root_domain = $this->hostedZoneIdFromDomain($domain);
+        $acm_arn = $this->findOrCreateAcmCertificateArn($env, $domain, $hosted_zone_id_root_domain['hosted_zone_id']);
+        $prefix_lists = $this->createPrefixLists($env);
 
         $this->startTimer();
 
-        $this->line("Creating stack for '$env' environment...");
-
-        $db_username = Str::substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 1) . Str::random(random_int(10, 15));
-        $db_password = Str::random(random_int(32, 40));
-
-        $application_image = $ecr->repositoryUri($this->awsEcrRepositoryName($env, 'application')) . ':' . $application_image_tag;
-        $webserver_image = $ecr->repositoryUri($this->awsEcrRepositoryName($env, 'webserver')) . ':' . $webserver_image_tag;
-
-        $cloudformation->createStack(
-            false,
+        $db_credentials = $this->createStack(
+            $env,
+            $aws_region,
+            $image_tags['application_tag'],
+            $image_tags['webserver_tag'],
             $domain,
-            $root_domain,
-            $hosted_zone_id,
+            $hosted_zone_id_root_domain['root_domain'],
+            $hosted_zone_id_root_domain['hosted_zone_id'],
             $acm_arn,
             $db_storage,
             $db_instance_type,
-            $db_username,
-            $db_password,
             $cache_node_type,
-            $application_image,
-            $webserver_image,
             $cpu,
             $memory,
-            $database_prefix_list_id,
-            $application_prefix_list_id,
+            $prefix_lists['database'],
+            $prefix_lists['application'],
             $scale_out_cooldown,
             $scale_in_cooldown,
             $scale_target_cpu
         );
 
-        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created', false);
-
-        if (!$result['success']) {
-            $this->error("Stack creation failed with status '{$result['status']}'");
-
+        if(!$db_credentials) {
             return 1;
-        } else {
-            $this->info("Stack creation completed successfully");
         }
 
-        $tries = 0;
-        $limit = 10;
-
-        do {
-            $outputs = $cloudformation->stackOutput([
+        $outputs = $this->stackOutputs(
+            $env,
+            $aws_region,
+            [
                 'DomainName',
                 'DBHost',
                 'DBPort',
@@ -308,40 +223,22 @@ class CloudStacks extends Command
                 'CacheSecurityGroupId',
                 'ArtisanTaskDefinitionArn',
                 'Subnet1Id',
-            ]);
-
-            if (empty($outputs)) {
-                sleep(2);
-            }
-        } while ($tries < $limit && empty($outputs));
-
-        if ($tries >= $limit) {
-            $this->error('Failed to get CloudFormation stack outputs');
-
-            return 1;
-        }
-
-        $this->line('Creating database schema...');
+            ]
+        );
 
         $database_name = $this->createDatabaseSchema(
-            static::larasurfConfig()->get('project-name'),
             $env,
             $outputs['DBHost'],
             $outputs['DBPort'],
-            $db_username,
-            $db_password,
+            $db_credentials['username'],
+            $db_credentials['password']
         );
 
         if (!$database_name) {
-            $this->error("Failed to create database schema '$database_name'");
-
-            return 1;
+            return 9;
         }
 
-        $this->info("Created database schema '$database_name' successfully");
-
-
-        $parameters = [
+        $secrets = $this->createCloudVariables($env, [
             'APP_ENV' => $env,
             'APP_KEY' => 'base64:' . base64_encode(Encrypter::generateKey('AES-256-CBC')),
             'APP_URL' => "https://$domain",
@@ -350,8 +247,8 @@ class CloudStacks extends Command
             'DB_HOST' => $outputs['DBHost'],
             'DB_PORT' => $outputs['DBPort'],
             'DB_DATABASE' => $database_name,
-            'DB_USERNAME' => $db_username,
-            'DB_PASSWORD' => $db_password,
+            'DB_USERNAME' => $db_credentials['username'],
+            'DB_PASSWORD' => $db_credentials['password'],
             'LOG_CHANNEL' => 'errorlog',
             'QUEUE_CONNECTION' => 'sqs',
             'MAIL_MAILER' => $env === Cloud::ENVIRONMENT_PRODUCTION ? 'ses' : 'smtp',
@@ -360,109 +257,28 @@ class CloudStacks extends Command
             'REDIS_PORT' => $outputs['CacheEndpointPort'],
             'SQS_QUEUE' => $outputs['QueueUrl'],
             'AWS_BUCKET' => $outputs['BucketName'],
-        ];
+        ]);
 
-        $this->line('Creating cloud variables...');
+        $updated_outputs = $this->updateStackPostCreate($env, $aws_region, $secrets, $outputs['ArtisanTaskDefinitionArn']);
 
-        $ssm = $this->awsSsm($env);
-
-        foreach ($parameters as $name => $value) {
-            $ssm->putParameter($name, $value);
-            sleep(1);
-
-            $this->line("<info>Successfully created cloud variable:</info> $name");
+        if (!$updated_outputs) {
+            return 10;
         }
 
-        $this->line('Waiting to list cloud variables...');
-
-        do {
-            $secrets = $ssm->listParameterArns(true);
-
-            $has_all = true;
-
-            foreach (array_keys($parameters) as $parameter) {
-                if (!in_array($parameter, array_keys($secrets))) {
-                    $has_all = false;
-
-                    break;
-                }
-            }
-
-            if (!$has_all) {
-                $this->line('Cloud variables still creating, checking again soon...');
-                sleep(5);
-            }
-        } while (!$has_all);
-
-        $this->line('Updating stack with cloud variables...');
-
-        $cloudformation->updateStack(true, $secrets);
-
-        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated', false);
-
-        if (!$result['success']) {
-            $this->error("Stack updating failed with status '{$result['status']}'");
-
-            return 1;
-        } else {
-            $this->info("Stack updating completed successfully");
-        }
-
-        $tries = 0;
-        $limit = 10;
-
-        do {
-            $updated_outputs = $cloudformation->stackOutput([
-                    'ArtisanTaskDefinitionArn',
-                    'ContainerClusterArn',
-                ]) ?? null;
-
-            if (empty($updated_outputs)) {
-                $this->line('Stack outputs are not yet updated, checking again soon...');
-                sleep(5);
-            }
-        } while ($tries < $limit && (empty($updated_outputs) || $updated_outputs['ArtisanTaskDefinitionArn'] === $outputs['ArtisanTaskDefinitionArn']));
-
-        if ($tries >= $limit) {
-            $this->error('Failed to get updated CloudFormation outputs');
-
-            return 1;
-        }
-
-        $security_groups = [
-            $outputs['DBSecurityGroupId'],
-            $outputs['CacheSecurityGroupId'],
-            $outputs['ContainersSecurityGroupId'],
-        ];
-
-        $subnets = [$outputs['Subnet1Id']];
-
-        $this->line('Starting ECS task to run migrations...');
-
-        $ecs = $this->awsEcs($env, $aws_region);
-        $task_arn = $ecs->runTask($updated_outputs['ContainerClusterArn'], $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $updated_outputs['ArtisanTaskDefinitionArn']);
-
-        if (!$task_arn) {
-            $this->error('Failed to start ECS task to run migrations');
-
-            return 1;
-        }
-
-        $this->info('Started ECS task to run migrations successfully');
-
-        $ecs->waitForTaskFinish(
+        if (!$this->runMigrations(
+            $env,
+            $aws_region,
             $updated_outputs['ContainerClusterArn'],
-            $task_arn,
-            $this->getOutput(),
-            'Task has not completed yet, checking again soon...'
-        );
-
-        $this->line('Updating application prefix list to allow ingress from this IP...');
-
-        $this->stopTimer();
-        $this->displayTimeElapsed();
-
-        $this->line("<info>Visit</info> https://$domain <info>to see your application</info>");
+            [
+                $outputs['DBSecurityGroupId'],
+                $outputs['CacheSecurityGroupId'],
+                $outputs['ContainersSecurityGroupId'],
+            ],
+            [$outputs['Subnet1Id']],
+            $updated_outputs['ArtisanTaskDefinitionArn']
+        )) {
+            return 11;
+        }
 
         return 0;
     }
@@ -675,10 +491,17 @@ class CloudStacks extends Command
 
             $this->line('Deleting prefix lists...');
 
-            $ec2->deletePrefixList($outputs['DBAdminAccessPrefixListId']);
-            $ec2->deletePrefixList($outputs['AppAccessPrefixListId']);
+            if ($ec2->deletePrefixList($outputs['DBAdminAccessPrefixListId'])) {
+                $this->info('Deleted database prefix list successfully');
+            } else {
+                $this->warn('Database prefix list not found');
+            }
 
-            $this->info('Deleted prefix lists successfully');
+            if ($ec2->deletePrefixList($outputs['AppAccessPrefixListId'])) {
+                $this->info('Deleted application prefix list successfully');
+            } else {
+                $this->warn('Application prefix list not found');
+            }
         } else {
             $this->warn('Failed to get stack outputs');
         }
@@ -716,6 +539,284 @@ class CloudStacks extends Command
         return 0;
     }
 
+    protected function createStack(
+        string $environment,
+        string $aws_region,
+        string $application_image_tag,
+        string $webserver_image_tag,
+        string $domain,
+        string $root_domain,
+        string $hosted_zone_id,
+        string $acm_arn,
+        int $db_storage,
+        string $db_instance_type,
+        string $cache_node_type,
+        string $cpu,
+        string $memory,
+        string $database_prefix_list_id,
+        string $application_prefix_list_id,
+        int $scale_out_cooldown,
+        int $scale_in_cooldown,
+        string $scale_target_cpu
+    ): array|false
+    {
+        $this->line("Creating stack for '$environment' environment...");
+
+        // username must start with a letter and be no more than 16 characters
+        $db_username = Str::substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 1) . Str::random(random_int(10, 15));
+
+        // password must be no more than 40 characters
+        $db_password = Str::random(random_int(32, 40));
+
+        $ecr = $this->awsEcr($environment, $aws_region);
+        $application_image = $ecr->repositoryUri($this->awsEcrRepositoryName($environment, 'application')) . ':' . $application_image_tag;
+        $webserver_image = $ecr->repositoryUri($this->awsEcrRepositoryName($environment, 'webserver')) . ':' . $webserver_image_tag;
+
+        $cloudformation = $this->awsCloudFormation($environment, $aws_region);
+        $cloudformation->createStack(
+            false,
+            $domain,
+            $root_domain,
+            $hosted_zone_id,
+            $acm_arn,
+            $db_storage,
+            $db_instance_type,
+            $db_username,
+            $db_password,
+            $cache_node_type,
+            $application_image,
+            $webserver_image,
+            $cpu,
+            $memory,
+            $database_prefix_list_id,
+            $application_prefix_list_id,
+            $scale_out_cooldown,
+            $scale_in_cooldown,
+            $scale_target_cpu
+        );
+
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created', false);
+
+        if (!$result['success']) {
+            $this->error("Stack creation failed with status '{$result['status']}'");
+
+            return false;
+        }
+
+        $this->info('Stack creation completed successfully');
+
+        return [
+            'username' => $db_username,
+            'password' => $db_password,
+        ];
+    }
+
+    protected function updateStackPostCreate(string $environment, string $aws_region, array $secrets, string $old_artisan_task_definition): array|false
+    {
+        $this->line('Updating stack with cloud variables...');
+
+        $cloudformation = $this->awsCloudFormation($environment, $aws_region);
+        $cloudformation->updateStack(true, $secrets);
+        $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated', false);
+
+        if (!$result['success']) {
+            $this->error("Stack updating failed with status '{$result['status']}'");
+
+            return false;
+        }
+
+        $this->info('Stack update completed successfully');
+
+        $tries = 0;
+        $limit = 10;
+
+        do {
+            $updated_outputs = $cloudformation->stackOutput([
+                'ArtisanTaskDefinitionArn',
+                'ContainerClusterArn',
+            ]) ?? null;
+
+            if (empty($updated_outputs)) {
+                $this->line('Stack outputs are not yet updated, checking again soon...');
+                sleep(5);
+            }
+        } while ($tries < $limit && (empty($updated_outputs) || $updated_outputs['ArtisanTaskDefinitionArn'] === $old_artisan_task_definition));
+
+        if ($tries >= $limit) {
+            $this->error('Failed to get updated CloudFormation outputs');
+
+            return false;
+        }
+
+        return $updated_outputs;
+    }
+
+    protected function stackOutputs(string $environment, string $aws_region, array $names)
+    {
+        $tries = 0;
+        $limit = 10;
+
+        $cloudformation = $this->awsCloudFormation($environment, $aws_region);
+
+        do {
+            $outputs = $cloudformation->stackOutput($names);
+
+            if (empty($outputs)) {
+                sleep(2);
+            }
+        } while ($tries < $limit && empty($outputs));
+
+        if ($tries >= $limit) {
+            $this->error('Failed to get CloudFormation stack outputs');
+
+            return false;
+        }
+
+        return $outputs;
+    }
+
+    protected function createDatabaseSchema(
+        string $environment,
+        string $db_host,
+        string $db_port,
+        string $db_username,
+        string $db_password,
+    ): string|false
+    {
+        $this->line('Creating database schema...');
+
+        $database_name = (new SchemaCreator(
+            static::larasurfConfig()->get('project-name'),
+            $environment,
+            $db_host,
+            $db_port,
+            $db_username,
+            $db_password,
+        ))->createSchema();
+
+        if (!$database_name) {
+            $this->error("Failed to create database schema '$database_name'");
+
+            return false;
+        }
+
+        $this->info("Created database schema '$database_name' successfully");
+
+        return $database_name;
+    }
+
+    protected function createCloudVariables(string $environment, array $parameters): array
+    {
+        $this->line('Creating cloud variables...');
+
+        $ssm = $this->awsSsm($environment);
+
+        foreach ($parameters as $name => $value) {
+            $ssm->putParameter($name, $value);
+            sleep(1);
+
+            $this->line("<info>Successfully created cloud variable:</info> $name");
+        }
+
+        $this->line('Waiting to list cloud variables...');
+
+        do {
+            $secrets = $ssm->listParameterArns(true);
+
+            $has_all = true;
+
+            foreach (array_keys($parameters) as $parameter) {
+                if (!in_array($parameter, array_keys($secrets))) {
+                    $has_all = false;
+
+                    break;
+                }
+            }
+
+            if (!$has_all) {
+                $this->line('Cloud variables still creating, checking again soon...');
+                sleep(5);
+            }
+        } while (!$has_all);
+
+        return $secrets;
+    }
+
+    protected function confirmProjectImagesExist(string $environment, string $aws_region, string $current_commit): array|false
+    {
+        $ecr = $this->awsEcr($environment, $aws_region);
+
+        $application_image_tag = 'commit-' . $current_commit;
+        $webserver_image_tag = 'commit-' . $current_commit;
+
+        $application_repo_name = $this->awsEcrRepositoryName($environment, 'application');
+        $webserver_repo_name = $this->awsEcrRepositoryName($environment, 'webserver');
+
+        $this->line('Checking if application and webserver images exist...');
+
+        if (!$ecr->imageTagExists($application_repo_name, $application_image_tag)) {
+            $this->error("Failed to find tag '$application_image_tag' in ECR repository '$application_repo_name'");
+            $this->line('Is CircleCI finished building and publishing the images?');
+
+            return false;
+        }
+
+        if (!$ecr->imageTagExists($webserver_repo_name, $webserver_image_tag)) {
+            $this->error("Failed to find tag '$webserver_image_tag' in ECR repository '$webserver_repo_name'");
+            $this->line('Is CircleCI finished building and publishing the images?');
+
+            return false;
+        }
+
+        return [
+            'application_tag' => $application_image_tag,
+            'webserver_tag' => $webserver_image_tag,
+        ];
+    }
+
+    protected function confirmStackDoesntExist(string $environment, string $aws_region): bool
+    {
+        $this->line('Checking if stack exists...');
+
+        $cloudformation = $this->awsCloudFormation($environment, $aws_region);
+
+        if ($cloudformation->stackStatus()) {
+            $this->error("Stack exists for '$environment' environment");
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function maybeDeleteAllCloudVariables(string $environment)
+    {
+        $ssm = $this->awsSsm($environment);
+
+        $existing_parameters = $ssm->listParameters();
+
+        if ($existing_parameters) {
+            $this->line("The following variables exist for the '$environment' environment:");
+            $this->line(implode(PHP_EOL, $existing_parameters));
+            $delete_params = $this->confirm('Are you sure you\'d like to delete these variables?', false);
+
+            if (!$delete_params) {
+                return false;
+            }
+
+            $this->line('Deleting cloud variables...');
+
+            $this->withProgressBar($existing_parameters, function ($parameter) use ($ssm) {
+                $ssm->deleteParameter($parameter);
+                sleep (1);
+            });
+
+            $this->newLine();
+        }
+
+        return true;
+    }
+
     protected function askAcmCertificateArn(): string
     {
         do {
@@ -728,6 +829,82 @@ class CloudStacks extends Command
         } while (!$valid);
 
         return $acm_arn;
+    }
+
+    protected function hostedZoneIdFromDomain(string $domain): array|false
+    {
+        $route53 = $this->awsRoute53();
+
+        $this->line('Finding hosted zone from domain...');
+
+        $root_domain = $this->rootDomainFromFullDomain($domain);
+
+        $hosted_zone_id = $route53->hostedZoneIdFromRootDomain($root_domain);
+
+        if (!$hosted_zone_id) {
+            $this->error("Hosted zone for domain '$domain' could not be found");
+
+            return false;
+        }
+
+        $this->line("<info>Hosted zone found with ID:</info> $hosted_zone_id");
+
+        return [
+            'hosted_zone_id' => $hosted_zone_id,
+            'root_domain' => $root_domain,
+        ];
+    }
+
+    protected function createPrefixLists(string $environment): array
+    {
+        $ec2 = $this->awsEc2($environment);
+
+        $this->line('Creating prefix lists...');
+
+        $database_prefix_list_id = $ec2->createPrefixList('database', 'me');
+
+        $this->info('Created database prefix list successfully');
+
+        $application_prefix_list_id = $ec2->createPrefixList('application', 'me');
+
+        $this->info('Created application prefix list successfully');
+
+        return [
+            'database' => $database_prefix_list_id,
+            'application' => $application_prefix_list_id,
+        ];
+    }
+
+    protected function runMigrations(
+        string $environment,
+        string $aws_region,
+        string $container_cluster_arn,
+        array $security_groups,
+        array $subnets,
+        string $artisan_task_definition_arn
+    ): bool
+    {
+        $this->line('Starting ECS task to run migrations...');
+
+        $ecs = $this->awsEcs($environment, $aws_region);
+        $task_arn = $ecs->runTask($container_cluster_arn, $security_groups, $subnets, ['php', 'artisan', 'migrate', '--force'], $artisan_task_definition_arn);
+
+        if (!$task_arn) {
+            $this->error('Failed to start ECS task to run migrations');
+
+            return false;
+        }
+
+        $this->info('Started ECS task to run migrations successfully');
+
+        $ecs->waitForTaskFinish(
+            $container_cluster_arn,
+            $task_arn,
+            $this->getOutput(),
+            'Task has not completed yet, checking again soon...'
+        );
+
+        return true;
     }
 
     protected function askDomain(): string
@@ -785,6 +962,10 @@ class CloudStacks extends Command
 
     protected function askDatabaseStorage(): string
     {
+        $this->line('<info>Minimum database storage (GB):</info> ' . Cloud::DB_STORAGE_MIN_GB);
+        $this->line('<info>Maximum database storage (GB):</info> ' . Cloud::DB_STORAGE_MAX_GB);
+
+
         do {
             $db_storage = (int) $this->ask('Database storage (GB)?', Cloud::DB_STORAGE_MIN_GB);
             $valid = $db_storage <= Cloud::DB_STORAGE_MAX_GB && $db_storage >= Cloud::DB_STORAGE_MIN_GB;
@@ -805,15 +986,16 @@ class CloudStacks extends Command
             $this->line('Creating ACM certificate...');
 
             $acm = $this->awsAcm($env);
-            $acm_arn = null;
 
-            $dns_record = $acm->requestCertificate(
-                $acm_arn,
+            $certificate_response = $acm->requestCertificate(
                 $domain,
                 AcmClient::VALIDATION_METHOD_DNS,
                 $this->getOutput(),
                 'Certificate is still being created, checking again soon...'
             );
+
+            $dns_record = $certificate_response['dns_record'];
+            $acm_arn = $certificate_response['certificate_arn'];
 
             $this->line('');
             $this->line('Verifying ACM certificate via DNS record...');
@@ -838,26 +1020,5 @@ class CloudStacks extends Command
         }
 
         return $acm_arn;
-    }
-
-    protected function createDatabaseSchema(string $project_name, string $environment, string $db_host, string $db_port, string $db_username, string $db_password)
-    {
-        $pdo = new PDO(sprintf('mysql:host=%s;port=%s;', $db_host, $db_port), $db_username, $db_password);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $database_name = str_replace('-', '_', $project_name) . '_' . $environment;
-
-        $result = $pdo->exec(sprintf(
-            'CREATE DATABASE `%s` CHARACTER SET %s COLLATE %s;',
-            $database_name,
-            'utf8mb4',
-            'utf8mb4_unicode_ci'
-        ));
-
-        if ($result === false) {
-            return false;
-        }
-
-        return $database_name;
     }
 }

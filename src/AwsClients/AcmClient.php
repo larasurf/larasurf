@@ -14,7 +14,7 @@ class AcmClient extends Client
         self::VALIDATION_METHOD_DNS,
     ];
 
-    public function requestCertificate(&$output_arn, string $domain, string $validation_method = self::VALIDATION_METHOD_DNS, OutputStyle $output = null, string $wait_message = ''): DnsRecord
+    public function requestCertificate(string $domain, string $validation_method = self::VALIDATION_METHOD_DNS, OutputStyle $output = null, string $wait_message = ''): array
     {
         $this->validateValidationMethod($validation_method);
 
@@ -50,10 +50,13 @@ class AcmClient extends Client
             return false;
         }, $output, $wait_message);
 
-        return (new DnsRecord())
-            ->setName($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Name'])
-            ->setValue($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Value'])
-            ->setType(DnsRecord::TYPE_CNAME);
+        return [
+            'dns_record' => (new DnsRecord())
+                ->setName($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Name'])
+                ->setValue($result['Certificate']['DomainValidationOptions'][0]['ResourceRecord']['Value'])
+                ->setType(DnsRecord::TYPE_CNAME),
+            'certificate_arn' => $output_arn,
+        ];
     }
 
     public function waitForPendingValidation(string $arn, OutputStyle $output = null, string $wait_message = '')
