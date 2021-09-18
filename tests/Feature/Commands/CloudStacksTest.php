@@ -168,6 +168,8 @@ class CloudStacksTest extends TestCase
         $ecs->shouldReceive('waitForTaskFinish')->andReturn();
 
         $this->artisan('larasurf:cloud-stacks create --environment production')
+            ->expectsOutput('Checking if application and webserver images exist...')
+            ->expectsOutput('Checking if stack exists...')
             ->expectsOutput("The following variables exist for the 'production' environment:")
             ->expectsOutput(implode(PHP_EOL, $existing_parameters))
             ->expectsQuestion('Are you sure you\'d like to delete these variables?', true)
@@ -224,6 +226,10 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testCreateExistingCertificate()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -343,6 +349,8 @@ class CloudStacksTest extends TestCase
         $ecs->shouldReceive('waitForTaskFinish')->andReturn();
 
         $this->artisan('larasurf:cloud-stacks create --environment production')
+            ->expectsOutput('Checking if application and webserver images exist...')
+            ->expectsOutput('Checking if stack exists...')
             ->expectsOutput("The following variables exist for the 'production' environment:")
             ->expectsOutput(implode(PHP_EOL, $existing_parameters))
             ->expectsQuestion('Are you sure you\'d like to delete these variables?', true)
@@ -397,28 +405,153 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testCreateNotOnCorrectBranch()
     {
-        
+        $this->createGitHead('stage');
+
+        $this->artisan('larasurf:cloud-stacks create --environment production')
+            ->expectsOutput('Must be on the \'main\' branch to create a stack for this environment')
+            ->assertExitCode(1);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testCreateNoCurrentCommit()
     {
-        
+        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
+            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
+        }
+
+        if (File::isDirectory(base_path('.git/refs/heads'))) {
+            File::deleteDirectory(base_path('.git/refs/heads'));
+        }
+
+        $this->createGitHead('main');
+        $this->createValidLaraSurfConfig('local-stage-production');
+
+        $this->artisan('larasurf:cloud-stacks create --environment production')
+            ->expectsOutput('Failed to find current commit, is this a git repository?')
+            ->assertExitCode(1);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testCreateImageDoesntExist()
     {
-        
+        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
+            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
+        }
+
+        $current_commit = Str::random();
+
+        $this->createGitHead('main');
+        $this->createValidLaraSurfConfig('local-stage-production');
+        $this->createGitCurrentCommit('main', $current_commit);
+
+        $ecr = $this->mockLaraSurfEcrClient();
+        $ecr->shouldReceive('imageTagExists')->andReturn(false);
+
+        $image_tag = 'commit-' . $current_commit;
+        $application_repo_name = "{$this->project_name}-{$this->project_id}/production/application";
+
+        $this->artisan('larasurf:cloud-stacks create --environment production')
+            ->expectsOutput('Checking if application and webserver images exist...')
+            ->expectsOutput("Failed to find tag '$image_tag' in ECR repository '$application_repo_name'")
+            ->expectsOutput('Is CircleCI finished building and publishing the images?')
+            ->assertExitCode(1);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testCreateStackExists()
     {
-        
+        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
+            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
+        }
+
+        $this->createGitHead('main');
+        $this->createValidLaraSurfConfig('local-stage-production');
+        $this->createGitCurrentCommit('main', Str::random());
+
+        $ecr = $this->mockLaraSurfEcrClient();
+        $ecr->shouldReceive('imageTagExists')->andReturn(true);
+
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
+
+        $this->artisan('larasurf:cloud-stacks create --environment production')
+            ->expectsOutput('Checking if application and webserver images exist...')
+            ->expectsOutput('Checking if stack exists...')
+            ->expectsOutput('Stack already exists for \'production\' environment')
+            ->assertExitCode(1);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testCreateHostedZoneNotFound()
     {
-        
+        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
+            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
+        }
+
+        $this->createGitHead('main');
+        $this->createValidLaraSurfConfig('local-stage-production');
+        $this->createGitCurrentCommit('main', Str::random());
+
+        $ecr = $this->mockLaraSurfEcrClient();
+        $ecr->shouldReceive('imageTagExists')->andReturn(true);
+
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
+
+        $existing_parameters = [
+            $this->faker->word,
+            $this->faker->word,
+        ];
+
+        $domain = $this->faker->domainName;
+
+        $ssm = $this->mockLaraSurfSsmClient();
+        $ssm->shouldReceive('listParameters')->andReturn($existing_parameters);
+        $ssm->shouldReceive('deleteParameter')->andReturn();
+
+        $route53 = $this->mockLaraSurfRoute53Client();
+        $route53->shouldReceive('hostedZoneIdFromRootDomain')->andReturn(false);
+
+        $this->artisan('larasurf:cloud-stacks create --environment production')
+            ->expectsOutput('Checking if application and webserver images exist...')
+            ->expectsOutput('Checking if stack exists...')
+            ->expectsOutput("The following variables exist for the 'production' environment:")
+            ->expectsOutput(implode(PHP_EOL, $existing_parameters))
+            ->expectsQuestion('Are you sure you\'d like to delete these variables?', true)
+            ->expectsOutput('Deleting cloud variables...')
+            ->expectsQuestion('Database instance type?', 'db.t2.small')
+            ->expectsOutput('Minimum database storage (GB): 20')
+            ->expectsOutput('Maximum database storage (GB): 70368')
+            ->expectsQuestion('Database storage (GB)?', '25')
+            ->expectsQuestion('Cache node type?', 'cache.t2.micro')
+            ->expectsQuestion('Task definition CPU?', '256')
+            ->expectsQuestion('Task definition memory?', '512')
+            ->expectsQuestion('Auto Scaling target CPU percent?', '50')
+            ->expectsQuestion('Auto Scaling scale out cooldown (seconds)?', '10')
+            ->expectsQuestion('Auto Scaling scale in cooldown (seconds)?', '10')
+            ->expectsQuestion('Fully qualified domain name?', $domain)
+            ->expectsOutput('Finding hosted zone from domain...')
+            ->expectsOutput("Hosted zone for domain '$domain' could not be found")
+            ->assertExitCode(1);
     }
 }

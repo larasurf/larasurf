@@ -123,9 +123,9 @@ class CloudStacks extends Command
         $branch = $env === Cloud::ENVIRONMENT_PRODUCTION ? 'main' : 'stage';
 
         if (!$this->gitIsOnBranch($branch)) {
-            $this->error("Must be on the $branch branch to create a stack for this environment");
+            $this->error("Must be on the '$branch' branch to create a stack for this environment");
 
-            return 2;
+            return 1;
         }
 
         $path = CloudFormationClient::templatePath();
@@ -133,7 +133,7 @@ class CloudStacks extends Command
         if (!File::exists($path)) {
             $this->error("CloudFormation template does not exist at path '$path'");
 
-            return 3;
+            return 1;
         }
 
         $aws_region = static::larasurfConfig()->get("environments.$env.aws-region");
@@ -141,27 +141,27 @@ class CloudStacks extends Command
         if (!$aws_region) {
             $this->error("AWS region is not set for the '$env' environment; create image repositories first");
 
-            return 4;
+            return 1;
         }
 
         $current_commit = $this->gitCurrentCommit($branch);
 
         if (!$current_commit) {
-            return 5;
+            return 1;
         }
 
         $image_tag = $this->confirmProjectImagesExist($env, $aws_region, $current_commit);
 
         if (!$image_tag) {
-            return 6;
+            return 1;
         }
 
         if (!$this->confirmStackDoesntExist($env, $aws_region)) {
-            return 7;
+            return 1;
         }
 
         if (!$this->maybeDeleteAllCloudVariables($env)) {
-            return 8;
+            return 1;
         }
 
         $db_instance_type = $this->askDatabaseInstanceType();
@@ -175,6 +175,11 @@ class CloudStacks extends Command
         $domain = $this->askDomain();
 
         $hosted_zone_id_root_domain = $this->hostedZoneIdFromDomain($domain);
+
+        if (!$hosted_zone_id_root_domain) {
+            return 1;
+        }
+
         $acm_arn = $this->findOrCreateAcmCertificateArn($env, $domain, $hosted_zone_id_root_domain['hosted_zone_id']);
 
         $prefix_lists = $this->createPrefixLists($env);
@@ -202,7 +207,7 @@ class CloudStacks extends Command
         );
 
         if(!$db_credentials) {
-            return 9;
+            return 1;
         }
 
         $outputs = $this->stackOutputs(
@@ -235,7 +240,7 @@ class CloudStacks extends Command
         );
 
         if (!$database_name) {
-            return 10;
+            return 1;
         }
 
         $secrets = $this->createCloudVariables($env, [
@@ -262,7 +267,7 @@ class CloudStacks extends Command
         $updated_outputs = $this->updateStackPostCreate($env, $aws_region, $secrets, $outputs['ArtisanTaskDefinitionArn']);
 
         if (!$updated_outputs) {
-            return 11;
+            return 1;
         }
 
         if (!$this->runMigrations(
@@ -277,7 +282,7 @@ class CloudStacks extends Command
             [$outputs['Subnet1Id']],
             $updated_outputs['ArtisanTaskDefinitionArn']
         )) {
-            return 12;
+            return 1;
         }
 
         $this->info("Visit https://$domain to see your application");
@@ -778,7 +783,7 @@ class CloudStacks extends Command
         $cloudformation = $this->awsCloudFormation($environment, $aws_region);
 
         if ($cloudformation->stackStatus()) {
-            $this->error("Stack exists for '$environment' environment");
+            $this->error("Stack already exists for '$environment' environment");
 
             return false;
         }

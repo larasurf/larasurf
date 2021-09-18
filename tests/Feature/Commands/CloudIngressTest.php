@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\Tests\Feature\Commands;
 
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\PrefixListEntry;
 use LaraSurf\LaraSurf\Tests\TestCase;
@@ -105,6 +106,10 @@ class CloudIngressTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testListStackDoesntExist()
     {
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
