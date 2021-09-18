@@ -150,9 +150,9 @@ class CloudStacks extends Command
             return 5;
         }
 
-        $image_tags = $this->confirmProjectImagesExist($env, $aws_region, $current_commit);
+        $image_tag = $this->confirmProjectImagesExist($env, $aws_region, $current_commit);
 
-        if (!$image_tags) {
+        if (!$image_tag) {
             return 6;
         }
 
@@ -176,6 +176,7 @@ class CloudStacks extends Command
 
         $hosted_zone_id_root_domain = $this->hostedZoneIdFromDomain($domain);
         $acm_arn = $this->findOrCreateAcmCertificateArn($env, $domain, $hosted_zone_id_root_domain['hosted_zone_id']);
+
         $prefix_lists = $this->createPrefixLists($env);
 
         $this->startTimer();
@@ -183,8 +184,7 @@ class CloudStacks extends Command
         $db_credentials = $this->createStack(
             $env,
             $aws_region,
-            $image_tags['application_tag'],
-            $image_tags['webserver_tag'],
+            $image_tag,
             $domain,
             $hosted_zone_id_root_domain['root_domain'],
             $hosted_zone_id_root_domain['hosted_zone_id'],
@@ -202,7 +202,7 @@ class CloudStacks extends Command
         );
 
         if(!$db_credentials) {
-            return 1;
+            return 9;
         }
 
         $outputs = $this->stackOutputs(
@@ -235,7 +235,7 @@ class CloudStacks extends Command
         );
 
         if (!$database_name) {
-            return 9;
+            return 10;
         }
 
         $secrets = $this->createCloudVariables($env, [
@@ -262,7 +262,7 @@ class CloudStacks extends Command
         $updated_outputs = $this->updateStackPostCreate($env, $aws_region, $secrets, $outputs['ArtisanTaskDefinitionArn']);
 
         if (!$updated_outputs) {
-            return 10;
+            return 11;
         }
 
         if (!$this->runMigrations(
@@ -277,8 +277,10 @@ class CloudStacks extends Command
             [$outputs['Subnet1Id']],
             $updated_outputs['ArtisanTaskDefinitionArn']
         )) {
-            return 11;
+            return 12;
         }
+
+        $this->info("Visit https://$domain to see your application");
 
         return 0;
     }
@@ -542,8 +544,7 @@ class CloudStacks extends Command
     protected function createStack(
         string $environment,
         string $aws_region,
-        string $application_image_tag,
-        string $webserver_image_tag,
+        string $image_tag,
         string $domain,
         string $root_domain,
         string $hosted_zone_id,
@@ -569,8 +570,8 @@ class CloudStacks extends Command
         $db_password = Str::random(random_int(32, 40));
 
         $ecr = $this->awsEcr($environment, $aws_region);
-        $application_image = $ecr->repositoryUri($this->awsEcrRepositoryName($environment, 'application')) . ':' . $application_image_tag;
-        $webserver_image = $ecr->repositoryUri($this->awsEcrRepositoryName($environment, 'webserver')) . ':' . $webserver_image_tag;
+        $application_image = $ecr->repositoryUri($this->awsEcrRepositoryName($environment, 'application')) . ':' . $image_tag;
+        $webserver_image = $ecr->repositoryUri($this->awsEcrRepositoryName($environment, 'webserver')) . ':' . $image_tag;
 
         $cloudformation = $this->awsCloudFormation($environment, $aws_region);
         $cloudformation->createStack(
@@ -651,7 +652,7 @@ class CloudStacks extends Command
         return $updated_outputs;
     }
 
-    protected function stackOutputs(string $environment, string $aws_region, array $names)
+    protected function stackOutputs(string $environment, string $aws_region, array $names): array|false
     {
         $tries = 0;
         $limit = 10;
@@ -742,36 +743,32 @@ class CloudStacks extends Command
         return $secrets;
     }
 
-    protected function confirmProjectImagesExist(string $environment, string $aws_region, string $current_commit): array|false
+    protected function confirmProjectImagesExist(string $environment, string $aws_region, string $current_commit): string|false
     {
         $ecr = $this->awsEcr($environment, $aws_region);
 
-        $application_image_tag = 'commit-' . $current_commit;
-        $webserver_image_tag = 'commit-' . $current_commit;
+        $image_tag = 'commit-' . $current_commit;
 
         $application_repo_name = $this->awsEcrRepositoryName($environment, 'application');
         $webserver_repo_name = $this->awsEcrRepositoryName($environment, 'webserver');
 
         $this->line('Checking if application and webserver images exist...');
 
-        if (!$ecr->imageTagExists($application_repo_name, $application_image_tag)) {
-            $this->error("Failed to find tag '$application_image_tag' in ECR repository '$application_repo_name'");
+        if (!$ecr->imageTagExists($application_repo_name, $image_tag)) {
+            $this->error("Failed to find tag '$image_tag' in ECR repository '$application_repo_name'");
             $this->line('Is CircleCI finished building and publishing the images?');
 
             return false;
         }
 
-        if (!$ecr->imageTagExists($webserver_repo_name, $webserver_image_tag)) {
-            $this->error("Failed to find tag '$webserver_image_tag' in ECR repository '$webserver_repo_name'");
+        if (!$ecr->imageTagExists($webserver_repo_name, $image_tag)) {
+            $this->error("Failed to find tag '$image_tag' in ECR repository '$webserver_repo_name'");
             $this->line('Is CircleCI finished building and publishing the images?');
 
             return false;
         }
 
-        return [
-            'application_tag' => $application_image_tag,
-            'webserver_tag' => $webserver_image_tag,
-        ];
+        return $image_tag;
     }
 
     protected function confirmStackDoesntExist(string $environment, string $aws_region): bool
@@ -939,7 +936,7 @@ class CloudStacks extends Command
     protected function askScalingTargetCpu(): int
     {
         do {
-            $db_storage = (int) $this->ask('Auto Scaling target CPU percent?', 50);
+            $db_storage = (int) $this->ask('Auto Scaling target CPU percent?', '50');
             $valid = $db_storage <= 100 && $db_storage >=10;
 
             if (!$valid) {
@@ -952,12 +949,12 @@ class CloudStacks extends Command
 
     protected function askScaleOutCooldown(): int
     {
-        return (int) $this->ask('Auto Scaling scale out cooldown (seconds)?', 10);
+        return (int) $this->ask('Auto Scaling scale out cooldown (seconds)?', '10');
     }
 
     protected function askScaleInCooldown(): int
     {
-        return (int) $this->ask('Auto Scaling scale in cooldown (seconds)?', 10);
+        return (int) $this->ask('Auto Scaling scale in cooldown (seconds)?', '10');
     }
 
     protected function askDatabaseStorage(): string

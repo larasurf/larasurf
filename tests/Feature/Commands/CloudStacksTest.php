@@ -2,14 +2,11 @@
 
 namespace LaraSurf\LaraSurf\Tests\Feature\Commands;
 
-use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\AwsClients\AcmClient;
 use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\AwsClients\DataTransferObjects\DnsRecord;
-use LaraSurf\LaraSurf\Commands\CloudStacks;
-use LaraSurf\LaraSurf\Constants\Cloud;
 use LaraSurf\LaraSurf\SchemaCreator;
 use LaraSurf\LaraSurf\Tests\TestCase;
 use Mockery;
@@ -43,7 +40,7 @@ class CloudStacksTest extends TestCase
         $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
         $cloudformation->shouldReceive('stackOutput')->andReturn($output);
 
-        $this->artisan('larasurf:cloud-stacks output --environment stage --key ' . $this->faker->word)
+        $this->artisan('larasurf:cloud-stacks output --environment production --key ' . $this->faker->word)
             ->expectsOutput($output)
             ->assertExitCode(0);
     }
@@ -54,102 +51,6 @@ class CloudStacksTest extends TestCase
      */
     public function testCreate()
     {
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
-
-        $this->createGitHead('main');
-        $this->createValidLaraSurfConfig('local-stage-production');
-        $this->createGitCurrentCommit('main', Str::random());
-
-        $domain = $this->faker->domainName;
-
-        $command = Mockery::mock(CloudStacks::class)->makePartial()->shouldAllowMockingProtectedMethods();
-        $command->shouldReceive('environmentOption')->andReturn('production');
-        $command->shouldReceive('confirmProjectImagesExist')->andReturn([
-            'application_tag' => Str::random(),
-            'webserver_tag' => Str::random(),
-        ]);
-        $command->shouldReceive('confirmStackDoesntExist')->andReturn(true);
-        $command->shouldReceive('maybeDeleteAllCloudVariables')->andReturn(true);
-        $command->shouldReceive('askDatabaseInstanceType')->andReturn($this->faker->word);
-        $command->shouldReceive('askDatabaseStorage')->andReturn($this->faker->numerify('###'));
-        $command->shouldReceive('askCacheNodeType')->andReturn($this->faker->word);
-        $command->shouldReceive('askTaskDefinitionCpu')->andReturn('256');
-        $command->shouldReceive('askTaskDefinitionMemory')->andReturn('512');
-        $command->shouldReceive('askScalingTargetCpu')->andReturn(50);
-        $command->shouldReceive('askScaleOutCooldown')->andReturn(10);
-        $command->shouldReceive('askScaleInCooldown')->andReturn(10);
-        $command->shouldReceive('askDomain')->andReturn($domain);
-        $command->shouldReceive('hostedZoneIdFromDomain')->andReturn([
-            'hosted_zone_id' => Str::random(),
-            'root_domain' => $domain,
-        ]);
-        $command->shouldReceive('findOrCreateAcmCertificateArn')->andReturn(Str::random());
-        $command->shouldReceive('createPrefixLists')->andReturn([
-            'database' => Str::random(),
-            'application' => Str::random(),
-        ]);
-        $command->shouldReceive('createStack')->andReturn([
-            'username' => Str::random(),
-            'password' => Str::random(),
-        ]);
-        $command->shouldReceive('stackOutputs')->andReturn([
-            'DomainName' => $domain,
-            'DBHost' => $this->faker->domainName,
-            'DBPort' => $this->faker->numerify('####'),
-            'DBAdminAccessPrefixListId' => Str::random(),
-            'AppAccessPrefixListId' => Str::random(),
-            'CacheEndpointAddress' => $this->faker->url,
-            'CacheEndpointPort' => $this->faker->numerify('####'),
-            'QueueUrl' => $this->faker->url,
-            'BucketName' => $this->faker->word,
-            'DBSecurityGroupId' => Str::random(),
-            'ContainersSecurityGroupId' => Str::random(),
-            'CacheSecurityGroupId' => Str::random(),
-            'ArtisanTaskDefinitionArn' => Str::random(),
-            'Subnet1Id' => Str::random(),
-        ]);
-        $command->shouldReceive('createDatabaseSchema')->andReturn($this->faker->word);
-        $command->shouldReceive('createCloudVariables')->andReturn([
-            'APP_ENV' => Str::random(),
-            'APP_KEY' => Str::random(),
-            'APP_URL' => Str::random(),
-            'CACHE_DRIVER' => Str::random(),
-            'DB_CONNECTION' => Str::random(),
-            'DB_HOST' => Str::random(),
-            'DB_PORT' => Str::random(),
-            'DB_DATABASE' => Str::random(),
-            'DB_USERNAME' => Str::random(),
-            'DB_PASSWORD' => Str::random(),
-            'LOG_CHANNEL' => Str::random(),
-            'QUEUE_CONNECTION' => Str::random(),
-            'MAIL_MAILER' => Str::random(),
-            'AWS_DEFAULT_REGION' => Str::random(),
-            'REDIS_HOST' => Str::random(),
-            'REDIS_PORT' => Str::random(),
-            'SQS_QUEUE' => Str::random(),
-            'AWS_BUCKET' => Str::random(),
-        ]);
-        $command->shouldReceive('updateStackPostCreate')->andReturn([
-            'ArtisanTaskDefinitionArn' => Str::random(),
-            'ContainerClusterArn' => Str::random(),
-        ]);
-        $command->shouldReceive('runMigrations')->andReturn(true);
-
-        $this->assertEquals(0, $command->handleCreate());
-    }
-
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
-    public function testOldCreate()
-    {
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
-
         Mockery::getConfiguration()->setConstantsMap([
             AcmClient::class => [
                 'VALIDATION_METHOD_DNS' => 'DNS',
@@ -160,23 +61,26 @@ class CloudStacksTest extends TestCase
             ]
         ]);
 
+        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
+            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
+        }
+
         $this->createGitHead('main');
-
         $this->createValidLaraSurfConfig('local-stage-production');
-
         $this->createGitCurrentCommit('main', Str::random());
 
-        $ecs = $this->mockLaraSurfEcsClient();
-        $ecs->shouldReceive('imageTagExists')->andReturn(true);
-        $ecs->shouldReceive('imageTagExists')->andReturn(true);
-        $ecs->shouldReceive('runTask')->andReturn(Str::random());
-        $ecs->shouldReceive('waitForTaskFinish')->andReturn();
+        $ecr = $this->mockLaraSurfEcrClient();
+        $ecr->shouldReceive('imageTagExists')->andReturn(true);
+        $ecr->shouldReceive('repositoryUri')->andReturn($this->faker->url);
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
         $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
         $cloudformation->shouldReceive('stackStatus')->andReturn(false);
         $cloudformation->shouldReceive('createStack')->andReturn();
         $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+            'success' => true,
+            'status' => 'CREATE_COMPLETE',
+        ], [
             'success' => true,
             'status' => 'CREATE_COMPLETE',
         ]);
@@ -195,18 +99,13 @@ class CloudStacksTest extends TestCase
             'CacheSecurityGroupId' => Str::random(),
             'ArtisanTaskDefinitionArn' => Str::random(),
             'Subnet1Id' => Str::random(),
+        ], [
+            'ArtisanTaskDefinitionArn' => Str::random(),
+            'ContainerClusterArn' => Str::random(),
         ]);
         $cloudformation->shouldReceive('updateStack')->andReturn();
-        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
-            'success' => true,
-            'status' => 'CREATE_COMPLETE',
-        ]);
-        $cloudformation->shouldReceive('stackOutput')->andReturn([
-            'ArtisanTaskDefinitionArn',
-            'ContainerClusterArn',
-        ]);
 
-        $parameters = [
+        $existing_parameters = [
             $this->faker->word,
             $this->faker->word,
         ];
@@ -214,9 +113,9 @@ class CloudStacksTest extends TestCase
         $domain = $this->faker->domainName;
 
         $ssm = $this->mockLaraSurfSsmClient();
-        $ssm->shouldReceive('listParameters')->andReturn($parameters);
-        $ssm->shouldReceive('deleteParameter')->times(2)->andReturn();
-        $ssm->shouldReceive('putParameter')->times(14)->andReturn();
+        $ssm->shouldReceive('listParameters')->andReturn($existing_parameters);
+        $ssm->shouldReceive('deleteParameter')->andReturn();
+        $ssm->shouldReceive('putParameter')->andReturn();
         $ssm->shouldReceive('listParameterArns')->andReturn([
             'APP_ENV' => 'production',
             'APP_KEY' => 'base64:' . base64_encode(Str::random()),
@@ -257,30 +156,26 @@ class CloudStacksTest extends TestCase
         $acm->shouldReceive('waitForPendingValidation')->andReturn();
 
         $ec2 = $this->mockLaraSurfEc2Client();
-        $ec2->shouldReceive('createPrefixList')->andReturn(Str::random());
-        $ec2->shouldReceive('createPrefixList')->andReturn(Str::random());
-
-        $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('imageTagExists')->times(2)->andReturn(true);
-        $ecr->shouldReceive('repositoryUri')->andReturn($this->faker->url);
-        $ecr->shouldReceive('repositoryUri')->andReturn($this->faker->url);
+        $ec2->shouldReceive('createPrefixList')->times(2)->andReturn(Str::random());
 
         $database_name = $this->faker->word;
 
         $schema_creator = Mockery::mock('overload:' . SchemaCreator::class);
         $schema_creator->shouldReceive('createSchema')->andReturn($database_name);
 
+        $ecs = $this->mockLaraSurfEcsClient();
+        $ecs->shouldReceive('runTask')->andReturn(Str::random());
+        $ecs->shouldReceive('waitForTaskFinish')->andReturn();
+
         $this->artisan('larasurf:cloud-stacks create --environment production')
-            ->expectsOutput('Checking if application and webserver images exist...')
-            ->expectsOutput('Checking if stack exists..')
-            ->expectsOutput('The following variables exist for the \'production\' environment:')
-            ->expectsOutput(implode(PHP_EOL, $parameters))
+            ->expectsOutput("The following variables exist for the 'production' environment:")
+            ->expectsOutput(implode(PHP_EOL, $existing_parameters))
             ->expectsQuestion('Are you sure you\'d like to delete these variables?', true)
             ->expectsOutput('Deleting cloud variables...')
             ->expectsQuestion('Database instance type?', 'db.t2.small')
-            ->expectsOutput('Minimum database storage (GB): ' . Cloud::DB_STORAGE_MIN_GB)
-            ->expectsOutput('Maximum database storage (GB): ' . Cloud::DB_STORAGE_MAX_GB)
-            ->expectsQuestion('Database storage (GB)?', '20')
+            ->expectsOutput('Minimum database storage (GB): 20')
+            ->expectsOutput('Maximum database storage (GB): 70368')
+            ->expectsQuestion('Database storage (GB)?', '25')
             ->expectsQuestion('Cache node type?', 'cache.t2.micro')
             ->expectsQuestion('Task definition CPU?', '256')
             ->expectsQuestion('Task definition memory?', '512')
@@ -289,7 +184,7 @@ class CloudStacksTest extends TestCase
             ->expectsQuestion('Auto Scaling scale in cooldown (seconds)?', '10')
             ->expectsQuestion('Fully qualified domain name?', $domain)
             ->expectsOutput('Finding hosted zone from domain...')
-            ->expectsOutput('Hosted zone found with ID: ' . $hosted_zone_id)
+            ->expectsOutput("Hosted zone found with ID: $hosted_zone_id")
             ->expectsQuestion('Is there a preexisting ACM certificate you\'d like to use?', false)
             ->expectsOutput('Creating ACM certificate...')
             ->expectsOutput('Verifying ACM certificate via DNS record...')
@@ -297,7 +192,7 @@ class CloudStacksTest extends TestCase
             ->expectsOutput('Creating prefix lists...')
             ->expectsOutput('Created database prefix list successfully')
             ->expectsOutput('Created application prefix list successfully')
-            ->expectsOutput('Creating stack for \'production\' environment...')
+            ->expectsOutput("Creating stack for 'production' environment...")
             ->expectsOutput('Stack creation completed successfully')
             ->expectsOutput('Creating database schema...')
             ->expectsOutput("Created database schema '$database_name' successfully")
@@ -325,8 +220,8 @@ class CloudStacksTest extends TestCase
             ->expectsOutput('Stack update completed successfully')
             ->expectsOutput('Starting ECS task to run migrations...')
             ->expectsOutput('Started ECS task to run migrations successfully')
-            ->expectsOutput('Updating application prefix list to allow ingress from this IP...')
-            ->expectsOutput("Visit https://$domain to see your application");
+            ->expectsOutput("Visit https://$domain to see your application")
+            ->assertExitCode(0);
     }
 
     public function testCreateExistingCertificate()

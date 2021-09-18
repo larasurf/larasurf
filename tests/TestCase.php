@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\Tests;
 
+use Illuminate\Console\OutputStyle;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
