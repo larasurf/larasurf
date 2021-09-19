@@ -554,4 +554,164 @@ class CloudStacksTest extends TestCase
             ->expectsOutput("Hosted zone for domain '$domain' could not be found")
             ->assertExitCode(1);
     }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testUpdateNone()
+    {
+        Mockery::getConfiguration()->setConstantsMap([
+            CloudFormationClient::class => [
+                'STACK_STATUS_UPDATE_COMPLETE' => 'UPDATE_COMPLETE',
+            ]
+        ]);
+
+        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
+            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
+        }
+
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('updateStack')->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+            'success' => true,
+            'status' => 'UPDATE_COMPLETE',
+        ]);
+
+        $ssm = $this->mockLaraSurfSsmClient();
+        $ssm->shouldReceive('listParameterArns')->andReturn([
+            Str::random() => Str::random(),
+            Str::random() => Str::random(),
+        ]);
+
+        $this->artisan('larasurf:cloud-stacks update --environment production')
+            ->expectsChoice('Which options would you like to change?', ['(None)'], [
+                '(None)',
+                'Domain + ACM certificate ARN',
+                'ACM certificate ARN',
+                'Database instance type',
+                'Database storage size',
+                'Cache node type',
+                'Task definition CPU + Memory',
+                'AutoScaling target CPU percent',
+                'AutoScaling scale out cooldown',
+                'AutoScaling scale in cooldown',
+            ])
+            ->expectsOutput('Gathering cloud variables...')
+            ->expectsOutput('Updating stack...')
+            ->expectsOutput('Stack update completed successfully')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testUpdateAll()
+    {
+        Mockery::getConfiguration()->setConstantsMap([
+            AcmClient::class => [
+                'VALIDATION_METHOD_DNS' => 'DNS',
+            ],
+            CloudFormationClient::class => [
+                'STACK_STATUS_UPDATE_COMPLETE' => 'UPDATE_COMPLETE',
+            ]
+        ]);
+
+        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
+            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
+        }
+
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('updateStack')->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+            'success' => true,
+            'status' => 'UPDATE_COMPLETE',
+        ]);
+
+        $route53 = $this->mockLaraSurfRoute53Client();
+        $route53->shouldReceive('hostedZoneIdFromRootDomain')->andReturn(Str::random());
+        $route53->shouldReceive('upsertDnsRecords')->andReturn(Str::random());
+        $route53->shouldReceive('waitForChange')->andReturn();
+
+        $acm = $this->mockLaraSurfAcmClient();
+        $acm->shouldReceive('requestCertificate')->andReturn([
+            'dns_record' => (new DnsRecord())
+                ->setType(DnsRecord::TYPE_CNAME)
+                ->setValue(Str::random())
+                ->setName(Str::random())
+                ->setTtl(random_int(100, 1000)),
+            'certificate_arn' => Str::random(),
+        ]);
+        $acm->shouldReceive('waitForPendingValidation')->andReturn();
+
+        $ssm = $this->mockLaraSurfSsmClient();
+        $ssm->shouldReceive('listParameterArns')->andReturn([
+            Str::random() => Str::random(),
+            Str::random() => Str::random(),
+        ]);
+
+        $domain = $this->faker->domainName;
+
+        $this->artisan('larasurf:cloud-stacks update --environment production')
+            ->expectsChoice('Which options would you like to change?', [
+                'Domain + ACM certificate ARN',
+                'Database instance type',
+                'Database storage size',
+                'Cache node type',
+                'Task definition CPU + Memory',
+                'AutoScaling target CPU percent',
+                'AutoScaling scale out cooldown',
+                'AutoScaling scale in cooldown',
+            ], [
+                '(None)',
+                'Domain + ACM certificate ARN',
+                'ACM certificate ARN',
+                'Database instance type',
+                'Database storage size',
+                'Cache node type',
+                'Task definition CPU + Memory',
+                'AutoScaling target CPU percent',
+                'AutoScaling scale out cooldown',
+                'AutoScaling scale in cooldown',
+            ])
+            ->expectsQuestion('Fully qualified domain name?', $domain)
+            ->expectsQuestion('Is there a preexisting ACM certificate you\'d like to use?', false)
+            ->expectsOutput('Creating ACM certificate...')
+            ->expectsOutput('Verifying ACM certificate via DNS record...')
+            ->expectsOutput("Verified ACM certificate for domain '$domain' successfully")
+            ->expectsQuestion('Database instance type?', 'db.t2.small')
+            ->expectsOutput('Minimum database storage (GB): 20')
+            ->expectsOutput('Maximum database storage (GB): 70368')
+            ->expectsQuestion('Database storage (GB)?', '25')
+            ->expectsQuestion('Cache node type?', 'cache.t2.micro')
+            ->expectsQuestion('Task definition CPU?', '256')
+            ->expectsQuestion('Task definition memory?', '512')
+            ->expectsQuestion('Auto Scaling target CPU percent?', '50')
+            ->expectsQuestion('Auto Scaling scale out cooldown (seconds)?', '10')
+            ->expectsQuestion('Auto Scaling scale in cooldown (seconds)?', '10')
+            ->expectsOutput('Gathering cloud variables...')
+            ->expectsOutput('Updating stack...')
+            ->expectsOutput('Stack update completed successfully')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testUpdateStackDoesntExist()
+    {
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
+
+        $this->artisan('larasurf:cloud-stacks update --environment production')
+            ->expectsOutput("Stack does not exist for the 'production' environment")
+            ->assertExitCode(1);
+    }
 }

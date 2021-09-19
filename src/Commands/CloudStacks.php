@@ -314,8 +314,6 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $secrets = $this->awsSsm($env)->listParameterArns(true);
-
         $updates = $name = $this->choice(
             'Which options would you like to change?',
             [
@@ -418,6 +416,12 @@ class CloudStacks extends Command
         }
 
         $this->startTimer();
+
+        $this->info('Gathering cloud variables...');
+
+        $secrets = $this->awsSsm($env)->listParameterArns(true);
+
+        $this->info('Updating stack...');
 
         $cloudformation->updateStack(
             true,
