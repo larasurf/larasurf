@@ -13,12 +13,18 @@ class CloudVars extends Command
     use HasEnvironmentOption;
     use InteractsWithAws;
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_EXISTS = 'exists';
     const COMMAND_GET = 'get';
     const COMMAND_PUT = 'put';
     const COMMAND_DELETE = 'delete';
     const COMMAND_LIST = 'list';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-vars
                             {--environment=null : The environment: \'stage\' or \'production\'}
                             {--key=null : The variable key, required for \'exists\', \'get\', \'put\', and \'delete\'}
@@ -26,8 +32,16 @@ class CloudVars extends Command
                             {--values : Specifies the value of the variables should be output when using the \'list\' subcommand}
                             {subcommand : The subcommand to run: \'exists\', \'get\', \'put\', \'delete\', or \'list\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage application environment variables in cloud environments';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
         self::COMMAND_EXISTS => 'handleExists',
         self::COMMAND_GET => 'handleGet',
@@ -36,6 +50,11 @@ class CloudVars extends Command
         self::COMMAND_LIST => 'handleList',
     ];
 
+    /**
+     * Determines if a cloud variable exists for the specified environment.
+     *
+     * @return int
+     */
     public function handleExists()
     {
         $env = $this->environmentOption();
@@ -50,15 +69,22 @@ class CloudVars extends Command
             return 1;
         }
 
-        if($this->awsSsm($env)->getParameter($key) === false) {
+        if ($this->awsSsm($env)->getParameter($key) === false) {
             $this->warn("Variable '$key' does not exist in the '$env' environment");
-        } else {
-            $this->info("Variable '$key' exists for in '$env' environment");
+
+            return 1;
         }
+
+        $this->info("Variable '$key' exists in '$env' environment");
 
         return 0;
     }
 
+    /**
+     * Decrypts and returns the value of a cloud variable for the specified environment.
+     *
+     * @return int
+     */
     public function handleGet()
     {
         $env = $this->environmentOption();
@@ -77,13 +103,20 @@ class CloudVars extends Command
 
         if ($value === false) {
             $this->warn("Variable '$key' does not exist in the '$env' environment");
+
+            return 1;
         }
 
-        $this->line("<info>$key:</info> $value");
+        $this->line($value);
 
         return 0;
     }
 
+    /**
+     * Update the value of a cloud variable for the specified environment.
+     *
+     * @return int
+     */
     public function handlePut()
     {
         $env = $this->environmentOption();
@@ -111,6 +144,11 @@ class CloudVars extends Command
         return 0;
     }
 
+    /**
+     * Deletes a cloud variable for the specified environment.
+     *
+     * @return int
+     */
     public function handleDelete()
     {
         $env = $this->environmentOption();
@@ -125,11 +163,26 @@ class CloudVars extends Command
             return 1;
         }
 
-        $this->awsSsm($env)->deleteParameter($key);
+        $ssm = $this->awsSsm($env);
+
+        if ($ssm->getParameter($key) === false) {
+            $this->warn("Variable '$key' does not exist in the '$env' environment");
+
+            return 1;
+        }
+
+        $ssm->deleteParameter($key);
+
+        $this->info("Variable '$key' in the '$env' environment deleted successfully");
 
         return 0;
     }
 
+    /**
+     * Lists cloud variables for the specified environment, optionally decrypting them.
+     *
+     * @return int
+     */
     public function handleList()
     {
         $env = $this->environmentOption();
@@ -152,9 +205,12 @@ class CloudVars extends Command
             }
         }
 
-        return 1;
+        return 0;
     }
 
+    /**
+     * @return string|false
+     */
     protected function keyOption(): string|false
     {
         $key = $this->option('key');
@@ -174,6 +230,9 @@ class CloudVars extends Command
         return $key;
     }
 
+    /**
+     * @return string|false
+     */
     protected function valueOption(): string|false
     {
         $value = $this->option('value');
@@ -187,6 +246,9 @@ class CloudVars extends Command
         return $value;
     }
 
+    /**
+     * @return bool
+     */
     protected function valuesOption(): bool
     {
         return (bool) $this->option('values');
