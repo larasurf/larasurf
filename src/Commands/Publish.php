@@ -100,10 +100,10 @@ class Publish extends Command
             if (File::exists($env_file)) {
                 $contents = array_map('trim', file($env_file));
 
-                if ($env_file === '.env') {
+                if ($file === '.env') {
                     $app_url = $url;
                 } else {
-                    $app_url = $env_file === '.env.example' && Str::startsWith($url, 'https:')
+                    $app_url = $file === '.env.example' && Str::startsWith($url, 'https:')
                         ? 'https://localhost'
                         : 'http://localhost';
                 }
@@ -165,7 +165,7 @@ class Publish extends Command
             File::makeDirectory(base_path('.circleci'));
         }
 
-        $success = File::copy(__DIR__ . "/../../templates/circleci/inject-secrets.sh", '.circleci/inject-secrets.sh');
+        $success = File::copy(__DIR__ . "/../../templates/circleci/inject-secrets.sh", base_path('.circleci/inject-secrets.sh'));
 
         if ($success) {
             $this->info('Published CircleCI inject secrets script successfully');
