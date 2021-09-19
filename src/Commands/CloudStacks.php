@@ -15,7 +15,6 @@ use LaraSurf\LaraSurf\Commands\Traits\InteractsWithAws;
 use LaraSurf\LaraSurf\Commands\Traits\InteractsWithGitFiles;
 use LaraSurf\LaraSurf\Constants\Cloud;
 use LaraSurf\LaraSurf\SchemaCreator;
-use PDO;
 
 class CloudStacks extends Command
 {
@@ -25,6 +24,9 @@ class CloudStacks extends Command
     use InteractsWithAws;
     use InteractsWithGitFiles;
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_STATUS = 'status';
     const COMMAND_CREATE = 'create';
     const COMMAND_UPDATE = 'update';
@@ -32,13 +34,24 @@ class CloudStacks extends Command
     const COMMAND_WAIT = 'wait';
     const COMMAND_OUTPUT = 'output';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-stacks
                             {--environment=null : The environment: \'stage\' or \'production\'}
                             {--key=null : The key for the output command}
                             {subcommand : The subcommand to run: \'status\', \'create\', \'update\', \'delete\', or \'wait\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage application environment variables in cloud environments';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
         self::COMMAND_STATUS => 'handleStatus',
         self::COMMAND_CREATE => 'handleCreate',
@@ -48,6 +61,11 @@ class CloudStacks extends Command
         self::COMMAND_OUTPUT => 'handleOutput',
     ];
 
+    /**
+     * Get the status of the stack for the specified environment.
+     *
+     * @return int
+     */
     public function handleStatus()
     {
         $env = $this->environmentOption();
@@ -69,6 +87,11 @@ class CloudStacks extends Command
         return 0;
     }
 
+    /**
+     * Get a stack output for the specified environment.
+     *
+     * @return int
+     */
     public function handleOutput()
     {
         $env = $this->environmentOption();
@@ -112,6 +135,12 @@ class CloudStacks extends Command
         return 0;
     }
 
+    /**
+     * Create the stack for the specified environment with prompts for various configuration options.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
+     */
     public function handleCreate()
     {
         $env = $this->environmentOption();
@@ -290,6 +319,12 @@ class CloudStacks extends Command
         return 0;
     }
 
+    /**
+     * Update the stack with any template changes with prompts for configuration changes.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
+     */
     public function handleUpdate()
     {
         $env = $this->environmentOption();
@@ -454,6 +489,12 @@ class CloudStacks extends Command
         return 0;
     }
 
+    /**
+     * Delete the stack for the specified environment.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
+     */
     public function handleDelete()
     {
         $env = $this->environmentOption();
@@ -474,13 +515,15 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $this->line('Checking database for deletion protection...');
+        $this->line('Getting stack outputs...');
 
         $outputs = $cloudformation->stackOutput([
             'DBId',
             'DBAdminAccessPrefixListId',
             'AppAccessPrefixListId',
         ]);
+
+        $this->line('Checking database for deletion protection...');
 
         $rds = $this->awsRds($env);
         $ec2 = $this->awsEc2($env);
@@ -515,9 +558,13 @@ class CloudStacks extends Command
             }
         } else {
             $this->warn('Failed to get stack outputs');
+
+            return 1;
         }
 
         $this->startTimer();
+
+        $this->line('Deleting stack...');
 
         $cloudformation->deleteStack();
 
@@ -526,7 +573,7 @@ class CloudStacks extends Command
         if (!$result['success']) {
             $this->error("Stack deletion failed with status '{$result['status']}'");
         } else {
-            $this->info("Stack deletion completed successfully");
+            $this->info('Stack deletion completed successfully');
         }
 
         $this->stopTimer();
@@ -535,6 +582,12 @@ class CloudStacks extends Command
         return 0;
     }
 
+    /**
+     * Wait for the specified environment's stack updates to complete.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
+     */
     public function handleWait()
     {
         $env = $this->option('environment');
@@ -550,6 +603,27 @@ class CloudStacks extends Command
         return 0;
     }
 
+    /**
+     * @param string $environment
+     * @param string $aws_region
+     * @param string $image_tag
+     * @param string $domain
+     * @param string $root_domain
+     * @param string $hosted_zone_id
+     * @param string $acm_arn
+     * @param int $db_storage
+     * @param string $db_instance_type
+     * @param string $cache_node_type
+     * @param string $cpu
+     * @param string $memory
+     * @param string $database_prefix_list_id
+     * @param string $application_prefix_list_id
+     * @param int $scale_out_cooldown
+     * @param int $scale_in_cooldown
+     * @param string $scale_target_cpu
+     * @return array|false
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
+     */
     protected function createStack(
         string $environment,
         string $aws_region,
@@ -621,6 +695,14 @@ class CloudStacks extends Command
         ];
     }
 
+    /**
+     * @param string $environment
+     * @param string $aws_region
+     * @param array $secrets
+     * @param string $old_artisan_task_definition
+     * @return array|false
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
+     */
     protected function updateStackPostCreate(string $environment, string $aws_region, array $secrets, string $old_artisan_task_definition): array|false
     {
         $this->line('Updating stack with cloud variables...');
@@ -661,6 +743,12 @@ class CloudStacks extends Command
         return $updated_outputs;
     }
 
+    /**
+     * @param string $environment
+     * @param string $aws_region
+     * @param array $names
+     * @return array|false
+     */
     protected function stackOutputs(string $environment, string $aws_region, array $names): array|false
     {
         $tries = 0;
@@ -685,6 +773,14 @@ class CloudStacks extends Command
         return $outputs;
     }
 
+    /**
+     * @param string $environment
+     * @param string $db_host
+     * @param string $db_port
+     * @param string $db_username
+     * @param string $db_password
+     * @return string|false
+     */
     protected function createDatabaseSchema(
         string $environment,
         string $db_host,
@@ -715,6 +811,11 @@ class CloudStacks extends Command
         return $database_name;
     }
 
+    /**
+     * @param string $environment
+     * @param array $parameters
+     * @return array
+     */
     protected function createCloudVariables(string $environment, array $parameters): array
     {
         $this->line('Creating cloud variables...');
@@ -752,6 +853,12 @@ class CloudStacks extends Command
         return $secrets;
     }
 
+    /**
+     * @param string $environment
+     * @param string $aws_region
+     * @param string $current_commit
+     * @return string|false
+     */
     protected function confirmProjectImagesExist(string $environment, string $aws_region, string $current_commit): string|false
     {
         $ecr = $this->awsEcr($environment, $aws_region);
@@ -780,6 +887,11 @@ class CloudStacks extends Command
         return $image_tag;
     }
 
+    /**
+     * @param string $environment
+     * @param string $aws_region
+     * @return bool
+     */
     protected function confirmStackDoesntExist(string $environment, string $aws_region): bool
     {
         $this->line('Checking if stack exists...');
@@ -795,6 +907,10 @@ class CloudStacks extends Command
         return true;
     }
 
+    /**
+     * @param string $environment
+     * @return bool
+     */
     protected function maybeDeleteAllCloudVariables(string $environment)
     {
         $ssm = $this->awsSsm($environment);
@@ -823,6 +939,9 @@ class CloudStacks extends Command
         return true;
     }
 
+    /**
+     * @return string
+     */
     protected function askAcmCertificateArn(): string
     {
         do {
@@ -837,6 +956,10 @@ class CloudStacks extends Command
         return $acm_arn;
     }
 
+    /**
+     * @param string $domain
+     * @return array|false
+     */
     protected function hostedZoneIdFromDomain(string $domain): array|false
     {
         $route53 = $this->awsRoute53();
@@ -861,6 +984,10 @@ class CloudStacks extends Command
         ];
     }
 
+    /**
+     * @param string $environment
+     * @return array
+     */
     protected function createPrefixLists(string $environment): array
     {
         $ec2 = $this->awsEc2($environment);
@@ -881,6 +1008,15 @@ class CloudStacks extends Command
         ];
     }
 
+    /**
+     * @param string $environment
+     * @param string $aws_region
+     * @param string $container_cluster_arn
+     * @param array $security_groups
+     * @param array $subnets
+     * @param string $artisan_task_definition_arn
+     * @return bool
+     */
     protected function runMigrations(
         string $environment,
         string $aws_region,
@@ -913,6 +1049,9 @@ class CloudStacks extends Command
         return true;
     }
 
+    /**
+     * @return string
+     */
     protected function askDomain(): string
     {
         do {
@@ -922,26 +1061,42 @@ class CloudStacks extends Command
         return $domain;
     }
 
+    /**
+     * @return string
+     */
     protected function askDatabaseInstanceType(): string
     {
         return $this->choice('Database instance type?', Cloud::DB_INSTANCE_TYPES, 0);
     }
 
+    /**
+     * @return string
+     */
     protected function askCacheNodeType(): string
     {
         return $this->choice('Cache node type?', Cloud::CACHE_NODE_TYPES, 0);
     }
 
+    /**
+     * @return string
+     */
     protected function askTaskDefinitionCpu(): string
     {
         return $this->choice('Task definition CPU?', Cloud::FARGATE_CPU_VALUES, 0);
     }
 
+    /**
+     * @param string $cpu
+     * @return string
+     */
     protected function askTaskDefinitionMemory(string $cpu): string
     {
         return $this->choice('Task definition memory?', Cloud::FARGATE_CPU_MEMORY_VALUES_MAP[$cpu] ?? [], 0);
     }
 
+    /**
+     * @return int
+     */
     protected function askScalingTargetCpu(): int
     {
         do {
@@ -956,16 +1111,25 @@ class CloudStacks extends Command
         return $db_storage;
     }
 
+    /**
+     * @return int
+     */
     protected function askScaleOutCooldown(): int
     {
         return (int) $this->ask('Auto Scaling scale out cooldown (seconds)?', '10');
     }
 
+    /**
+     * @return int
+     */
     protected function askScaleInCooldown(): int
     {
         return (int) $this->ask('Auto Scaling scale in cooldown (seconds)?', '10');
     }
 
+    /**
+     * @return string
+     */
     protected function askDatabaseStorage(): string
     {
         $this->line('<info>Minimum database storage (GB):</info> ' . Cloud::DB_STORAGE_MIN_GB);
@@ -984,6 +1148,13 @@ class CloudStacks extends Command
         return $db_storage;
     }
 
+    /**
+     * @param string $env
+     * @param string $domain
+     * @param string $hosted_zone_id
+     * @return string
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException
+     */
     protected function findOrCreateAcmCertificateArn(string $env, string $domain, string $hosted_zone_id): string
     {
         if ($this->confirm('Is there a preexisting ACM certificate you\'d like to use?', false)) {

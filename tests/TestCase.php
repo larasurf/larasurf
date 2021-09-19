@@ -293,6 +293,11 @@ EOF;
         return Mockery::mock('overload:' . CloudFormationClient::class);
     }
 
+    protected function mockLaraSurfRdsClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . RdsClient::class);
+    }
+
     protected function mockLaraSurfEcsClient(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . EcsClient::class);

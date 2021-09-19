@@ -714,4 +714,134 @@ class CloudStacksTest extends TestCase
             ->expectsOutput("Stack does not exist for the 'production' environment")
             ->assertExitCode(1);
     }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testDelete()
+    {
+        Mockery::getConfiguration()->setConstantsMap([
+            CloudFormationClient::class => [
+                'STACK_STATUS_DELETED' => 'DELETED',
+            ]
+        ]);
+
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('stackOutput')->andReturn([
+            'DBId' => Str::random(),
+            'DBAdminAccessPrefixListId' => Str::random(),
+            'AppAccessPrefixListId' => Str::random(),
+        ]);
+        $cloudformation->shouldReceive('stackStatus')->andReturn('UPDATE_COMPLETE');
+        $cloudformation->shouldReceive('deleteStack')->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+            'success' => true,
+            'status' => 'DELETED',
+        ]);
+
+        $rds = $this->mockLaraSurfRdsClient();
+        $rds->shouldReceive('checkDeletionProtection')->andReturn(true);
+        $rds->shouldReceive('modifyDeletionProtection')->andReturn();
+
+        $ec2 = $this->mockLaraSurfEc2Client();
+        $ec2->shouldReceive('deletePrefixList')->times(2)->andReturn(true);
+
+        $this->artisan('larasurf:cloud-stacks delete --environment production')
+            ->expectsConfirmation("Are you sure you want to delete the stack for the 'production' environment?", 'yes')
+            ->expectsOutput('Getting stack outputs...')
+            ->expectsOutput('Checking database for deletion protection...')
+            ->expectsOutput("Deletion protection is enabled for the 'production' environment's database")
+            ->expectsConfirmation('Would you like to disable deletion protection and proceed?', 'yes')
+            ->expectsOutput('Disabling database deletion protection...')
+            ->expectsOutput('Deletion protection disabled successfully')
+            ->expectsOutput('Deleting prefix lists...')
+            ->expectsOutput('Deleted database prefix list successfully')
+            ->expectsOutput('Deleted application prefix list successfully')
+            ->expectsOutput('Deleting stack...')
+            ->expectsOutput('Stack deletion completed successfully')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testDeleteNoDatabaseProtection()
+    {
+        Mockery::getConfiguration()->setConstantsMap([
+            CloudFormationClient::class => [
+                'STACK_STATUS_DELETED' => 'DELETED',
+            ]
+        ]);
+
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('stackOutput')->andReturn([
+            'DBId' => Str::random(),
+            'DBAdminAccessPrefixListId' => Str::random(),
+            'AppAccessPrefixListId' => Str::random(),
+        ]);
+        $cloudformation->shouldReceive('stackStatus')->andReturn('UPDATE_COMPLETE');
+        $cloudformation->shouldReceive('deleteStack')->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+            'success' => true,
+            'status' => 'DELETED',
+        ]);
+
+        $rds = $this->mockLaraSurfRdsClient();
+        $rds->shouldReceive('checkDeletionProtection')->andReturn(false);
+
+        $ec2 = $this->mockLaraSurfEc2Client();
+        $ec2->shouldReceive('deletePrefixList')->times(2)->andReturn(true);
+
+        $this->artisan('larasurf:cloud-stacks delete --environment production')
+            ->expectsConfirmation("Are you sure you want to delete the stack for the 'production' environment?", 'yes')
+            ->expectsOutput('Getting stack outputs...')
+            ->expectsOutput('Checking database for deletion protection...')
+            ->expectsOutput('Deleting prefix lists...')
+            ->expectsOutput('Deleted database prefix list successfully')
+            ->expectsOutput('Deleted application prefix list successfully')
+            ->expectsOutput('Deleting stack...')
+            ->expectsOutput('Stack deletion completed successfully')
+            ->assertExitCode(0);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testDeleteStackDoesntExist()
+    {
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
+
+        $this->artisan('larasurf:cloud-stacks delete --environment production')
+            ->expectsQuestion("Are you sure you want to delete the stack for the 'production' environment?", true)
+            ->expectsOutput("Stack does not exist for the 'production' environment")
+            ->assertExitCode(1);
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testWait()
+    {
+        Mockery::getConfiguration()->setConstantsMap([
+            CloudFormationClient::class => [
+                'STACK_STATUS_UPDATE_COMPLETE' => 'UPDATE_COMPLETE',
+            ]
+        ]);
+
+        $status = 'UPDATE_COMPLETE';
+
+        $this->mockLaraSurfCloudFormationClient()->shouldReceive('waitForStackInfoPanel')->andReturn([
+            'success' => true,
+            'status' => $status,
+        ]);
+
+        $this->artisan('larasurf:cloud-stacks wait --environment production')
+            ->expectsOutput("Stack operation finished with status: $status")
+            ->assertExitCode(0);
+    }
 }
