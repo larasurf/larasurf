@@ -13,10 +13,19 @@ class Publish extends Command
     use DerivesAppUrl;
     use InteractsWithLaraSurfConfig;
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Publish or make changes to various files as part of LaraSurf\'s post-install process';
 
+    /**
+     * Handle the command.
+     */
     public function handle()
     {
         foreach ([
@@ -35,6 +44,9 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Publish the code style fixer configuration file.
+     */
     protected function publishCsFixerConfig()
     {
         $success = File::copy(__DIR__ . '/../../templates/.php-cs-fixer.dist.php', base_path('.php-cs-fixer.dist.php'));
@@ -46,6 +58,9 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Update the local NGINX configuration file to support SSL.
+     */
     protected function publishNginxLocalSslConfig()
     {
         $nginx_config_path = base_path('.docker/nginx/laravel.conf.template');
@@ -72,6 +87,9 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Update the local .env and .env.example files with configurations specific to LaraSurf.
+     */
     protected function publishEnvChanges()
     {
         $url = self::deriveAppUrl();
@@ -114,6 +132,12 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Publish the relevant CircleCI configuration file depending on the configured environment.
+     * Publish the bash script used for injecting secrets into the CloudFormation template within CircleCI.
+     *
+     * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException
+     */
     protected function publishCircleCIConfig()
     {
         $production = static::larasurfConfig()->exists('environments.production');
@@ -132,6 +156,9 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Publish the bash script used for injecting secrets into the CloudFormation template within CircleCI.
+     */
     protected function publishCircleCIInjectSecretsScript()
     {
         if (!File::isDirectory(base_path('.circleci'))) {
@@ -147,7 +174,12 @@ class Publish extends Command
         }
     }
 
-    protected function publishCircleCI($filename)
+    /**
+     * Publish a specific CircleCI configuration file.
+     *
+     * @param string $filename
+     */
+    protected function publishCircleCI(string $filename)
     {
         if (!File::isDirectory(base_path('.circleci'))) {
             File::makeDirectory(base_path('.circleci'));
@@ -196,6 +228,9 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Publish the CloudFormation template.
+     */
     protected function publishCloudFormation()
     {
         if (!File::isDirectory(base_path('.cloudformation'))) {
@@ -217,6 +252,9 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Publish the updated .gitignore file.
+     */
     protected function publishGitIgnore()
     {
         $contents = File::get(__DIR__ . '/../../templates/gitignore.txt');
@@ -228,6 +266,9 @@ class Publish extends Command
         }
     }
 
+    /**
+     * Update the api routes file to contain a health check route.
+     */
     protected function publishHealthCheck()
     {
         $path = base_path('routes/api.php');
@@ -271,6 +312,9 @@ EOF;
         $this->info('Published health check feature test successfully');
     }
 
+    /**
+     * Update the TrustProxies middleware to trust dynamic proxies.
+     */
     protected function publishProxies()
     {
         $path = app_path('Http/Middleware/TrustProxies.php');

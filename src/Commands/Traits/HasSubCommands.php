@@ -4,6 +4,11 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 
 trait HasSubCommands
 {
+    /**
+     * Handle the main command, running the subcommand.
+     *
+     * @return int
+     */
     public function handle()
     {
         if (!$this->validateSubCommandArgument()) {
@@ -13,6 +18,11 @@ trait HasSubCommands
         return $this->runSubCommand();
     }
 
+    /**
+     * Validates the specified subcommand argument exists.
+     *
+     * @return bool
+     */
     protected function validateSubCommandArgument()
     {
         $command = $this->argument('subcommand');
@@ -26,6 +36,11 @@ trait HasSubCommands
         return true;
     }
 
+    /**
+     * Runs the specified subcommand.
+     *
+     * @return int
+     */
     protected function runSubCommand()
     {
         $command = $this->argument('subcommand');

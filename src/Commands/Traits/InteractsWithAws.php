@@ -20,6 +20,10 @@ trait InteractsWithAws
 {
     use InteractsWithLaraSurfConfig;
 
+    /**
+     * @param string|null $environment
+     * @return AcmClient
+     */
     protected function awsAcm(string $environment = null): AcmClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
@@ -27,6 +31,11 @@ trait InteractsWithAws
         return new AcmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @param string|null $aws_region
+     * @return CloudFormationClient
+     */
     protected function awsCloudFormation(string $environment = null, string $aws_region = null): CloudFormationClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
@@ -34,6 +43,11 @@ trait InteractsWithAws
         return new CloudFormationClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @param string|null $aws_region
+     * @return CloudWatchLogsClient
+     */
     protected function awsCloudWatchLogs(string $environment = null, string $aws_region = null): CloudWatchLogsClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
@@ -41,6 +55,10 @@ trait InteractsWithAws
         return new CloudWatchLogsClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @return Ec2Client
+     */
     protected function awsEc2(string $environment = null): Ec2Client
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
@@ -48,6 +66,9 @@ trait InteractsWithAws
         return new Ec2Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @return Route53Client
+     */
     protected function awsRoute53(): Route53Client
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
@@ -55,6 +76,9 @@ trait InteractsWithAws
         return new Route53Client($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @return SesClient
+     */
     protected function awsSes(): SesClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
@@ -62,6 +86,10 @@ trait InteractsWithAws
         return new SesClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @return SsmClient
+     */
     protected function awsSsm(string $environment = null): SsmClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
@@ -69,6 +97,10 @@ trait InteractsWithAws
         return new SsmClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @return RdsClient
+     */
     protected function awsRds(string $environment = null): RdsClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment);
@@ -76,6 +108,11 @@ trait InteractsWithAws
         return new RdsClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @param string|null $aws_region
+     * @return EcrClient
+     */
     protected function awsEcr(string $environment = null, string $aws_region = null): EcrClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
@@ -83,6 +120,9 @@ trait InteractsWithAws
         return new EcrClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @return IamClient
+     */
     protected function awsIam(): IamClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments();
@@ -90,6 +130,11 @@ trait InteractsWithAws
         return new IamClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @param string|null $aws_region
+     * @return EcsClient
+     */
     protected function awsEcs(string $environment = null, string $aws_region = null): EcsClient
     {
         [$project_name, $project_id, $aws_profile, $aws_region, $environment] = $this->awsClientArguments($environment, $aws_region);
@@ -97,6 +142,11 @@ trait InteractsWithAws
         return new EcsClient($project_name, $project_id, $aws_profile, $aws_region, $environment);
     }
 
+    /**
+     * @param string|null $environment
+     * @param string|null $aws_region
+     * @return array
+     */
     protected function awsClientArguments(string $environment = null, string $aws_region = null): array
     {
         $project_name = static::larasurfConfig()->get('project-name');
@@ -113,11 +163,20 @@ trait InteractsWithAws
         ];
     }
 
+    /**
+     * @param string $environment
+     * @param string $type
+     * @return string
+     */
     protected function awsEcrRepositoryName(string $environment, string $type): string
     {
         return static::larasurfConfig()->get('project-name') . '-' . static::larasurfConfig()->get('project-id') . "/$environment/$type";
     }
 
+    /**
+     * @param string $full_domain
+     * @return string
+     */
     protected function rootDomainFromFullDomain(string $full_domain): string
     {
         $suffix = Str::afterLast($full_domain, '.');

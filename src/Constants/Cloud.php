@@ -4,26 +4,47 @@ namespace LaraSurf\LaraSurf\Constants;
 
 class Cloud
 {
+    /**
+     * The supported AWS regions.
+     */
     const AWS_REGION_US_EAST_1 = 'us-east-1';
 
+    /**
+     * All supported AWS regions.
+     */
     const AWS_REGIONS = [
         self::AWS_REGION_US_EAST_1,
     ];
 
+    /**
+     * The supported application environments.
+     */
     const ENVIRONMENT_STAGE = 'stage';
     const ENVIRONMENT_PRODUCTION = 'production';
 
+    /**
+     * All supported application environments.
+     */
     const ENVIRONMENTS = [
         self::ENVIRONMENT_STAGE,
         self::ENVIRONMENT_PRODUCTION,
     ];
 
+    /**
+     * The supported users.
+     */
     const USER_CIRCLECI = 'circleci';
 
+    /**
+     * All supported users.
+     */
     const USERS = [
         self::USER_CIRCLECI,
     ];
 
+    /**
+     * The supported database instance types.
+     */
     const DB_INSTANCE_TYPES = [
         'db.t2.small',
         'db.t2.medium',
@@ -31,10 +52,19 @@ class Cloud
         'db.m5.xlarge',
     ];
 
+    /**
+     * The minimum database storage size in GB.
+     */
     const DB_STORAGE_MIN_GB = 20;
 
+    /**
+     * The maximum database storage size in GB.
+     */
     const DB_STORAGE_MAX_GB = 70368; // 64 tebibytes;
 
+    /**
+     * The supported cache node types.
+     */
     const CACHE_NODE_TYPES = [
         'cache.t2.micro',
         'cache.t2.small',
@@ -52,6 +82,9 @@ class Cloud
         'cache.m4.10xlarge',
     ];
 
+    /**
+     * The supported Fargate CPU values.
+     */
     const FARGATE_CPU_VALUES = [
         '256',
         '512',
@@ -60,6 +93,9 @@ class Cloud
         '4096',
     ];
 
+    /**
+     * A mapping of Fargate CPU value => supported memory values.
+     */
     const FARGATE_CPU_MEMORY_VALUES_MAP = [
         '256' => [
             '512',

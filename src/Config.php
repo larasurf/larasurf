@@ -14,8 +14,22 @@ use League\Flysystem\FileNotFoundException;
 
 class Config
 {
+    /**
+     * The JSON decoded LaraSurf configuration file.
+     *
+     * @var array
+     */
     protected array $config;
 
+    /**
+     * Config constructor.
+     * JSON decodes the specified file name.
+     *
+     * @param string $filename
+     * @throws FileNotFoundException
+     * @throws InvalidConfigException
+     * @throws \JsonException
+     */
     public function __construct(protected $filename = 'larasurf.json')
     {
         $path = base_path($filename);
@@ -33,11 +47,25 @@ class Config
         $this->config = $config;
     }
 
+    /**
+     * Get a configuration value using dot notation.
+     *
+     * @param string $key
+     * @return array|\ArrayAccess|mixed
+     */
     public function get(string $key)
     {
         return Arr::get($this->config, $key);
     }
 
+    /**
+     * Set a configuration value using dot notation.
+     *
+     * @param string $key
+     * @param string|null $value
+     * @throws InvalidConfigKeyException
+     * @throws InvalidConfigValueException
+     */
     public function set(string $key, ?string $value)
     {
         if (!in_array($key, [
@@ -65,6 +93,13 @@ class Config
         Arr::set($this->config, $key, $value);
     }
 
+    /**
+     * Determine if a configuration value exists using dot notation.
+     *
+     * @param string $key
+     * @return bool
+     * @throws InvalidConfigKeyException
+     */
     public function exists(string $key)
     {
         if (!in_array($key, [
@@ -82,6 +117,11 @@ class Config
         return Arr::get($this->config, $key, false) !== false;
     }
 
+    /**
+     * Write the current configuration to a file.
+     *
+     * @return bool
+     */
     public function write(): bool
     {
         $json = json_encode($this->config, JSON_PRETTY_PRINT);
@@ -89,6 +129,11 @@ class Config
         return File::put(base_path($this->filename), $json . PHP_EOL);
     }
 
+    /**
+     * Get the validation rules for a LaraSurf configuration file.
+     *
+     * @return array
+     */
     protected function validationRules(): array
     {
         return [
@@ -103,6 +148,12 @@ class Config
         ];
     }
 
+    /**
+     * Validates a LaraSurf configuration file using validation rules.
+     *
+     * @param array $config
+     * @throws InvalidConfigException
+     */
     protected function validateConfig(array $config)
     {
         $validator = Validator::make($config, $this->validationRules());

@@ -6,6 +6,15 @@ use PDO;
 
 class SchemaCreator
 {
+    /**
+     * SchemaCreator constructor.
+     * @param string $project_name
+     * @param string $environment
+     * @param string $db_host
+     * @param string $db_port
+     * @param string $db_username
+     * @param string $db_password
+     */
     public function __construct(
         protected string $project_name,
         protected string $environment,
@@ -16,6 +25,11 @@ class SchemaCreator
     ) {
     }
 
+    /**
+     * Creates a database schema on the specified MySQL host for use by a Laravel application.
+     *
+     * @return string|false
+     */
     public function createSchema(): string|false
     {
         $pdo = new PDO(sprintf('mysql:host=%s;port=%s;', $this->db_host, $this->db_port), $this->db_username, $this->db_password);

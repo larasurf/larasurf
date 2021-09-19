@@ -19,11 +19,17 @@ use LaraSurf\LaraSurf\Commands\Splash;
 
 class LaraSurfServiceProvider extends ServiceProvider
 {
+    /**
+     * Register application services.
+     */
     public function register()
     {
         //
     }
 
+    /**
+     * Boot the application.
+     */
     public function boot()
     {
         if ($this->app->runningInConsole()) {

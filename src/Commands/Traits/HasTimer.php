@@ -6,19 +6,39 @@ use Carbon\Carbon;
 
 trait HasTimer
 {
-    protected $start_time = null;
-    protected $end_time = null;
+    /**
+     * The timestamp for when the timer was started.
+     *
+     * @var int|null
+     */
+    protected ?int $start_time = null;
 
+    /**
+     * The timestamp for when the timer was stopped.
+     *
+     * @var int|null
+     */
+    protected ?int $end_time = null;
+
+    /**
+     * Start the timer.
+     */
     protected function startTimer()
     {
         $this->start_time = time();
     }
 
+    /**
+     * Stop the timer.
+     */
     protected function stopTimer()
     {
         $this->end_time = time();
     }
 
+    /**
+     * Display the time elapsed in a human-friendly manner.
+     */
     protected function displayTimeElapsed()
     {
         $start_time = Carbon::createFromTimestamp($this->start_time);

@@ -131,6 +131,10 @@ class CloudVarsTest extends TestCase
             ->assertExitCode(1);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testList()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -149,6 +153,10 @@ class CloudVarsTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function testListValues()
     {
         $this->createValidLaraSurfConfig('local-stage-production');

@@ -8,6 +8,12 @@ trait HasEnvironmentOption
 {
     use InteractsWithLaraSurfConfig;
 
+    /**
+     * Gets a valid --environment optino value.
+     *
+     * @return string|false
+     * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException
+     */
     protected function environmentOption(): string|false
     {
         $env = $this->option('environment');

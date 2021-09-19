@@ -8,8 +8,19 @@ use LaraSurf\LaraSurf\Exceptions\Git\ParsingGitConfigFailedException;
 
 trait InteractsWithGitFiles
 {
+    /**
+     * The parsed git config.
+     *
+     * @var array|null
+     */
     protected static ?array $git_config = null;
 
+    /**
+     * Get the parsed git config, parsing it if not already done.
+     *
+     * @return array
+     * @throws ParsingGitConfigFailedException
+     */
     protected static function gitConfig(): array
     {
         $config_path = static::gitConfigFilePath();
@@ -27,26 +38,54 @@ trait InteractsWithGitFiles
         return static::$git_config;
     }
 
+    /**
+     * Get the git configuration file path.
+     *
+     * @return string
+     */
     protected static function gitConfigFilePath(): string
     {
         return base_path('.git/config');
     }
 
+    /**
+     * Get the git head file path.
+     *
+     * @return string
+     */
     protected static function gitHeadFilePath(): string
     {
         return base_path('.git/HEAD');
     }
 
+    /**
+     * Get the git ref heads directory path.
+     *
+     * @return string
+     */
     protected static function gitRefHeadsPath(): string
     {
         return base_path('.git/refs/heads');
     }
 
+    /**
+     * Git a remote origin URL from the parsed git config.
+     *
+     * @param string $name
+     * @return string|false
+     * @throws ParsingGitConfigFailedException
+     */
     protected static function gitRemoteUrl(string $name = 'origin'): string|false
     {
         return static::gitConfig()["remote $name"]['url'] ?? false;
     }
 
+    /**
+     * Git the origin project name or false.
+     *
+     * @return string|false
+     * @throws ParsingGitConfigFailedException
+     */
     protected function gitOriginProjectName()
     {
         $url = static::gitRemoteUrl();
@@ -68,6 +107,12 @@ trait InteractsWithGitFiles
         return $origin;
     }
 
+    /**
+     * Confirms the current git branch.
+     *
+     * @param string $branch
+     * @return bool
+     */
     protected function gitIsOnBranch(string $branch): bool
     {
         if (!File::exists(static::gitHeadFilePath())) {
@@ -79,6 +124,12 @@ trait InteractsWithGitFiles
         return trim(str_replace('ref: refs/heads/', '', File::get(static::gitHeadFilePath()))) === $branch;
     }
 
+    /**
+     * Gets the current git commit.
+     *
+     * @param string $branch
+     * @return string
+     */
     protected function gitCurrentCommit(string $branch): string
     {
         $path = static::gitRefHeadsPath() . '/' . $branch;

@@ -9,8 +9,20 @@ trait InteractsWithCircleCI
 {
     use InteractsWithGitFiles;
 
+    /**
+     * The CircleCI client.
+     *
+     * @var Client|null
+     */
     protected static ?Client $circleci_client = null;
 
+    /**
+     * Get the CircleCI client, instantiating it if not already done.
+     *
+     * @param string $api_key
+     * @param string $project_name
+     * @return Client|null
+     */
     protected static function circleCI(string $api_key, string $project_name)
     {
         if (!static::$circleci_client) {
@@ -20,11 +32,21 @@ trait InteractsWithCircleCI
         return static::$circleci_client;
     }
 
+    /**
+     * Get the path for the CircleCI api key file.
+     *
+     * @return string
+     */
     protected static function circleCIApiKeyFilePath(): string
     {
         return '.circleci/api-key.txt';
     }
 
+    /**
+     * Get the CircleCI api key from a file.
+     *
+     * @return string|false
+     */
     protected static function circleCIApiKey(): string|false
     {
         if (!File::exists(base_path(static::circleCIApiKeyFilePath()))) {
@@ -34,6 +56,13 @@ trait InteractsWithCircleCI
         return trim(File::get(base_path(static::circleCIApiKeyFilePath()))) ?: false;
     }
 
+    /**
+     * Prompt to delete the specified environment variables and delete them if the user confirms.
+     *
+     * @param array $variables
+     * @return bool
+     * @throws \LaraSurf\LaraSurf\Exceptions\CircleCI\RequestFailedException
+     */
     protected function maybeDeleteCircleCIEnvironmentVariables(array $variables): bool
     {
         $circleci_api_key = static::circleCIApiKey();
@@ -75,6 +104,14 @@ trait InteractsWithCircleCI
         return true;
     }
 
+    /**
+     * Confirm if a user wants to delete the specified environment variables.
+     *
+     * @param Client $circleci
+     * @param array $variables
+     * @return array|false
+     * @throws \LaraSurf\LaraSurf\Exceptions\CircleCI\RequestFailedException
+     */
     protected function circleCIExistingEnvironmentVariablesAskDelete(Client $circleci, array $variables): array|false
     {
         $existing_circleci_vars = $circleci->listEnvironmentVariables();

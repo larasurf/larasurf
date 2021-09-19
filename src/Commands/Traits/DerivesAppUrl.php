@@ -7,6 +7,11 @@ use Illuminate\Support\Str;
 
 trait DerivesAppUrl
 {
+    /**
+     * Determines the application url based upon if local SSL is enabled.
+     *
+     * @return string
+     */
     protected static function deriveAppUrl() {
         $nginx_file = base_path('.docker/nginx/laravel.conf.template');
         $nginx_contents = File::exists($nginx_file) ? File::get($nginx_file) : false;
