@@ -338,6 +338,11 @@ EOF;
         return Mockery::mock('overload:' . Ec2Client::class);
     }
 
+    protected function mockLaraSurfIamClient(): Mockery\MockInterface
+    {
+        return Mockery::mock('overload:' . IamClient::class);
+    }
+
     protected function mockCircleCI(): Mockery\MockInterface
     {
         return Mockery::mock('overload:' . Client::class);

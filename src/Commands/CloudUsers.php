@@ -14,22 +14,45 @@ class CloudUsers extends Command
     use InteractsWithAws;
     use InteractsWithCircleCI;
 
+    /**
+     * The policy ARN for administrator access.
+     */
     const IAM_POLICY_ARN_ADMIN_ACCESS = 'arn:aws:iam::aws:policy/AdministratorAccess';
 
+    /**
+     * The available subcommands to run.
+     */
     const COMMAND_CREATE = 'create';
     const COMMAND_DELETE = 'delete';
 
+    /**
+     * @var string
+     */
     protected $signature = 'larasurf:cloud-users
                             {--user= : Specify the cloud user}
                             {subcommand : The subcommand to run: \'create\' or \'delete\'}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Manage users in the cloud';
 
+    /**
+     * A mapping of subcommands => method name to call.
+     *
+     * @var string[]
+     */
     protected array $commands = [
         self::COMMAND_CREATE => 'handleCreate',
         self::COMMAND_DELETE => 'handleDelete',
     ];
 
+    /**
+     * Create a cloud user. Only CircleCI is supported.
+     *
+     * @return int
+     * @throws \LaraSurf\LaraSurf\Exceptions\CircleCI\RequestFailedException
+     */
     protected function handleCreate()
     {
         $user = $this->userOption();
@@ -85,8 +108,10 @@ class CloudUsers extends Command
 
         $iam = static::awsIam();
 
+        $this->line('Checking if cloud user exists...');
+
         if ($iam->userExists($iam_user)) {
-            $this->error("IAM user '$iam_user' exists");
+            $this->error("Cloud user '$iam_user' already exists");
 
             return 1;
         }
@@ -95,17 +120,17 @@ class CloudUsers extends Command
 
         $iam->createUser($iam_user);
 
-        $this->line("Assigning permissions...");
+        $this->line('Assigning permissions...');
 
         // todo: create policy, assign that instead of admin access
 
         $iam->attachUserPolicy($iam_user, self::IAM_POLICY_ARN_ADMIN_ACCESS);
 
-        $this->line("Creating access keys...");
+        $this->line('Creating access keys...');
 
         $access_keys = $iam->createAccessKey($iam_user);
 
-        $this->line("Updating CircleCI environment variables...");
+        $this->line('Updating CircleCI environment variables...');
 
         foreach ([
             'AWS_ACCESS_KEY_ID' => $access_keys->getId(),
@@ -119,6 +144,11 @@ class CloudUsers extends Command
         return 0;
     }
 
+    /**
+     * Delete a cloud user.
+     *
+     * @return int
+     */
     protected function handleDelete()
     {
         $user = $this->userOption();
@@ -131,10 +161,12 @@ class CloudUsers extends Command
 
         $iam = static::awsIam();
 
-        if (!$iam->userExists($iam_user)) {
-            $this->warn("IAM user '$iam_user' does not exist");
+        $this->line('Checking if cloud user exists...');
 
-            return 0;
+        if (!$iam->userExists($iam_user)) {
+            $this->warn("Cloud user '$iam_user' does not exist");
+
+            return 1;
         }
 
         $this->line('Detaching user policies...');
@@ -153,6 +185,8 @@ class CloudUsers extends Command
 
         $iam->deleteUser($iam_user);
 
+        $this->info('Deleted cloud user successfully');
+
         $this->maybeDeleteCircleCIEnvironmentVariables([
             'AWS_ACCESS_KEY_ID',
             'AWS_SECRET_ACCESS_KEY',
@@ -161,6 +195,9 @@ class CloudUsers extends Command
         return 0;
     }
 
+    /**
+     * @return string|false
+     */
     protected function userOption(): string|false
     {
         $user = $this->option('user');
@@ -174,6 +211,10 @@ class CloudUsers extends Command
         return $user;
     }
 
+    /**
+     * @param string $user
+     * @return string
+     */
     protected function iamUserName(string $user): string
     {
         $name = static::larasurfConfig()->get('project-name');
