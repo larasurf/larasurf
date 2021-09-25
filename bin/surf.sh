@@ -16,13 +16,13 @@ function exit_if_containers_not_running() {
   fi
 }
 
-if [[ "$1" == 'ssl' ]]; then
+if [[ "$1" == 'tls' ]]; then
   if [[ -n "$(which mkcert.exe)" ]]; then
-      mkcert.exe -install && mkcert.exe -key-file .docker/ssl/local.pem -cert-file .docker/ssl/local.crt localhost
+      mkcert.exe -install && mkcert.exe -key-file .docker/tls/local.pem -cert-file .docker/tls/local.crt localhost
     elif [[ -n "$(which mkcert)" ]]; then
-      mkcert -install && mkcert -key-file .docker/ssl/local.pem -cert-file .docker/ssl/local.crt localhost
+      mkcert -install && mkcert -key-file .docker/tls/local.pem -cert-file .docker/tls/local.crt localhost
     else
-      echo -e "${ERROR}To use local SSL, please install mkcert from: https://github.com/FiloSottile/mkcert${RESET}"
+      echo -e "${ERROR}To use local TLS, please install mkcert from: https://github.com/FiloSottile/mkcert${RESET}"
       exit 1
     fi
 elif [[ "$1" == 'composer' ]]; then
