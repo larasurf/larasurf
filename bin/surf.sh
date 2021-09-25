@@ -203,6 +203,10 @@ elif [[ "$1" == 'down' ]]; then
   else
     docker-compose down --volumes
   fi
+elif [[ "$1" == 'rebuild' ]]; then
+  cd $(pwd)
+
+  docker-compose build "${@:2}"
 else
   # todo
   echo 'See: https://larasurf.com/docs'
