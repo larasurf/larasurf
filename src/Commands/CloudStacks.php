@@ -139,7 +139,11 @@ class CloudStacks extends Command
      * Create the stack for the specified environment with prompts for various configuration options.
      *
      * @return int
+     * @throws \JsonException
+     * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException
      * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
+     * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException
+     * @throws \League\Flysystem\FileNotFoundException
      */
     public function handleCreate()
     {
