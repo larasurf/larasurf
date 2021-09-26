@@ -49,8 +49,12 @@ class SsmClient extends Client
         $this->client->putParameter($args);
     }
 
-    public function deleteParameter(string $path)
+    public function deleteParameter(string $path, bool $get_path = false)
     {
+        if ($get_path) {
+            $path = $this->parameterPath($path);
+        }
+
         $this->client->deleteParameter([
             'Name' => $path,
         ]);

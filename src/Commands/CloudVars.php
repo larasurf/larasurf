@@ -171,7 +171,7 @@ class CloudVars extends Command
             return 1;
         }
 
-        $ssm->deleteParameter($key);
+        $ssm->deleteParameter($key, true);
 
         $this->info("Variable '$key' in the '$env' environment deleted successfully");
 
