@@ -21,7 +21,7 @@ class CloudUsers extends Command
 
     /**
      * The available subcommands to run.
-     */cl
+     */
     const COMMAND_CREATE = 'create';
     const COMMAND_DELETE = 'delete';
 

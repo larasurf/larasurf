@@ -24,7 +24,7 @@ class CloudIngress extends Command
      * @var string
      */
     protected $signature = 'larasurf:cloud-ingress
-                            {--environment=null : The environment: \'stage\' or \'production\'}
+                            {--environment= : The environment: \'stage\' or \'production\'}
                             {--type=null : The resource type for ingress: \'application\' or \'database\'}
                             {--source=null : The source to allow ingress from: \'me\', \'public\', or an IP (X.X.X.X)}
                             {subcommand : The subcommand to run: \'allow\', \'revoke\', or \'list\'}';
