@@ -28,7 +28,7 @@ class PublishTest extends TestCase
 
         File::put(base_path('.docker/nginx/laravel.conf.template'), '');
 
-        $this->artisan('larasurf:publish --nginx-local-ssl')
+        $this->artisan('larasurf:publish --nginx-local-tls')
             ->expectsOutput('Modified nginx config successfully');
 
         $this->assertTrue(Str::contains(File::get(base_path('.docker/nginx/laravel.conf.template')), 'listen 443 ssl;'));
