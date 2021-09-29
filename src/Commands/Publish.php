@@ -16,7 +16,7 @@ class Publish extends Command
     /**
      * @var string
      */
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-ssl} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
 
     /**
      * @var string
@@ -30,7 +30,7 @@ class Publish extends Command
     {
         foreach ([
                      'cs-fixer' => [$this, 'publishCsFixerConfig'],
-                     'nginx-local-ssl' => [$this, 'publishNginxLocalSslConfig'],
+                     'nginx-local-tls' => [$this, 'publishNginxLocalTlsConfig'],
                      'env-changes' => [$this, 'publishEnvChanges'],
                      'circleci' => [$this, 'publishCircleCIConfig'],
                      'cloudformation' => [$this, 'publishCloudFormation'],
@@ -59,9 +59,9 @@ class Publish extends Command
     }
 
     /**
-     * Update the local NGINX configuration file to support SSL.
+     * Update the local NGINX configuration file to support TLS.
      */
-    protected function publishNginxLocalSslConfig()
+    protected function publishNginxLocalTlsConfig()
     {
         $nginx_config_path = base_path('.docker/nginx/laravel.conf.template');
 
