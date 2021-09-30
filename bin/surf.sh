@@ -6,6 +6,8 @@ ERROR='\033[91m'
 SUCCESS='\033[92m'
 RESET='\033[0m'
 
+export SURF_USER_ID=${UID}
+
 function exit_if_containers_not_running() {
   CONTAINERS_RUNNING="$(docker-compose ps -q)"
 
