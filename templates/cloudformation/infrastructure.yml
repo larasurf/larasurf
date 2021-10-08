@@ -475,7 +475,7 @@ Resources:
                 Resource: '*'
                 Condition:
                   StringLike:
-                    'ses:FromAddress: !Sub '*@${DomainName}'
+                    'ses:FromAddress': !Sub '*@${DomainName}'
       Tags:
         - Key: Project
           Value: !Sub '${ProjectName}-${ProjectId}'
