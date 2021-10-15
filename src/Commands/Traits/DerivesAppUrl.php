@@ -16,7 +16,7 @@ trait DerivesAppUrl
         $nginx_file = base_path('.docker/nginx/laravel.conf.template');
         $nginx_contents = File::exists($nginx_file) ? File::get($nginx_file) : false;
         $is_ssl = $nginx_contents && Str::contains($nginx_contents, 'listen 443 ssl;');
-        $app_port_env_name = $is_ssl ? 'SURF_APP_SSL_PORT' : 'SURF_APP_PORT';
+        $app_port_env_name = $is_ssl ? 'SURF_APP_TLS_PORT' : 'SURF_APP_PORT';
         $app_port = env($app_port_env_name);
 
         if (($is_ssl && $app_port === '443') || (!$is_ssl && $app_port === '80')) {
