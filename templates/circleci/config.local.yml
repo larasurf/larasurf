@@ -16,7 +16,7 @@ jobs:
       - run:
           name: Check Code Style and Run Tests
           command: |
-            docker-compose -f .circleci/docker-compose.ci.yml run --rm --entrypoint bash laravel -c "
+            docker-compose -f .circleci/docker-compose.ci.yml run --rm --entrypoint bash -e CACHE_DRIVER=array laravel -c "
               set -e
               cp .env.example .env
               php artisan key:generate --force
