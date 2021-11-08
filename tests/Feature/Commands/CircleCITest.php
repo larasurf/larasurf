@@ -11,12 +11,15 @@ class CircleCITest extends TestCase
 {
     public function testSetApiKey()
     {
-        $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
+        $project_name = $this->faker->word . '/' . $this->faker->word;
+
+        $this->createGitConfig($project_name);
 
         $api_key = Str::random();
 
         Http::fake([
             'https://circleci.com/api/v2/me' => Http::response('', 200),
+            "https://circleci.com/api/v2/project/gh/$project_name/checkout-key" => Http::response('', 201),
         ]);
 
         $this->artisan('larasurf:circleci set-api-key')
@@ -24,6 +27,8 @@ class CircleCITest extends TestCase
             ->expectsOutput('Verifying API token...')
             ->expectsOutput('Verified API key successfully')
             ->expectsOutput('Updated file \'.circleci/api-key.txt\' successfully')
+            ->expectsOutput('Creating user checkout key for project...')
+            ->expectsOutput('Created user checkout key for project successfully')
             ->assertExitCode(0);
 
         $this->assertTrue(File::exists(base_path('.circleci/api-key.txt')));

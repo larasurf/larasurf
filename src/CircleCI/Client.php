@@ -54,6 +54,21 @@ class Client
         return true;
     }
 
+    public function createUserKey(): bool
+    {
+        $response = Http
+            ::withHeaders($this->headers)
+            ->post("{$this->base_url}/project/" . $this->projectSlug() . '/checkout-key', [
+                'type' => 'user-key',
+            ]);
+
+        if ($response->failed()) {
+            throw new RequestFailedException($response);
+        }
+
+        return true;
+    }
+
     public function checkApiKey(): bool
     {
         return !Http::withHeaders($this->headers)->get("{$this->base_url}/me")->failed();

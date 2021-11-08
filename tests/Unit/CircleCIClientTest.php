@@ -66,6 +66,17 @@ class CircleCIClientTest extends TestCase
         $this->assertTrue($response);
     }
 
+    public function testCreateUserKey()
+    {
+        Http::fake(fn ($request) => Http::response([], 201, [
+            'Content-Type' => 'application/json',
+        ]));
+
+        $response = $this->client->createUserKey();
+
+        $this->assertTrue($response);
+    }
+
     public function testCheckApiKey()
     {
         Http::fake(fn ($request) => Http::response([], 200, [
