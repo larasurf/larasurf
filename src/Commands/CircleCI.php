@@ -78,12 +78,6 @@ class CircleCI extends Command
 
         $this->info("Updated file '$path' successfully");
 
-        $this->line('Creating user checkout key for project...');
-
-        $client->createUserKey();
-
-        $this->info('Created user checkout key for project successfully');
-
         return 0;
     }
 
