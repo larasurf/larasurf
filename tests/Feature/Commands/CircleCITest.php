@@ -27,8 +27,6 @@ class CircleCITest extends TestCase
             ->expectsOutput('Verifying API token...')
             ->expectsOutput('Verified API key successfully')
             ->expectsOutput('Updated file \'.circleci/api-key.txt\' successfully')
-            ->expectsOutput('Creating user checkout key for project...')
-            ->expectsOutput('Created user checkout key for project successfully')
             ->assertExitCode(0);
 
         $this->assertTrue(File::exists(base_path('.circleci/api-key.txt')));
