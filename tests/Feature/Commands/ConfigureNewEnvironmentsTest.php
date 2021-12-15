@@ -5,7 +5,7 @@ namespace LaraSurf\LaraSurf\Tests\Feature\Commands;
 use LaraSurf\LaraSurf\Config;
 use LaraSurf\LaraSurf\Tests\TestCase;
 
-class ConfigureNewEnvironmentTest extends TestCase
+class ConfigureNewEnvironmentsTest extends TestCase
 {
     /**
      * @runInSeparateProcess

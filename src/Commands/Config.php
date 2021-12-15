@@ -61,6 +61,10 @@ class Config extends Command
             $value = $value ? 'true' : 'false';
         }
 
+        if (!is_string($value)) {
+            $value = json_encode($value);
+        }
+
         $this->line($value);
 
         return 0;
