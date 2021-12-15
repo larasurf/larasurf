@@ -136,7 +136,7 @@ class ConfigureNewEnvironments extends Command
             File::delete($circleci_config_file);
         }
 
-        Artisan::call('larasurf:publish --circleci --cloudformation --proxies');
+        Artisan::call('larasurf:publish --circleci --cloudformation --proxies', [], $this->getOutput());
 
         return 0;
     }
