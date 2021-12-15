@@ -56,7 +56,7 @@ class ConfigureNewEnvironments extends Command
     protected function handleValidateNewEnvironments()
     {
         if (!$this->gitIsOnBranch('main')) {
-            $this->error('Checkout the main branch before running this command.');
+            $this->error('Checkout the main branch before running this command');
 
             return 1;
         }
