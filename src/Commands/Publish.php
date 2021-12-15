@@ -165,12 +165,18 @@ class Publish extends Command
             File::makeDirectory(base_path('.circleci'));
         }
 
-        $success = File::copy(__DIR__ . "/../../templates/circleci/inject-secrets.sh", base_path('.circleci/inject-secrets.sh'));
+        $file_path = base_path('.circleci/inject-secrets.sh');
 
-        if ($success) {
-            $this->info('Published CircleCI inject secrets script successfully');
+        if (File::exists($file_path)) {
+            $this->warn("File '.circleci/inject-secrets.sh exists");
         } else {
-            $this->error('Failed to publish CircleCI inject secrets script');
+            $success = File::copy(__DIR__ . "/../../templates/circleci/inject-secrets.sh", $file_path);
+
+            if ($success) {
+                $this->info('Published CircleCI inject secrets script successfully');
+            } else {
+                $this->error('Failed to publish CircleCI inject secrets script');
+            }
         }
     }
 

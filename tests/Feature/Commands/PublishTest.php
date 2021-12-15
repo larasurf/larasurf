@@ -90,6 +90,10 @@ EOF;
             File::delete(base_path('.circleci/Dockerfile'));
         }
 
+        if (File::exists(base_path('.circleci/inject-secrets.sh'))) {
+            File::delete(base_path('.circleci/inject-secrets.sh'));
+        }
+
         $this->artisan('larasurf:publish --circleci')
             ->expectsOutput('Published CircleCI configuration file successfully')
             ->expectsOutput('Published docker-compose file successfully')
@@ -118,6 +122,10 @@ EOF;
 
         if (File::exists(base_path('.circleci/Dockerfile'))) {
             File::delete(base_path('.circleci/Dockerfile'));
+        }
+
+        if (File::exists(base_path('.circleci/inject-secrets.sh'))) {
+            File::delete(base_path('.circleci/inject-secrets.sh'));
         }
 
         $this->artisan('larasurf:publish --circleci')
@@ -150,6 +158,10 @@ EOF;
 
         if (File::exists(base_path('.circleci/Dockerfile'))) {
             File::delete(base_path('.circleci/Dockerfile'));
+        }
+
+        if (File::exists(base_path('.circleci/inject-secrets.sh'))) {
+            File::delete(base_path('.circleci/inject-secrets.sh'));
         }
 
         $this->artisan('larasurf:publish --circleci')

@@ -9,7 +9,7 @@ trait HasEnvironmentOption
     use InteractsWithLaraSurfConfig;
 
     /**
-     * Gets a valid --environment optino value.
+     * Gets a valid --environment option value.
      *
      * @return string|false
      * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException

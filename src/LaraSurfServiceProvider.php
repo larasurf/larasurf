@@ -14,6 +14,7 @@ use LaraSurf\LaraSurf\Commands\CloudTasks;
 use LaraSurf\LaraSurf\Commands\CloudUsers;
 use LaraSurf\LaraSurf\Commands\CloudVars;
 use LaraSurf\LaraSurf\Commands\Config;
+use LaraSurf\LaraSurf\Commands\ConfigureNewEnvironments;
 use LaraSurf\LaraSurf\Commands\Publish;
 use LaraSurf\LaraSurf\Commands\Splash;
 
@@ -47,6 +48,7 @@ class LaraSurfServiceProvider extends ServiceProvider
                 CloudUsers::class,
                 CloudArtisan::class,
                 CloudTasks::class,
+                ConfigureNewEnvironments::class,
             ]);
         }
     }

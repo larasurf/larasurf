@@ -104,7 +104,7 @@ elif [[ "$1" == 'cloud-users' ]]; then
   docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
 elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]]; then
   if [[ "$3" != '--environment' ]] || [[ "$4" != 'stage' ]] && [[ "$4" != 'production' ]]; then
-    echo -e "${ERROR}Invalid environment${RESET}"
+    echo -e "${ERROR}Invalid environment specified${RESET}"
 
     exit 1
   fi
@@ -215,6 +215,41 @@ elif [[ "$1" == 'rebuild' ]]; then
   cd $(pwd)
 
   docker-compose build "${@:2}"
+elif [[ "$1" == 'configure-new-environments' ]]; then
+  exit_if_containers_not_running
+
+  if [[ "$2" != '--environments' ]] || [[ "$3" != 'stage-production' ]] && [[ "$3" != 'production' ]] && [[ "$3" != 'stage' ]]; then
+    echo -e "${ERROR}Invalid environments specified${RESET}"
+
+    exit 1
+  fi
+
+  cd $(pwd)
+
+  if ! docker-compose exec laravel php artisan larasurf:configure-new-environments validate-new-environments --environments "$3"; then
+    exit 1
+  fi
+
+  NEW_BRANCHES=$(docker-compose exec laravel php artisan larasurf:configure-new-environments get-new-branches --environments "$3")
+
+  cd $(pwd)
+
+  if [[ "$NEW_BRANCHES" == 'stage-develop' ]]; then
+    git checkout -b stage
+    cd $(pwd)
+    git checkout -b develop
+  elif [[ "$NEW_BRANCHES" == 'stage' ]]; then
+    git checkout -b stage
+    cd $(pwd)
+    git checkout develop
+  elif [[ "$NEW_BRANCHES" == 'develop' ]]; then
+    git checkout -b develop
+  else
+    exit 1
+  fi
+
+  cd $(pwd)
+  docker-compose exec laravel php artisan larasurf:configure-new-environments modify-larasurf-config --environments "$3"
 else
   # todo
   echo 'See: https://larasurf.com/docs'
