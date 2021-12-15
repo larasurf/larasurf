@@ -325,12 +325,16 @@ EOF;
     {
         $path = app_path('Http/Middleware/TrustProxies.php');
 
-        $contents = File::get($path);
+        if (!File::exists($path)) {
+            $contents = File::get($path);
 
-        $contents = Str::replace('protected $proxies;', "protected \$proxies = '*';", $contents);
+            $contents = Str::replace('protected $proxies;', "protected \$proxies = '*';", $contents);
 
-        File::put($path, $contents);
+            File::put($path, $contents);
 
-        $this->info('Published trusted proxy changes successfully');
+            $this->info('Published trusted proxy changes successfully');
+        } else {
+            $this->warn("File '$path' does not exist");
+        }
     }
 }
