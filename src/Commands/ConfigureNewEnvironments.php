@@ -85,7 +85,7 @@ class ConfigureNewEnvironments extends Command
             Cloud::ENVIRONMENT_PRODUCTION => 'develop',
         ][$envs];
 
-        $this->line($new_branches);
+        $this->getOutput()->write($new_branches);
 
         return 0;
     }
