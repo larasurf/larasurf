@@ -325,7 +325,7 @@ EOF;
     {
         $path = app_path('Http/Middleware/TrustProxies.php');
 
-        if (!File::exists($path)) {
+        if (File::exists($path)) {
             $contents = File::get($path);
 
             $contents = Str::replace('protected $proxies;', "protected \$proxies = '*';", $contents);
