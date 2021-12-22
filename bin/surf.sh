@@ -44,7 +44,7 @@ elif [[ "$1" == 'aws' ]]; then
 elif [[ "$1" == 'awslocal' ]]; then
   exit_if_containers_not_running
 
-  NETWORK_NAME="$(basename $(pwd))_default"
+  NETWORK_NAME="$(echo "$(basename $(pwd))_default" | sed s/[^[:alnum:]_-]//g)"
 
   docker run --rm -it --network="$NETWORK_NAME" -e AWS_DEFAULT_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=local -e AWS_SECRET_ACCESS_KEY=local amazon/aws-cli:2.0.6 --endpoint http://awslocal:4566 "${@:2}"
 elif [[ "$1" == 'artisan' ]]; then
