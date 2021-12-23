@@ -149,8 +149,8 @@ class Publish extends Command
 EOD;
 
             foreach ([
-                "'url' => env('AWS_URL')",
-                "'url' => env(\"AWS_URL\")",
+                "'url' => env('AWS_URL'),",
+                "'url' => env(\"AWS_URL\"),",
                      ] as $find) {
                 $contents = Str::replace($find, $replace, $contents);
             }
