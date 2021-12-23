@@ -16,7 +16,7 @@ class Publish extends Command
     /**
      * @var string
      */
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls} {--env-changes} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls} {--env-changes} {--awslocal} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
 
     /**
      * @var string
@@ -32,6 +32,7 @@ class Publish extends Command
                      'cs-fixer' => [$this, 'publishCsFixerConfig'],
                      'nginx-local-tls' => [$this, 'publishNginxLocalTlsConfig'],
                      'env-changes' => [$this, 'publishEnvChanges'],
+                     'awslocal' => [$this, 'publishAwsLocalChanges'],
                      'circleci' => [$this, 'publishCircleCIConfig'],
                      'cloudformation' => [$this, 'publishCloudFormation'],
                      'gitignore' => [$this, 'publishGitIgnore'],
@@ -128,6 +129,38 @@ class Publish extends Command
                 } else {
                     $this->error("Failed to modify $file");
                 }
+            }
+        }
+    }
+
+    /**
+     * Update the S3 filesystem configuration to override the base URL for temporary URLs.
+     */
+    protected function publishAwsLocalChanges()
+    {
+        $file_path = base_path('config/filesystems.php');
+
+        $contents = File::get($file_path);
+
+        if (!Str::contains($contents, "'temporary_url' =>")) {
+            $replace = <<<EOD
+'url' => env('AWS_URL'),
+            'temporary_url' => env('AWS_URL'),
+EOD;
+
+            foreach ([
+                "'url' => env('AWS_URL')",
+                "'url' => env(\"AWS_URL\")",
+                     ] as $find) {
+                $contents = Str::replace($find, $replace, $contents);
+            }
+
+            $success = File::put($file_path, $contents);
+
+            if ($success) {
+                $this->info("Modified $file_path successfully");
+            } else {
+                $this->error("Failed to modify $file_path");
             }
         }
     }
