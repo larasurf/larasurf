@@ -115,7 +115,7 @@ class Publish extends Command
                                  'CACHE_DRIVER=' => 'redis',
                                  'DB_CONNECTION=' => 'mysql',
                                  'QUEUE_CONNECTION=' => 'sqs',
-                                 'SESSION_DRIVER' => 'redis',
+                                 'SESSION_DRIVER=' => 'redis',
                              ] as $find => $append) {
                         if (str_starts_with($content, $find)) {
                             $content = $find . $append;
