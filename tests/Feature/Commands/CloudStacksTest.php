@@ -19,6 +19,8 @@ class CloudStacksTest extends TestCase
      */
     public function testStatus()
     {
+        $this->createValidLaraSurfConfig('local-stage-production');
+
         $status = $this->faker->word;
 
         $this->mockLaraSurfCloudFormationClient()->shouldReceive('stackStatus')->andReturn($status);
@@ -34,6 +36,8 @@ class CloudStacksTest extends TestCase
      */
     public function testOutput()
     {
+        $this->createValidLaraSurfConfig('local-stage-production');
+
         $output = $this->faker->word;
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
@@ -133,6 +137,7 @@ class CloudStacksTest extends TestCase
             'AWS_DEFAULT_REGION' => 'us-east-1',
             'REDIS_HOST' => $this->faker->url,
             'REDIS_PORT' => $this->faker->numerify('####'),
+            'SESSION_DRIVER' => 'redis',
             'SQS_QUEUE' => $this->faker->url,
             'AWS_BUCKET' => $this->faker->word,
         ]);
@@ -315,6 +320,7 @@ class CloudStacksTest extends TestCase
             'AWS_DEFAULT_REGION' => 'us-east-1',
             'REDIS_HOST' => $this->faker->url,
             'REDIS_PORT' => $this->faker->numerify('####'),
+            'SESSION_DRIVER' => 'redis',
             'SQS_QUEUE' => $this->faker->url,
             'AWS_BUCKET' => $this->faker->word,
         ]);
