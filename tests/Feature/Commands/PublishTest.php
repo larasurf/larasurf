@@ -47,6 +47,7 @@ APP_URL=http://localhost
 CACHE_DRIVER=array
 DB_CONNECTION=sqlite
 QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
 UNMODIFIED=value
 EOF;
 
@@ -63,6 +64,7 @@ EOF;
         $this->assertTrue(in_array('CACHE_DRIVER=redis', $env_file));
         $this->assertTrue(in_array('DB_CONNECTION=mysql', $env_file));
         $this->assertTrue(in_array('QUEUE_CONNECTION=sqs', $env_file));
+        $this->assertTrue(in_array('SESSION_DRIVER=redis', $env_file));
         $this->assertTrue(in_array('UNMODIFIED=value', $env_file));
 
         $env_example_file = array_map('trim', file(base_path('.env.example')));
@@ -71,6 +73,7 @@ EOF;
         $this->assertTrue(in_array('CACHE_DRIVER=redis', $env_example_file));
         $this->assertTrue(in_array('DB_CONNECTION=mysql', $env_example_file));
         $this->assertTrue(in_array('QUEUE_CONNECTION=sqs', $env_example_file));
+        $this->assertTrue(in_array('SESSION_DRIVER=redis', $env_file));
         $this->assertTrue(in_array('UNMODIFIED=value', $env_example_file));
     }
 

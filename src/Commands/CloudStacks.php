@@ -293,6 +293,7 @@ class CloudStacks extends Command
             'AWS_DEFAULT_REGION' => $aws_region,
             'REDIS_HOST' => $outputs['CacheEndpointAddress'],
             'REDIS_PORT' => $outputs['CacheEndpointPort'],
+            'SESSION_DRIVER' => 'redis',
             'SQS_QUEUE' => $outputs['QueueUrl'],
             'AWS_BUCKET' => $outputs['BucketName'],
         ]);

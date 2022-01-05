@@ -215,6 +215,7 @@ class CloudStacksTest extends TestCase
             ->expectsOutput('Successfully created cloud variable: AWS_DEFAULT_REGION')
             ->expectsOutput('Successfully created cloud variable: REDIS_HOST')
             ->expectsOutput('Successfully created cloud variable: REDIS_PORT')
+            ->expectsOutput('Successfully created cloud variable: SESSION_DRIVER')
             ->expectsOutput('Successfully created cloud variable: SQS_QUEUE')
             ->expectsOutput('Successfully created cloud variable: AWS_BUCKET')
             ->expectsOutput('Waiting to list cloud variables...')
