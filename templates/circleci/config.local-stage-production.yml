@@ -139,17 +139,19 @@ jobs:
             export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
             export STACK_NAME="${PROJECT_NAME}-${PROJECT_ID}-<< parameters.environment >>"
 
-            aws cloudformation describe-stacks --stack-name "${STACK_NAME}" > /dev/null 2>&1 && \
-            aws cloudformation deploy \
-              --region "${<< parameters.var_name_region >>}" \
-              --template-file infrastructure.yml \
-              --stack-name "${STACK_NAME}" \
-              --capabilities CAPABILITY_NAMED_IAM \
-              --no-fail-on-empty-changeset \
-              --parameter-overrides \
-                  "ApplicationImage=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" \
-                  "WebserverImage=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" \
-            || echo 'Stack not yet deployed'
+            if $(aws cloudformation describe-stacks --stack-name "${STACK_NAME}" > /dev/null 2>&1); then
+              aws cloudformation deploy \
+                --region "${<< parameters.var_name_region >>}" \
+                --template-file infrastructure.yml \
+                --stack-name "${STACK_NAME}" \
+                --capabilities CAPABILITY_NAMED_IAM \
+                --no-fail-on-empty-changeset \
+                --parameter-overrides \
+                    "ApplicationImage=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" \
+                    "WebserverImage=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}"
+            else
+              echo 'Stack not yet deployed'
+            fi
       - run:
           name: Run Migrations
           command: |
