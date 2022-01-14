@@ -101,10 +101,10 @@ jobs:
             sudo mv trivy /usr/local/bin
       - run:
           name: Scan Application Image for Vulnerabilities
-          command: trivy --exit-code 1 --no-progress ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}
+          command: trivy image --exit-code 1 --no-progress ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}
       - run:
           name: Scan Webserver Image for Vulnerabilities
-          command: trivy --exit-code 1 --no-progress ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}
+          command: trivy image --exit-code 1 --no-progress ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}
   deploy:
     parameters:
       environment:
