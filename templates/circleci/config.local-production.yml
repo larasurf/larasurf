@@ -40,7 +40,7 @@ jobs:
                   DOCKER_BUILDKIT=1 docker build -t "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" --ssh default --progress plain --file .docker/php-fpm/Dockerfile .
                   DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" .circleci/
                   docker cp $(docker create --rm ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}):/var/www/public/. ./public/
-                  docker build -t "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" --file .docker/nginx/Dockerfile.cloud .
+                  docker build -t "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" --build-arg NGINX_CONFIG_TEMPLATE=.docker/nginx/laravel.conf.template.cloud --file .docker/nginx/Dockerfile .
       - unless:
           condition: << parameters.should_publish_images >>
           steps:
