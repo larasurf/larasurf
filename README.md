@@ -35,3 +35,4 @@
 [ ] Subcommand `rotate-keys` for cloud user AWS access keys<br/>
 [ ] Add `cloud-certs` command for ACM management<br/>
 [ ] Error messages audit/improvements<br/>
+[ ] Optionally prompt for cloud-vars secret value during `put` operation<br/>
