@@ -32,8 +32,7 @@ RUN until curl getcomposer.org --output /dev/null --silent; do echo 'Failed to c
         php8-tokenizer \
         php8-xml \
         php8-zip \
-        php8-zlib \
-        curl-dev
+        php8-zlib
 
 ARG WEB_ROOT=/var/www
 
