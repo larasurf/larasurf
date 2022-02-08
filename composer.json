@@ -1,20 +1,28 @@
 {
     "name": "larasurf/larasurf",
-    "description": "",
+    "description": "LaraSurf combines Docker, CircleCI, and AWS to create an end to end solution for generating, implementing, and deploying Laravel applications.",
+    "keywords": [
+        "laravel",
+        "aws",
+        "amazon web services",
+        "circleci"
+    ],
+    "homepage": "https://larasurf.com",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
             "name": "Brice Hartmann",
-            "email": "brice@bricehartmann.com"
+            "email": "brice@bricehartmann.com",
+            "role": "Developer"
         }
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": "^8.0",
+        "php": "^8.0.2",
         "ext-json": "*",
         "ext-pdo": "*",
-        "laravel/framework": "^8.0",
+        "laravel/framework": "^9.0",
         "aws/aws-sdk-php": "^3.20.0"
     },
     "autoload": {
@@ -35,6 +43,6 @@
         }
     },
     "require-dev": {
-        "orchestra/testbench": "^6.20"
+        "orchestra/testbench": "^7.0"
     }
 }
