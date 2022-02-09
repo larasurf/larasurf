@@ -2,7 +2,6 @@
 
 namespace LaraSurf\LaraSurf\Tests;
 
-use Illuminate\Console\OutputStyle;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
@@ -345,6 +344,9 @@ EOF;
 
     protected function mockCircleCI(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . Client::class);
+        $mock = $this->mock(Client::class);
+        $mock->shouldReceive('configure')->andReturnSelf();
+
+        return $mock;
     }
 }
