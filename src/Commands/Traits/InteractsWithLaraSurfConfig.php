@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf\Commands\Traits;
 
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use LaraSurf\LaraSurf\Config;
 
 trait InteractsWithLaraSurfConfig
@@ -28,7 +29,7 @@ trait InteractsWithLaraSurfConfig
      *
      * @return Config
      * @throws \JsonException
-     * @throws \League\Flysystem\FileNotFoundException
+     * @throws FileNotFoundException
      */
     protected static function larasurfConfig(): Config
     {

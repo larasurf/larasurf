@@ -15,7 +15,7 @@ class CircleCIClientTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new Client(Str::random(), $this->faker->word);
+        $this->client = (new Client())->configure(Str::random(), $this->faker->word);
     }
 
     public function testListEnvironmentVariables()

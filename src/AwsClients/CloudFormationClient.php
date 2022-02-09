@@ -4,11 +4,10 @@ namespace LaraSurf\LaraSurf\AwsClients;
 
 use Aws\Exception\AwsException;
 use Illuminate\Console\OutputStyle;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException;
-use League\Flysystem\FileNotFoundException;
-use SebastianBergmann\CodeCoverage\Report\PHP;
 use Symfony\Component\Console\Cursor;
 
 class CloudFormationClient extends Client

@@ -58,14 +58,14 @@ class CircleCI extends Command
         $this->line('Verifying API token...');
 
         // new CircleCI API client
-        $client = new Client($api_token, $origin);
+        $client = app(Client::class)->configure($api_token, $origin);
 
         if (!$client->checkApiKey()) {
             $this->error('Failed to verify API key');
-            
+
             return 1;
         }
-        
+
         $this->info('Verified API key successfully');
 
         $path = static::circleCIApiKeyFilePath();

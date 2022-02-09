@@ -26,7 +26,7 @@ trait InteractsWithCircleCI
     protected static function circleCI(string $api_key, string $project_name)
     {
         if (!static::$circleci_client) {
-            static::$circleci_client = new Client($api_key, $project_name);
+            static::$circleci_client = app(Client::class)->configure($api_key, $project_name);
         }
 
         return static::$circleci_client;

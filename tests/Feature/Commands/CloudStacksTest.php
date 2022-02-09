@@ -65,9 +65,7 @@ class CloudStacksTest extends TestCase
             ]
         ]);
 
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         $this->createGitHead('main');
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -165,8 +163,9 @@ class CloudStacksTest extends TestCase
 
         $database_name = $this->faker->word;
 
-        $schema_creator = Mockery::mock('overload:' . SchemaCreator::class);
-        $schema_creator->shouldReceive('createSchema')->andReturn($database_name);
+        $this->mock(SchemaCreator::class, function (Mockery\MockInterface $mock) use ($database_name) {
+            $mock->shouldReceive('createSchema')->andReturn($database_name);
+        });
 
         $ecs = $this->mockLaraSurfEcsClient();
         $ecs->shouldReceive('runTask')->andReturn(Str::random());
@@ -248,9 +247,7 @@ class CloudStacksTest extends TestCase
             ]
         ]);
 
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         $this->createGitHead('main');
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -348,8 +345,9 @@ class CloudStacksTest extends TestCase
 
         $database_name = $this->faker->word;
 
-        $schema_creator = Mockery::mock('overload:' . SchemaCreator::class);
-        $schema_creator->shouldReceive('createSchema')->andReturn($database_name);
+        $this->mock(SchemaCreator::class, function (Mockery\MockInterface $mock) use ($database_name) {
+            $mock->shouldReceive('createSchema')->andReturn($database_name);
+        });
 
         $ecs = $this->mockLaraSurfEcsClient();
         $ecs->shouldReceive('runTask')->andReturn(Str::random());
@@ -431,9 +429,7 @@ class CloudStacksTest extends TestCase
      */
     public function testCreateNoCurrentCommit()
     {
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         if (File::isDirectory(base_path('.git/refs/heads'))) {
             File::deleteDirectory(base_path('.git/refs/heads'));
@@ -453,9 +449,7 @@ class CloudStacksTest extends TestCase
      */
     public function testCreateImageDoesntExist()
     {
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         $current_commit = Str::random();
 
@@ -482,9 +476,7 @@ class CloudStacksTest extends TestCase
      */
     public function testCreateStackExists()
     {
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         $this->createGitHead('main');
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -510,9 +502,7 @@ class CloudStacksTest extends TestCase
      */
     public function testCreateHostedZoneNotFound()
     {
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         $this->createGitHead('main');
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -574,9 +564,7 @@ class CloudStacksTest extends TestCase
             ]
         ]);
 
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
         $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
@@ -627,9 +615,7 @@ class CloudStacksTest extends TestCase
             ]
         ]);
 
-        if (!File::exists(base_path('.cloudformation/infrastructure.yml'))) {
-            File::put(base_path('.cloudformation/infrastructure.yml'), Str::random());
-        }
+        $this->createMockCloudformationTemplate();
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
         $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));

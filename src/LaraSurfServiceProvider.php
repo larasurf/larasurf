@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf;
 
 use Illuminate\Support\ServiceProvider;
+use LaraSurf\LaraSurf\CircleCI\Client as CircleCIClient;
 use LaraSurf\LaraSurf\Commands\CircleCI;
 use LaraSurf\LaraSurf\Commands\CloudArtisan;
 use LaraSurf\LaraSurf\Commands\CloudDomains;
@@ -25,7 +26,13 @@ class LaraSurfServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->bind(SchemaCreator::class, function ($app) {
+            return new SchemaCreator();
+        });
+
+        $this->app->bind(CircleCIClient::class, function ($app) {
+            return new CircleCIClient();
+        });
     }
 
     /**

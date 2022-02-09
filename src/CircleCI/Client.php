@@ -3,23 +3,26 @@
 namespace LaraSurf\LaraSurf\CircleCI;
 
 use Illuminate\Support\Facades\Http;
+use LaraSurf\LaraSurf\Exceptions\CircleCI\ConfigurationNotYetSetException;
 use LaraSurf\LaraSurf\Exceptions\CircleCI\RequestFailedException;
 
 class Client
 {
-    protected array $headers;
     protected string $base_url = 'https://circleci.com/api/v2';
+    protected string $api_key;
+    protected string $project;
 
-    public function __construct(string $api_key, protected string $project)
+    public function configure(string $api_key, string $project): static
     {
-        $this->headers = [
-            'Circle-Token' => $api_key
-        ];
+        $this->api_key = $api_key;
+        $this->project = $project;
+
+        return $this;
     }
 
     public function listEnvironmentVariables(): array
     {
-        $response = Http::withHeaders($this->headers)->get("{$this->base_url}/project/" . $this->projectSlug() . '/envvar');
+        $response = Http::withHeaders($this->headers())->get("{$this->base_url}/project/" . $this->projectSlug() . '/envvar');
 
         if ($response->failed()) {
             throw new RequestFailedException($response);
@@ -31,7 +34,7 @@ class Client
     public function createEnvironmentVariable(string $name, string $value): bool
     {
         $response = Http
-            ::withHeaders($this->headers)
+            ::withHeaders($this->headers())
             ->post("{$this->base_url}/project/" . $this->projectSlug() . '/envvar', compact('name', 'value'));
 
         if ($response->failed()) {
@@ -44,7 +47,7 @@ class Client
     public function deleteEnvironmentVariable(string $name): bool
     {
         $response = Http
-            ::withHeaders($this->headers)
+            ::withHeaders($this->headers())
             ->delete("{$this->base_url}/project/" . $this->projectSlug() . "/envvar/$name");
 
         if ($response->failed()) {
@@ -57,7 +60,7 @@ class Client
     public function createUserKey(): bool
     {
         $response = Http
-            ::withHeaders($this->headers)
+            ::withHeaders($this->headers())
             ->post("{$this->base_url}/project/" . $this->projectSlug() . '/checkout-key', [
                 'type' => 'user-key',
             ]);
@@ -71,16 +74,31 @@ class Client
 
     public function checkApiKey(): bool
     {
-        return !Http::withHeaders($this->headers)->get("{$this->base_url}/me")->failed();
+        return !Http::withHeaders($this->headers())->get("{$this->base_url}/me")->failed();
     }
 
     public function projectExists(): bool
     {
-        return !Http::withHeaders($this->headers)->get("{$this->base_url}/project/" . $this->projectSlug())->failed();
+        return !Http::withHeaders($this->headers())->get("{$this->base_url}/project/" . $this->projectSlug())->failed();
+    }
+
+    protected function headers(): array
+    {
+        if (!$this->api_key) {
+            throw new ConfigurationNotYetSetException();
+        }
+
+        return [
+            'Circle-Token' => $this->api_key,
+        ];
     }
 
     protected function projectSlug(): string
     {
+        if (!$this->project) {
+            throw new ConfigurationNotYetSetException();
+        }
+
         return "gh/{$this->project}";
     }
 }

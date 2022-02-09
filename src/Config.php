@@ -2,6 +2,7 @@
 
 namespace LaraSurf\LaraSurf;
 
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
@@ -10,7 +11,6 @@ use LaraSurf\LaraSurf\Constants\Cloud;
 use LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigException;
 use LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException;
 use LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigValueException;
-use League\Flysystem\FileNotFoundException;
 
 class Config
 {

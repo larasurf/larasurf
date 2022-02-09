@@ -3,6 +3,7 @@
 namespace LaraSurf\LaraSurf\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -143,7 +144,7 @@ class CloudStacks extends Command
      * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\ExpectedArrayOfTypeException
      * @throws \LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException
      * @throws \LaraSurf\LaraSurf\Exceptions\Config\InvalidConfigKeyException
-     * @throws \League\Flysystem\FileNotFoundException
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
     public function handleCreate()
     {
@@ -796,14 +797,14 @@ class CloudStacks extends Command
     {
         $this->line('Creating database schema...');
 
-        $database_name = (new SchemaCreator(
+        $database_name = app(SchemaCreator::class)->createSchema(
             static::larasurfConfig()->get('project-name'),
             $environment,
             $db_host,
             $db_port,
             $db_username,
             $db_password,
-        ))->createSchema();
+        );
 
         if (!$database_name) {
             $this->error("Failed to create database schema '$database_name'");
