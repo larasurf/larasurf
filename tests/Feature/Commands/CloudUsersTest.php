@@ -8,25 +8,21 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class CloudUsersTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreate()
     {
         $this->createCircleCIApiKey(Str::random());
         $this->createValidLaraSurfConfig('local-stage-production');
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([]);
-        $circleci->shouldReceive('createEnvironmentVariable')->times(2)->andReturn();
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([]);
+        $circleci->shouldReceive('createEnvironmentVariable')->twice()->andReturn();
 
         $iam = $this->mockLaraSurfIamClient();
-        $iam->shouldReceive('userExists')->andReturn(false);
-        $iam->shouldReceive('createUser')->andReturn();
-        $iam->shouldReceive('attachUserPolicy')->andReturn();
-        $iam->shouldReceive('createAccessKey')->andReturn((new AccessKey())
+        $iam->shouldReceive('userExists')->once()->andReturn(false);
+        $iam->shouldReceive('createUser')->once()->andReturn();
+        $iam->shouldReceive('attachUserPolicy')->once()->andReturn();
+        $iam->shouldReceive('createAccessKey')->once()->andReturn((new AccessKey())
             ->setId(Str::random())
             ->setSecret(Str::random())
         );
@@ -46,29 +42,25 @@ class CloudUsersTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateEnvironmentVariablesExist()
     {
         $this->createCircleCIApiKey(Str::random());
         $this->createValidLaraSurfConfig('local-stage-production');
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([
             'AWS_ACCESS_KEY_ID' => Str::random(),
             'AWS_SECRET_ACCESS_KEY' => Str::random(),
         ]);
-        $circleci->shouldReceive('deleteEnvironmentVariable')->times(2)->andReturn();
-        $circleci->shouldReceive('createEnvironmentVariable')->times(2)->andReturn();
+        $circleci->shouldReceive('deleteEnvironmentVariable')->twice()->andReturn();
+        $circleci->shouldReceive('createEnvironmentVariable')->twice()->andReturn();
 
         $iam = $this->mockLaraSurfIamClient();
-        $iam->shouldReceive('userExists')->andReturn(false);
-        $iam->shouldReceive('createUser')->andReturn();
-        $iam->shouldReceive('attachUserPolicy')->andReturn();
-        $iam->shouldReceive('createAccessKey')->andReturn((new AccessKey())
+        $iam->shouldReceive('userExists')->once()->andReturn(false);
+        $iam->shouldReceive('createUser')->once()->andReturn();
+        $iam->shouldReceive('attachUserPolicy')->once()->andReturn();
+        $iam->shouldReceive('createAccessKey')->once()->andReturn((new AccessKey())
             ->setId(Str::random())
             ->setSecret(Str::random())
         );
@@ -92,21 +84,17 @@ class CloudUsersTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateUserExists()
     {
         $this->createCircleCIApiKey(Str::random());
         $this->createValidLaraSurfConfig('local-stage-production');
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([]);
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([]);
 
         $iam = $this->mockLaraSurfIamClient();
-        $iam->shouldReceive('userExists')->andReturn(true);
+        $iam->shouldReceive('userExists')->once()->andReturn(true);
 
         $iam_user = "{$this->project_name}-{$this->project_id}-circleci";
 
@@ -118,10 +106,6 @@ class CloudUsersTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDelete()
     {
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
@@ -130,22 +114,22 @@ class CloudUsersTest extends TestCase
         $this->createValidLaraSurfConfig('local-stage-production');
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([
             'AWS_ACCESS_KEY_ID' => Str::random(),
             'AWS_SECRET_ACCESS_KEY' => Str::random(),
         ]);
-        $circleci->shouldReceive('deleteEnvironmentVariable')->times(2)->andReturn();
+        $circleci->shouldReceive('deleteEnvironmentVariable')->twice()->andReturn();
 
         $iam = $this->mockLaraSurfIamClient();
-        $iam->shouldReceive('userExists')->andReturn(true);
-        $iam->shouldReceive('detachUserPolicy')->andReturn();
-        $iam->shouldReceive('listAccessKeys')->andReturn([
+        $iam->shouldReceive('userExists')->once()->andReturn(true);
+        $iam->shouldReceive('detachUserPolicy')->once()->andReturn();
+        $iam->shouldReceive('listAccessKeys')->once()->andReturn([
             Str::random(),
             Str::random(),
         ]);
-        $iam->shouldReceive('deleteAccessKey')->times(2)->andReturn();
-        $iam->shouldReceive('deleteUser')->andReturn();
+        $iam->shouldReceive('deleteAccessKey')->twice()->andReturn();
+        $iam->shouldReceive('deleteUser')->once()->andReturn();
 
         $iam_user = "{$this->project_name}-{$this->project_id}-circleci";
 
@@ -165,10 +149,6 @@ class CloudUsersTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDeleteDontDeleteEnvironmentVariables()
     {
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
@@ -177,21 +157,21 @@ class CloudUsersTest extends TestCase
         $this->createValidLaraSurfConfig('local-stage-production');
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([
             'AWS_ACCESS_KEY_ID' => Str::random(),
             'AWS_SECRET_ACCESS_KEY' => Str::random(),
         ]);
 
         $iam = $this->mockLaraSurfIamClient();
-        $iam->shouldReceive('userExists')->andReturn(true);
-        $iam->shouldReceive('detachUserPolicy')->andReturn();
-        $iam->shouldReceive('listAccessKeys')->andReturn([
+        $iam->shouldReceive('userExists')->once()->andReturn(true);
+        $iam->shouldReceive('detachUserPolicy')->once()->andReturn();
+        $iam->shouldReceive('listAccessKeys')->once()->andReturn([
             Str::random(),
             Str::random(),
         ]);
-        $iam->shouldReceive('deleteAccessKey')->times(2)->andReturn();
-        $iam->shouldReceive('deleteUser')->andReturn();
+        $iam->shouldReceive('deleteAccessKey')->twice()->andReturn();
+        $iam->shouldReceive('deleteUser')->once()->andReturn();
 
         $iam_user = "{$this->project_name}-{$this->project_id}-circleci";
 
@@ -209,10 +189,6 @@ class CloudUsersTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDeleteUserDoesntExist()
     {
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
@@ -221,7 +197,7 @@ class CloudUsersTest extends TestCase
         $this->createValidLaraSurfConfig('local-stage-production');
 
         $iam = $this->mockLaraSurfIamClient();
-        $iam->shouldReceive('userExists')->andReturn(false);
+        $iam->shouldReceive('userExists')->once()->andReturn(false);
 
         $iam_user = "{$this->project_name}-{$this->project_id}-circleci";
 

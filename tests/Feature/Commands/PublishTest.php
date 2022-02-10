@@ -107,10 +107,6 @@ EOF;
         $this->assertFileExists(base_path('.circleci/Dockerfile'));
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testPublishCircleCIConfigLocalProduction()
     {
         $this->createValidLaraSurfConfig('local-production');
@@ -143,10 +139,6 @@ EOF;
         $this->assertFileExists(base_path('.circleci/inject-secrets.sh'));
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testPublishCircleCIConfigLocalStageProduction()
     {
         $this->createValidLaraSurfConfig('local-stage-production');

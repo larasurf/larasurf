@@ -7,10 +7,6 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class CloudArtisanTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testHandle()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -21,8 +17,8 @@ class CloudArtisanTest extends TestCase
         ];
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('stackOutput')->andReturn([
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn([
             'ContainerClusterArn' => Str::random(),
             'DBSecurityGroupId' => Str::random(),
             'CacheSecurityGroupId' => Str::random(),
@@ -30,14 +26,15 @@ class CloudArtisanTest extends TestCase
             'Subnet1Id' => Str::random(),
             'ArtisanTaskDefinitionArn' => Str::random(),
         ]);
-        $cloudformation->shouldReceive('stackOutput')->andReturn(Str::random());
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn(Str::random());
 
         $ecs = $this->mockLaraSurfEcsClient();
-        $ecs->shouldReceive('runTask')->andReturn(Str::random());
-        $ecs->shouldReceive('waitForTaskFinish')->andReturn();
+        $ecs->shouldReceive('runTask')->once()->andReturn(Str::random());
+        $ecs->shouldReceive('waitForTaskFinish')->once()->andReturn();
 
         $this->mockLaraSurfCloudWatchLogsClient()
             ->shouldReceive('listLogStream')
+            ->once()
             ->andReturn($logs);
 
         $this->artisan('larasurf:cloud-artisan "test-command" --environment production')

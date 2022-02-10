@@ -3,14 +3,11 @@
 namespace LaraSurf\LaraSurf\Tests\Feature\Commands;
 
 use Illuminate\Support\Str;
+use LaraSurf\LaraSurf\CircleCI\Client;
 use LaraSurf\LaraSurf\Tests\TestCase;
 
 class CloudImagesTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateRepos()
     {
         $this->createGitHead('develop');
@@ -20,14 +17,14 @@ class CloudImagesTest extends TestCase
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([]);
-        $circleci->shouldReceive('createEnvironmentVariable')->andReturn();
-        $circleci->shouldReceive('createEnvironmentVariable')->andReturn();
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([]);
+        $circleci->shouldReceive('createEnvironmentVariable')->once()->andReturn();
+        $circleci->shouldReceive('createEnvironmentVariable')->once()->andReturn();
 
         $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('createRepository')->andReturn($this->faker->url);
-        $ecr->shouldReceive('createRepository')->andReturn($this->faker->url);
+        $ecr->shouldReceive('createRepository')->once()->andReturn($this->faker->url);
+        $ecr->shouldReceive('createRepository')->once()->andReturn($this->faker->url);
 
         $this->artisan('larasurf:cloud-images create-repos --environment production')
             ->expectsOutput('Checking CircleCI project is enabled...')
@@ -43,12 +40,11 @@ class CloudImagesTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateReposEnvironmentVariablesExist()
     {
+        global $debug_var;
+        $debug_var = true;
+
         $this->createGitHead('develop');
 
         $this->createCircleCIApiKey(Str::random());
@@ -56,19 +52,17 @@ class CloudImagesTest extends TestCase
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([
             'AWS_REGION_PRODUCTION' => 'us-east-1',
             'AWS_ECR_URL_PREFIX_PRODUCTION' => $this->faker->url,
         ]);
-        $circleci->shouldReceive('deleteEnvironmentVariable')->andReturn();
-        $circleci->shouldReceive('deleteEnvironmentVariable')->andReturn();
-        $circleci->shouldReceive('createEnvironmentVariable')->andReturn();
-        $circleci->shouldReceive('createEnvironmentVariable')->andReturn();
+        $circleci->shouldReceive('deleteEnvironmentVariable')->twice()->andReturn();
+        $circleci->shouldReceive('createEnvironmentVariable')->twice()->andReturn();
 
         $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('createRepository')->andReturn($this->faker->url);
-        $ecr->shouldReceive('createRepository')->andReturn($this->faker->url);
+        $ecr->shouldReceive('createRepository')->once()->andReturn($this->faker->url);
+        $ecr->shouldReceive('createRepository')->once()->andReturn($this->faker->url);
 
         $this->artisan('larasurf:cloud-images create-repos --environment production')
             ->expectsOutput('Checking CircleCI project is enabled...')
@@ -88,10 +82,6 @@ class CloudImagesTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateReposProjectNotEnabled()
     {
         $this->createGitHead('develop');
@@ -101,7 +91,7 @@ class CloudImagesTest extends TestCase
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(false);
+        $circleci->shouldReceive('projectExists')->once()->andReturn(false);
 
         $this->artisan('larasurf:cloud-images create-repos --environment production')
             ->expectsOutput('Checking CircleCI project is enabled...')
@@ -109,10 +99,6 @@ class CloudImagesTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateReposNotOnDevelop()
     {
         $this->createGitHead('stage');
@@ -122,10 +108,6 @@ class CloudImagesTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDeleteRepo()
     {
         $this->createGitHead('develop');
@@ -137,20 +119,18 @@ class CloudImagesTest extends TestCase
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([
             'AWS_REGION_PRODUCTION' => 'us-east-1',
             'AWS_ECR_URL_PREFIX_PRODUCTION' => $this->faker->url,
         ]);
-        $circleci->shouldReceive('deleteEnvironmentVariable')->andReturn();
-        $circleci->shouldReceive('deleteEnvironmentVariable')->andReturn();
+        $circleci->shouldReceive('deleteEnvironmentVariable')->twice()->andReturn();
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn(false);
 
         $ecr = $this->mockAwsEcrClient();
-        $ecr->shouldReceive('deleteRepository')->andReturn();
-        $ecr->shouldReceive('deleteRepository')->andReturn();
+        $ecr->shouldReceive('deleteRepository')->twice()->andReturn();
 
         $this->artisan('larasurf:cloud-images delete-repos --environment production')
             ->expectsOutput('Checking CircleCI project is enabled...')
@@ -165,10 +145,6 @@ class CloudImagesTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDeleteRepoStackExists()
     {
         $this->createGitHead('develop');
@@ -180,16 +156,15 @@ class CloudImagesTest extends TestCase
         $this->createGitConfig($this->faker->word . '/' . $this->faker->word);
 
         $circleci = $this->mockCircleCI();
-        $circleci->shouldReceive('projectExists')->andReturn(true);
-        $circleci->shouldReceive('listEnvironmentVariables')->andReturn([
+        $circleci->shouldReceive('projectExists')->once()->andReturn(true);
+        $circleci->shouldReceive('listEnvironmentVariables')->once()->andReturn([
             'AWS_REGION_PRODUCTION' => 'us-east-1',
             'AWS_ECR_URL_PREFIX_PRODUCTION' => $this->faker->url,
         ]);
-        $circleci->shouldReceive('deleteEnvironmentVariable')->andReturn();
-        $circleci->shouldReceive('deleteEnvironmentVariable')->andReturn();
+        $circleci->shouldReceive('deleteEnvironmentVariable')->twice()->andReturn();
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn(true);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn(true);
 
         $this->artisan('larasurf:cloud-images delete-repos --environment production')
             ->expectsOutput('Checking CircleCI project is enabled...')

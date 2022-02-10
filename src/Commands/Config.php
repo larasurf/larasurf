@@ -86,7 +86,6 @@ class Config extends Command
 
             return 1;
         }
-
         $key = $this->argument('key');
 
         static::larasurfConfig()->set($key, $value);

@@ -8,20 +8,17 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class CloudEmailsTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testVerifyDomain()
     {
         $domain = $this->faker->domainName;
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('stackOutput')->andReturn($domain);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackOutput')->twice()->andReturn($domain);
 
         $ses = $this->mockLaraSurfSesClient();
         $ses->shouldReceive('verifyDomain')
+            ->once()
             ->andReturn(new DnsRecord([
                 'Name' => $this->faker->word,
                 'ResourcesRecords' => [
@@ -32,8 +29,8 @@ class CloudEmailsTest extends TestCase
                 'TTL' => random_int(100, 1000),
                 'Type' => DnsRecord::TYPE_TXT,
             ]));
-        $ses->shouldReceive('waitForDomainVerification')->andReturn();
-        $ses->shouldReceive('verifyDomainDkim')->andReturn(new DnsRecord([
+        $ses->shouldReceive('waitForDomainVerification')->once()->andReturn();
+        $ses->shouldReceive('verifyDomainDkim')->once()->andReturn([new DnsRecord([
             'Name' => $this->faker->word,
             'ResourcesRecords' => [
                 [
@@ -42,13 +39,13 @@ class CloudEmailsTest extends TestCase
             ],
             'TTL' => random_int(100, 1000),
             'Type' => DnsRecord::TYPE_CNAME,
-        ]));
-        $ses->shouldReceive('waitForDomainDkimVerification')->andReturn();
+        ])]);
+        $ses->shouldReceive('waitForDomainDkimVerification')->once()->andReturn();
 
         $route53 = $this->mockLaraSurfRoute53Client();
-        $route53->shouldReceive('upsertDnsRecords')->andReturn(Str::random());
-        $route53->shouldReceive('waitForChange')->andReturn();
-        $route53->shouldReceive('upsertDnsRecords')->andReturn(Str::random());
+        $route53->shouldReceive('upsertDnsRecords')->once()->andReturn(Str::random());
+        $route53->shouldReceive('waitForChange')->twice()->andReturn();
+        $route53->shouldReceive('upsertDnsRecords')->once()->andReturn(Str::random());
 
         $this->artisan('larasurf:cloud-emails verify-domain --environment production')
             ->expectsOutput("Verifying email domain '$domain'...")
@@ -58,14 +55,10 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testVerifyDomainStackDoesntExist()
     {
         $this->mockLaraSurfCloudFormationClient()
-            ->shouldReceive('stackStatus')
+            ->shouldReceive('stackStatus')->once()
             ->andReturn(false);
 
         $this->artisan('larasurf:cloud-emails verify-domain --environment production')
@@ -73,21 +66,17 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCheckVerification()
     {
         $domain = $this->faker->domainName;
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('stackOutput')->andReturn($domain);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn($domain);
 
         $ses = $this->mockLaraSurfSesClient();
-        $ses->shouldReceive('checkDomainVerification')->andReturn(true);
-        $ses->shouldReceive('checkDomainDkimVerification')->andReturn(true);
+        $ses->shouldReceive('checkDomainVerification')->once()->andReturn(true);
+        $ses->shouldReceive('checkDomainDkimVerification')->once()->andReturn(true);
 
         $this->artisan('larasurf:cloud-emails check-verification --environment production')
             ->expectsOutput("Domain '$domain' is verified for email sending")
@@ -95,14 +84,11 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCheckVerificationStackDoesntExist()
     {
         $this->mockLaraSurfCloudFormationClient()
             ->shouldReceive('stackStatus')
+            ->once()
             ->andReturn(false);
 
         $this->artisan('larasurf:cloud-emails check-verification --environment production')
@@ -110,21 +96,17 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCheckVerificationNotVerified()
     {
         $domain = $this->faker->domainName;
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('stackOutput')->andReturn($domain);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn($domain);
 
         $ses = $this->mockLaraSurfSesClient();
-        $ses->shouldReceive('checkDomainVerification')->andReturn(false);
-        $ses->shouldReceive('checkDomainDkimVerification')->andReturn(true);
+        $ses->shouldReceive('checkDomainVerification')->once()->andReturn(false);
+        $ses->shouldReceive('checkDomainDkimVerification')->once()->andReturn(true);
 
         $this->artisan('larasurf:cloud-emails check-verification --environment production')
             ->expectsOutput("Domain '$domain' is not verified for email sending")
@@ -132,21 +114,17 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCheckVerificationDkimNotVerified()
     {
         $domain = $this->faker->domainName;
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('stackOutput')->andReturn($domain);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn($domain);
 
         $ses = $this->mockLaraSurfSesClient();
-        $ses->shouldReceive('checkDomainVerification')->andReturn(true);
-        $ses->shouldReceive('checkDomainDkimVerification')->andReturn(false);
+        $ses->shouldReceive('checkDomainVerification')->once()->andReturn(true);
+        $ses->shouldReceive('checkDomainDkimVerification')->once()->andReturn(false);
 
         $this->artisan('larasurf:cloud-emails check-verification --environment production')
             ->expectsOutput("Domain '$domain' is verified for email sending")
@@ -154,19 +132,15 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testEnableSending()
     {
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('stackOutput')->andReturn($this->faker->domainName);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn($this->faker->domainName);
 
         $ses = $this->mockLaraSurfSesClient();
-        $ses->shouldReceive('checkEmailSending')->andReturn(false);
-        $ses->shouldReceive('enableEmailSending')->andReturn();
+        $ses->shouldReceive('checkEmailSending')->once()->andReturn(false);
+        $ses->shouldReceive('enableEmailSending')->once()->andReturn();
 
         $this->artisan('larasurf:cloud-emails enable-sending')
             ->expectsQuestion('Use Case Description', $this->faker->sentence)
@@ -176,14 +150,11 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testEnableSendingStackDoesntExist()
     {
         $this->mockLaraSurfCloudFormationClient()
             ->shouldReceive('stackStatus')
+            ->once()
             ->andReturn(false);
 
         $this->artisan('larasurf:cloud-emails enable-sending')
@@ -191,43 +162,31 @@ class CloudEmailsTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testEnableSendingAlreadyEnabled()
     {
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
 
         $ses = $this->mockLaraSurfSesClient();
-        $ses->shouldReceive('checkEmailSending')->andReturn(true);
+        $ses->shouldReceive('checkEmailSending')->once()->andReturn(true);
 
         $this->artisan('larasurf:cloud-emails enable-sending')
             ->expectsOutput('Live email sending is already enabled')
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCheckSending()
     {
-        $this->mockLaraSurfSesClient()->shouldReceive('checkEmailSending')->andReturn(true);
+        $this->mockLaraSurfSesClient()->shouldReceive('checkEmailSending')->once()->andReturn(true);
 
         $this->artisan('larasurf:cloud-emails check-sending')
             ->expectsOutput('Live email sending is enabled')
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCheckSendingNotEnabled()
     {
-        $this->mockLaraSurfSesClient()->shouldReceive('checkEmailSending')->andReturn(false);
+        $this->mockLaraSurfSesClient()->shouldReceive('checkEmailSending')->once()->andReturn(false);
 
         $this->artisan('larasurf:cloud-emails check-sending')
             ->expectsOutput('Live email sending is not enabled')

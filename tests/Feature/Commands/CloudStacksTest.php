@@ -13,27 +13,19 @@ use Mockery;
 
 class CloudStacksTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testStatus()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
 
         $status = $this->faker->word;
 
-        $this->mockLaraSurfCloudFormationClient()->shouldReceive('stackStatus')->andReturn($status);
+        $this->mockLaraSurfCloudFormationClient()->shouldReceive('stackStatus')->once()->andReturn($status);
 
         $this->artisan('larasurf:cloud-stacks status --environment stage')
             ->expectsOutput($status)
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testOutput()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -41,18 +33,14 @@ class CloudStacksTest extends TestCase
         $output = $this->faker->word;
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('stackOutput')->andReturn($output);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn($output);
 
         $this->artisan('larasurf:cloud-stacks output --environment production --key ' . $this->faker->word)
             ->expectsOutput($output)
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreate()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -72,21 +60,21 @@ class CloudStacksTest extends TestCase
         $this->createGitCurrentCommit('main', Str::random());
 
         $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('imageTagExists')->andReturn(true);
-        $ecr->shouldReceive('repositoryUri')->andReturn($this->faker->url);
+        $ecr->shouldReceive('imageTagExists')->twice()->andReturn(true);
+        $ecr->shouldReceive('repositoryUri')->twice()->andReturn($this->faker->url);
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
-        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
-        $cloudformation->shouldReceive('createStack')->andReturn();
-        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn(false);
+        $cloudformation->shouldReceive('createStack')->once()->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->twice()->andReturn([
             'success' => true,
             'status' => 'CREATE_COMPLETE',
         ], [
             'success' => true,
             'status' => 'CREATE_COMPLETE',
         ]);
-        $cloudformation->shouldReceive('stackOutput')->andReturn([
+        $cloudformation->shouldReceive('stackOutput')->twice()->andReturn([
             'DomainName' => $this->faker->domainName,
             'DBHost' => $this->faker->domainName,
             'DBPort' => $this->faker->numerify('####'),
@@ -105,7 +93,7 @@ class CloudStacksTest extends TestCase
             'ArtisanTaskDefinitionArn' => Str::random(),
             'ContainerClusterArn' => Str::random(),
         ]);
-        $cloudformation->shouldReceive('updateStack')->andReturn();
+        $cloudformation->shouldReceive('updateStack')->once()->andReturn();
 
         $existing_parameters = [
             $this->faker->word,
@@ -115,10 +103,10 @@ class CloudStacksTest extends TestCase
         $domain = $this->faker->domainName;
 
         $ssm = $this->mockLaraSurfSsmClient();
-        $ssm->shouldReceive('listParameters')->andReturn($existing_parameters);
-        $ssm->shouldReceive('deleteParameter')->andReturn();
-        $ssm->shouldReceive('putParameter')->andReturn();
-        $ssm->shouldReceive('listParameterArns')->andReturn([
+        $ssm->shouldReceive('listParameters')->once()->andReturn($existing_parameters);
+        $ssm->shouldReceive('deleteParameter')->twice()->andReturn();
+        $ssm->shouldReceive('putParameter')->times(19)->andReturn();
+        $ssm->shouldReceive('listParameterArns')->once()->andReturn([
             'APP_ENV' => 'production',
             'APP_KEY' => 'base64:' . base64_encode(Str::random()),
             'APP_URL' => "https://$domain",
@@ -143,12 +131,12 @@ class CloudStacksTest extends TestCase
         $hosted_zone_id = Str::random();
 
         $route53 = $this->mockLaraSurfRoute53Client();
-        $route53->shouldReceive('hostedZoneIdFromRootDomain')->andReturn($hosted_zone_id);
-        $route53->shouldReceive('upsertDnsRecords')->andReturn(Str::random());
-        $route53->shouldReceive('waitForChange')->andReturn();
+        $route53->shouldReceive('hostedZoneIdFromRootDomain')->once()->andReturn($hosted_zone_id);
+        $route53->shouldReceive('upsertDnsRecords')->once()->andReturn(Str::random());
+        $route53->shouldReceive('waitForChange')->once()->andReturn();
 
         $acm = $this->mockLaraSurfAcmClient();
-        $acm->shouldReceive('requestCertificate')->andReturn([
+        $acm->shouldReceive('requestCertificate')->once()->andReturn([
             'dns_record' => (new DnsRecord())
                 ->setType(DnsRecord::TYPE_CNAME)
                 ->setValue(Str::random())
@@ -156,20 +144,20 @@ class CloudStacksTest extends TestCase
                 ->setTtl(random_int(100, 1000)),
             'certificate_arn' => Str::random(),
         ]);
-        $acm->shouldReceive('waitForPendingValidation')->andReturn();
+        $acm->shouldReceive('waitForPendingValidation')->once()->andReturn();
 
         $ec2 = $this->mockLaraSurfEc2Client();
-        $ec2->shouldReceive('createPrefixList')->times(2)->andReturn(Str::random());
+        $ec2->shouldReceive('createPrefixList')->twice()->andReturn(Str::random());
 
         $database_name = $this->faker->word;
 
         $this->mock(SchemaCreator::class, function (Mockery\MockInterface $mock) use ($database_name) {
-            $mock->shouldReceive('createSchema')->andReturn($database_name);
+            $mock->shouldReceive('createSchema')->once()->andReturn($database_name);
         });
 
         $ecs = $this->mockLaraSurfEcsClient();
-        $ecs->shouldReceive('runTask')->andReturn(Str::random());
-        $ecs->shouldReceive('waitForTaskFinish')->andReturn();
+        $ecs->shouldReceive('runTask')->once()->andReturn(Str::random());
+        $ecs->shouldReceive('waitForTaskFinish')->once()->andReturn();
 
         $this->artisan('larasurf:cloud-stacks create --environment production')
             ->expectsOutput('Checking if application and webserver images exist...')
@@ -231,10 +219,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateExistingCertificate()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -254,21 +238,21 @@ class CloudStacksTest extends TestCase
         $this->createGitCurrentCommit('main', Str::random());
 
         $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('imageTagExists')->andReturn(true);
-        $ecr->shouldReceive('repositoryUri')->andReturn($this->faker->url);
+        $ecr->shouldReceive('imageTagExists')->twice()->andReturn(true);
+        $ecr->shouldReceive('repositoryUri')->twice()->andReturn($this->faker->url);
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
-        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
-        $cloudformation->shouldReceive('createStack')->andReturn();
-        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn(false);
+        $cloudformation->shouldReceive('createStack')->once()->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->twice()->andReturn([
             'success' => true,
             'status' => 'CREATE_COMPLETE',
         ], [
             'success' => true,
             'status' => 'CREATE_COMPLETE',
         ]);
-        $cloudformation->shouldReceive('stackOutput')->andReturn([
+        $cloudformation->shouldReceive('stackOutput')->twice()->andReturn([
             'DomainName' => $this->faker->domainName,
             'DBHost' => $this->faker->domainName,
             'DBPort' => $this->faker->numerify('####'),
@@ -287,7 +271,7 @@ class CloudStacksTest extends TestCase
             'ArtisanTaskDefinitionArn' => Str::random(),
             'ContainerClusterArn' => Str::random(),
         ]);
-        $cloudformation->shouldReceive('updateStack')->andReturn();
+        $cloudformation->shouldReceive('updateStack')->once()->andReturn();
 
         $existing_parameters = [
             $this->faker->word,
@@ -297,10 +281,10 @@ class CloudStacksTest extends TestCase
         $domain = $this->faker->domainName;
 
         $ssm = $this->mockLaraSurfSsmClient();
-        $ssm->shouldReceive('listParameters')->andReturn($existing_parameters);
-        $ssm->shouldReceive('deleteParameter')->andReturn();
-        $ssm->shouldReceive('putParameter')->andReturn();
-        $ssm->shouldReceive('listParameterArns')->andReturn([
+        $ssm->shouldReceive('listParameters')->once()->andReturn($existing_parameters);
+        $ssm->shouldReceive('deleteParameter')->twice()->andReturn();
+        $ssm->shouldReceive('putParameter')->times(19)->andReturn();
+        $ssm->shouldReceive('listParameterArns')->once()->andReturn([
             'APP_ENV' => 'production',
             'APP_KEY' => 'base64:' . base64_encode(Str::random()),
             'APP_URL' => "https://$domain",
@@ -325,33 +309,20 @@ class CloudStacksTest extends TestCase
         $hosted_zone_id = Str::random();
 
         $route53 = $this->mockLaraSurfRoute53Client();
-        $route53->shouldReceive('hostedZoneIdFromRootDomain')->andReturn($hosted_zone_id);
-        $route53->shouldReceive('upsertDnsRecords')->andReturn(Str::random());
-        $route53->shouldReceive('waitForChange')->andReturn();
-
-        $acm = $this->mockLaraSurfAcmClient();
-        $acm->shouldReceive('requestCertificate')->andReturn([
-            'dns_record' => (new DnsRecord())
-                ->setType(DnsRecord::TYPE_CNAME)
-                ->setValue(Str::random())
-                ->setName(Str::random())
-                ->setTtl(random_int(100, 1000)),
-            'certificate_arn' => Str::random(),
-        ]);
-        $acm->shouldReceive('waitForPendingValidation')->andReturn();
+        $route53->shouldReceive('hostedZoneIdFromRootDomain')->once()->andReturn($hosted_zone_id);
 
         $ec2 = $this->mockLaraSurfEc2Client();
-        $ec2->shouldReceive('createPrefixList')->times(2)->andReturn(Str::random());
+        $ec2->shouldReceive('createPrefixList')->twice()->andReturn(Str::random());
 
         $database_name = $this->faker->word;
 
         $this->mock(SchemaCreator::class, function (Mockery\MockInterface $mock) use ($database_name) {
-            $mock->shouldReceive('createSchema')->andReturn($database_name);
+            $mock->shouldReceive('createSchema')->once()->andReturn($database_name);
         });
 
         $ecs = $this->mockLaraSurfEcsClient();
-        $ecs->shouldReceive('runTask')->andReturn(Str::random());
-        $ecs->shouldReceive('waitForTaskFinish')->andReturn();
+        $ecs->shouldReceive('runTask')->once()->andReturn(Str::random());
+        $ecs->shouldReceive('waitForTaskFinish')->once()->andReturn();
 
         $this->artisan('larasurf:cloud-stacks create --environment production')
             ->expectsOutput('Checking if application and webserver images exist...')
@@ -410,10 +381,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateNotOnCorrectBranch()
     {
         $this->createGitHead('stage');
@@ -423,10 +390,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateNoCurrentCommit()
     {
         $this->createMockCloudformationTemplate();
@@ -438,15 +401,13 @@ class CloudStacksTest extends TestCase
         $this->createGitHead('main');
         $this->createValidLaraSurfConfig('local-stage-production');
 
+        $this->mockAwsCloudFormationClient();
+
         $this->artisan('larasurf:cloud-stacks create --environment production')
             ->expectsOutput('Failed to find current commit, is this a git repository?')
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateImageDoesntExist()
     {
         $this->createMockCloudformationTemplate();
@@ -458,10 +419,13 @@ class CloudStacksTest extends TestCase
         $this->createGitCurrentCommit('main', $current_commit);
 
         $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('imageTagExists')->andReturn(false);
+        $ecr->shouldReceive('imageTagExists')->once()->andReturn(false);
 
         $image_tag = 'commit-' . $current_commit;
         $application_repo_name = "{$this->project_name}-{$this->project_id}/production/application";
+
+        $cloudformation = $this->mockLaraSurfCloudFormationClient();
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
 
         $this->artisan('larasurf:cloud-stacks create --environment production')
             ->expectsOutput('Checking if application and webserver images exist...')
@@ -470,10 +434,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateStackExists()
     {
         $this->createMockCloudformationTemplate();
@@ -483,11 +443,11 @@ class CloudStacksTest extends TestCase
         $this->createGitCurrentCommit('main', Str::random());
 
         $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('imageTagExists')->andReturn(true);
+        $ecr->shouldReceive('imageTagExists')->twice()->andReturn(true);
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
 
         $this->artisan('larasurf:cloud-stacks create --environment production')
             ->expectsOutput('Checking if application and webserver images exist...')
@@ -496,10 +456,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateHostedZoneNotFound()
     {
         $this->createMockCloudformationTemplate();
@@ -509,11 +465,11 @@ class CloudStacksTest extends TestCase
         $this->createGitCurrentCommit('main', Str::random());
 
         $ecr = $this->mockLaraSurfEcrClient();
-        $ecr->shouldReceive('imageTagExists')->andReturn(true);
+        $ecr->shouldReceive('imageTagExists')->twice()->andReturn(true);
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
-        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn(false);
 
         $existing_parameters = [
             $this->faker->word,
@@ -523,11 +479,11 @@ class CloudStacksTest extends TestCase
         $domain = $this->faker->domainName;
 
         $ssm = $this->mockLaraSurfSsmClient();
-        $ssm->shouldReceive('listParameters')->andReturn($existing_parameters);
-        $ssm->shouldReceive('deleteParameter')->andReturn();
+        $ssm->shouldReceive('listParameters')->once()->andReturn($existing_parameters);
+        $ssm->shouldReceive('deleteParameter')->twice()->andReturn();
 
         $route53 = $this->mockLaraSurfRoute53Client();
-        $route53->shouldReceive('hostedZoneIdFromRootDomain')->andReturn(false);
+        $route53->shouldReceive('hostedZoneIdFromRootDomain')->once()->andReturn(false);
 
         $this->artisan('larasurf:cloud-stacks create --environment production')
             ->expectsOutput('Checking if application and webserver images exist...')
@@ -552,10 +508,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testUpdateNone()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -567,19 +519,21 @@ class CloudStacksTest extends TestCase
         $this->createMockCloudformationTemplate();
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('updateStack')->andReturn();
-        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('updateStack')->once()->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->once()->andReturn([
             'success' => true,
             'status' => 'UPDATE_COMPLETE',
         ]);
 
         $ssm = $this->mockLaraSurfSsmClient();
-        $ssm->shouldReceive('listParameterArns')->andReturn([
+        $ssm->shouldReceive('listParameterArns')->once()->andReturn([
             Str::random() => Str::random(),
             Str::random() => Str::random(),
         ]);
+
+        $this->mockLaraSurfRoute53Client();
 
         $this->artisan('larasurf:cloud-stacks update --environment production')
             ->expectsChoice('Which options would you like to change?', ['(None)'], [
@@ -600,10 +554,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testUpdateAll()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -618,21 +568,21 @@ class CloudStacksTest extends TestCase
         $this->createMockCloudformationTemplate();
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
-        $cloudformation->shouldReceive('stackStatus')->andReturn('CREATE_COMPLETE');
-        $cloudformation->shouldReceive('updateStack')->andReturn();
-        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('CREATE_COMPLETE');
+        $cloudformation->shouldReceive('updateStack')->once()->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->once()->andReturn([
             'success' => true,
             'status' => 'UPDATE_COMPLETE',
         ]);
 
         $route53 = $this->mockLaraSurfRoute53Client();
-        $route53->shouldReceive('hostedZoneIdFromRootDomain')->andReturn(Str::random());
-        $route53->shouldReceive('upsertDnsRecords')->andReturn(Str::random());
-        $route53->shouldReceive('waitForChange')->andReturn();
+        $route53->shouldReceive('hostedZoneIdFromRootDomain')->once()->andReturn(Str::random());
+        $route53->shouldReceive('upsertDnsRecords')->once()->andReturn(Str::random());
+        $route53->shouldReceive('waitForChange')->once()->andReturn();
 
         $acm = $this->mockLaraSurfAcmClient();
-        $acm->shouldReceive('requestCertificate')->andReturn([
+        $acm->shouldReceive('requestCertificate')->once()->andReturn([
             'dns_record' => (new DnsRecord())
                 ->setType(DnsRecord::TYPE_CNAME)
                 ->setValue(Str::random())
@@ -640,10 +590,10 @@ class CloudStacksTest extends TestCase
                 ->setTtl(random_int(100, 1000)),
             'certificate_arn' => Str::random(),
         ]);
-        $acm->shouldReceive('waitForPendingValidation')->andReturn();
+        $acm->shouldReceive('waitForPendingValidation')->once()->andReturn();
 
         $ssm = $this->mockLaraSurfSsmClient();
-        $ssm->shouldReceive('listParameterArns')->andReturn([
+        $ssm->shouldReceive('listParameterArns')->once()->andReturn([
             Str::random() => Str::random(),
             Str::random() => Str::random(),
         ]);
@@ -693,25 +643,17 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testUpdateStackDoesntExist()
     {
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('templatePath')->andReturn(base_path('.cloudformation/infrastructure.yml'));
-        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
+        $cloudformation->shouldReceive('templatePath')->once()->andReturn(base_path('.cloudformation/infrastructure.yml'));
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn(false);
 
         $this->artisan('larasurf:cloud-stacks update --environment production')
             ->expectsOutput("Stack does not exist for the 'production' environment")
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDelete()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -721,24 +663,24 @@ class CloudStacksTest extends TestCase
         ]);
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackOutput')->andReturn([
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn([
             'DBId' => Str::random(),
             'DBAdminAccessPrefixListId' => Str::random(),
             'AppAccessPrefixListId' => Str::random(),
         ]);
-        $cloudformation->shouldReceive('stackStatus')->andReturn('UPDATE_COMPLETE');
-        $cloudformation->shouldReceive('deleteStack')->andReturn();
-        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('UPDATE_COMPLETE');
+        $cloudformation->shouldReceive('deleteStack')->once()->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->once()->andReturn([
             'success' => true,
             'status' => 'DELETED',
         ]);
 
         $rds = $this->mockLaraSurfRdsClient();
-        $rds->shouldReceive('checkDeletionProtection')->andReturn(true);
-        $rds->shouldReceive('modifyDeletionProtection')->andReturn();
+        $rds->shouldReceive('checkDeletionProtection')->once()->andReturn(true);
+        $rds->shouldReceive('modifyDeletionProtection')->once()->andReturn();
 
         $ec2 = $this->mockLaraSurfEc2Client();
-        $ec2->shouldReceive('deletePrefixList')->times(2)->andReturn(true);
+        $ec2->shouldReceive('deletePrefixList')->twice()->andReturn(true);
 
         $this->artisan('larasurf:cloud-stacks delete --environment production')
             ->expectsConfirmation("Are you sure you want to delete the stack for the 'production' environment?", 'yes')
@@ -756,10 +698,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDeleteNoDatabaseProtection()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -769,23 +707,23 @@ class CloudStacksTest extends TestCase
         ]);
 
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackOutput')->andReturn([
+        $cloudformation->shouldReceive('stackOutput')->once()->andReturn([
             'DBId' => Str::random(),
             'DBAdminAccessPrefixListId' => Str::random(),
             'AppAccessPrefixListId' => Str::random(),
         ]);
-        $cloudformation->shouldReceive('stackStatus')->andReturn('UPDATE_COMPLETE');
-        $cloudformation->shouldReceive('deleteStack')->andReturn();
-        $cloudformation->shouldReceive('waitForStackInfoPanel')->andReturn([
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn('UPDATE_COMPLETE');
+        $cloudformation->shouldReceive('deleteStack')->once()->andReturn();
+        $cloudformation->shouldReceive('waitForStackInfoPanel')->once()->andReturn([
             'success' => true,
             'status' => 'DELETED',
         ]);
 
         $rds = $this->mockLaraSurfRdsClient();
-        $rds->shouldReceive('checkDeletionProtection')->andReturn(false);
+        $rds->shouldReceive('checkDeletionProtection')->once()->andReturn(false);
 
         $ec2 = $this->mockLaraSurfEc2Client();
-        $ec2->shouldReceive('deletePrefixList')->times(2)->andReturn(true);
+        $ec2->shouldReceive('deletePrefixList')->twice()->andReturn(true);
 
         $this->artisan('larasurf:cloud-stacks delete --environment production')
             ->expectsConfirmation("Are you sure you want to delete the stack for the 'production' environment?", 'yes')
@@ -799,14 +737,10 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testDeleteStackDoesntExist()
     {
         $cloudformation = $this->mockLaraSurfCloudFormationClient();
-        $cloudformation->shouldReceive('stackStatus')->andReturn(false);
+        $cloudformation->shouldReceive('stackStatus')->once()->andReturn(false);
 
         $this->artisan('larasurf:cloud-stacks delete --environment production')
             ->expectsQuestion("Are you sure you want to delete the stack for the 'production' environment?", true)
@@ -814,10 +748,6 @@ class CloudStacksTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testWait()
     {
         Mockery::getConfiguration()->setConstantsMap([
@@ -828,7 +758,7 @@ class CloudStacksTest extends TestCase
 
         $status = 'UPDATE_COMPLETE';
 
-        $this->mockLaraSurfCloudFormationClient()->shouldReceive('waitForStackInfoPanel')->andReturn([
+        $this->mockLaraSurfCloudFormationClient()->shouldReceive('waitForStackInfoPanel')->once()->andReturn([
             'success' => true,
             'status' => $status,
         ]);

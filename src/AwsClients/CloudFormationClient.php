@@ -38,8 +38,6 @@ class CloudFormationClient extends Client
         int $scale_target_value_cpu
     )
     {
-        $this->validateEnvironmentIsSet();
-
         $this->client->createStack([
             'Capabilities' => ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
             'StackName' => $this->stackName(),
@@ -388,7 +386,7 @@ class CloudFormationClient extends Client
         ];
     }
 
-    public static function templatePath(): string
+    public function templatePath(): string
     {
         return base_path('.cloudformation/infrastructure.yml');
     }
@@ -400,14 +398,12 @@ class CloudFormationClient extends Client
 
     protected function stackName()
     {
-        $this->validateEnvironmentIsSet();
-
         return $this->project_name . '-' . $this->project_id . '-' . $this->environment;
     }
 
     protected function template(array $secrets = []): string
     {
-        $path = static::templatePath();
+        $path = $this->templatePath();
 
         if (!File::exists($path)) {
             throw new FileNotFoundException($path);

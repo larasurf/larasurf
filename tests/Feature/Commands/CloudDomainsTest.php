@@ -8,16 +8,13 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class CloudDomainsTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testHostedZoneExists()
     {
         $id = Str::random();
 
         $this->mockLaraSurfRoute53Client()
             ->shouldReceive('hostedZoneIdFromRootDomain')
+            ->once()
             ->andReturn($id);
 
         $this->artisan('larasurf:cloud-domains hosted-zone-exists --domain ' . $this->faker->domainName)
@@ -25,14 +22,11 @@ class CloudDomainsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testHostedZoneExistsDoesntExist()
     {
         $this->mockLaraSurfRoute53Client()
             ->shouldReceive('hostedZoneIdFromRootDomain')
+            ->once()
             ->andReturn(false);
 
         $domain = $this->faker->domainName;
@@ -42,16 +36,13 @@ class CloudDomainsTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testCreateHostedZone()
     {
         $id = Str::random();
 
         $this->mockLaraSurfRoute53Client()
             ->shouldReceive('createHostedZone')
+            ->once()
             ->andReturn($id);
 
         $this->artisan('larasurf:cloud-domains create-hosted-zone --domain ' . $this->faker->domainName)
@@ -59,10 +50,6 @@ class CloudDomainsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testNameServers()
     {
         $nameservers = [
@@ -72,8 +59,10 @@ class CloudDomainsTest extends TestCase
 
         $route53 = $this->mockLaraSurfRoute53Client();
         $route53->shouldReceive('hostedZoneIdFromRootDomain')
+            ->once()
             ->andReturn(Str::random());
         $route53->shouldReceive('hostedZoneNameServers')
+            ->once()
             ->andReturn($nameservers);
 
         $this->artisan('larasurf:cloud-domains nameservers --domain ' . $this->faker->domainName)
@@ -81,16 +70,13 @@ class CloudDomainsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testNameServersDoesntExist()
     {
         $domain = $this->faker->domainName;
 
         $route53 = $this->mockLaraSurfRoute53Client();
         $route53->shouldReceive('hostedZoneIdFromRootDomain')
+            ->once()
             ->andReturn(false);
 
         $this->artisan('larasurf:cloud-domains nameservers --domain ' . $domain)

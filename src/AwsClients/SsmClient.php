@@ -134,8 +134,6 @@ class SsmClient extends Client
 
     protected function parameterPath(string $parameter = null): string
     {
-        $this->validateEnvironmentIsSet();
-
         $parameter = $parameter ?? '';
 
         return '/' . $this->project_name . '-' . $this->project_id . '/' . $this->environment . '/' . $parameter;

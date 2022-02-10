@@ -8,10 +8,6 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class ConfigTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testGet()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -21,10 +17,6 @@ class ConfigTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testGetDoesntExist()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -36,10 +28,6 @@ class ConfigTest extends TestCase
             ->assertExitCode(1);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testGetDotNotation()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -49,10 +37,6 @@ class ConfigTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testSet()
     {
         $this->createValidLaraSurfConfig('local-stage-production');
@@ -67,10 +51,6 @@ class ConfigTest extends TestCase
         $this->assertEquals($value, $config->get('project-name'));
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testSetDotNotation()
     {
         $this->createValidLaraSurfConfig('local-stage-production');

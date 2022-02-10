@@ -4,17 +4,11 @@ namespace LaraSurf\LaraSurf\Commands\Traits;
 
 use Illuminate\Support\Facades\File;
 use LaraSurf\LaraSurf\CircleCI\Client;
+use LaraSurf\LaraSurf\Tests\Feature\Commands\PublishTest;
 
 trait InteractsWithCircleCI
 {
     use InteractsWithGitFiles;
-
-    /**
-     * The CircleCI client.
-     *
-     * @var Client|null
-     */
-    protected static ?Client $circleci_client = null;
 
     /**
      * Get the CircleCI client, instantiating it if not already done.
@@ -25,11 +19,7 @@ trait InteractsWithCircleCI
      */
     protected static function circleCI(string $api_key, string $project_name)
     {
-        if (!static::$circleci_client) {
-            static::$circleci_client = app(Client::class)->configure($api_key, $project_name);
-        }
-
-        return static::$circleci_client;
+        return app(Client::class)->configure($api_key, $project_name);
     }
 
     /**
@@ -79,6 +69,7 @@ trait InteractsWithCircleCI
             $this->line('Checking CircleCI project is enabled...');
 
             if ($circleci->projectExists()) {
+
                 $this->line('Checking CircleCI environment variables...');
 
                 $circleci_existing_vars = $this->circleCIExistingEnvironmentVariablesAskDelete($circleci, $variables);

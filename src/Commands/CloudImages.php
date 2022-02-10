@@ -166,6 +166,7 @@ class CloudImages extends Command
         $env = $this->environmentOption();
 
         if (!$env) {
+
             return 1;
         }
 

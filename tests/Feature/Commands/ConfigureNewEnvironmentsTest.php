@@ -7,10 +7,6 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class ConfigureNewEnvironmentsTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testValidateNewEnvironmentsLocalProductionToLocalStageProduction()
     {
         $this->createGitHead('main');
@@ -21,10 +17,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testValidateNewEnvironmentsLocalToLocalProduction()
     {
         $this->createGitHead('main');
@@ -35,10 +27,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testValidateNewEnvironmentsLocalToLocalStageProduction()
     {
         $this->createGitHead('main');
@@ -49,10 +37,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testGetNewBranchesLocalToLocalProduction()
     {
         $this->createGitHead('main');
@@ -64,10 +48,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testGetNewBranchesLocalProductionToLocalStageProduction()
     {
         $this->createGitHead('main');
@@ -79,10 +59,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testGetNewBranchesLocalToLocalStageProduction()
     {
         $this->createGitHead('main');
@@ -94,10 +70,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->assertExitCode(0);
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testModifyLaraSurfConfigLocalToLocalProduction()
     {
         $this->createGitHead('main');
@@ -112,10 +84,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
         $this->assertTrue($config->exists('environments.production'));
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testModifyLaraSurfConfigLocalToLocalStageProduction()
     {
         $this->createGitHead('main');
@@ -131,10 +99,6 @@ class ConfigureNewEnvironmentsTest extends TestCase
         $this->assertTrue($config->exists('environments.production'));
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
     public function testModifyLaraSurfConfigLocalProductionToLocalStageProduction()
     {
         $this->createGitHead('main');

@@ -16,14 +16,23 @@ abstract class Client
     abstract protected function makeClient(array $args);
 
     protected $client;
+    protected string $project_name;
+    protected string $project_id;
+    protected string $aws_profile;
+    protected string $aws_region;
+    protected ?string $environment;
 
-    public function __construct(protected string $project_name,
-                                protected string $project_id,
-                                protected string $aws_profile,
-                                protected string $aws_region,
-                                protected ?string $environment = null)
+    public function configure(string $project_name, string $project_id, string $aws_profile, string $aws_region, ?string $environment = null): static
     {
+        $this->project_name = $project_name;
+        $this->project_id = $project_id;
+        $this->aws_profile = $aws_profile;
+        $this->aws_region = $aws_region;
+        $this->environment = $environment;
+
         $this->client = $this->makeClient($this->clientArguments());
+
+        return $this;
     }
 
     protected static function credentialsProvider($profile): callable
@@ -73,8 +82,6 @@ abstract class Client
 
     protected function resourceTags(): array
     {
-        $this->validateEnvironmentIsSet();
-
         return [
             [
                 'Key' => 'Project',
@@ -85,13 +92,6 @@ abstract class Client
                 'Value' => $this->environment,
             ],
         ];
-    }
-
-    protected function validateEnvironmentIsSet()
-    {
-        if (!$this->environment) {
-            throw new EnvironmentNotSetException();
-        }
     }
 
     protected function waitForFinish(int $limit, int $wait_seconds, callable $operation, \Illuminate\Console\OutputStyle $output = null, string $wait_message = ''): bool

@@ -162,7 +162,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $path = CloudFormationClient::templatePath();
+        $path = $this->awsCloudFormation()->templatePath();
 
         if (!File::exists($path)) {
             $this->error("CloudFormation template does not exist at path '$path'");
@@ -339,7 +339,7 @@ class CloudStacks extends Command
             return 1;
         }
 
-        $path = CloudFormationClient::templatePath();
+        $path = $this->awsCloudFormation()->templatePath();
 
         if (!File::exists($path)) {
             $this->error("CloudFormation template does not exist at path '$path'");

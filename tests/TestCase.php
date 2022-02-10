@@ -163,7 +163,7 @@ EOF;
 
     protected function awsClient(string $type, string $environment = Cloud::ENVIRONMENT_PRODUCTION)
     {
-        return new $type(
+        return (new $type())->configure(
             $this->project_name,
             $this->project_id,
             $this->aws_profile,
@@ -289,64 +289,85 @@ EOF;
 
     protected function mockLaraSurfCloudFormationClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . CloudFormationClient::class);
+        return $this->mock(CloudFormationClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfRdsClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . RdsClient::class);
+        return $this->mock(RdsClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfEcsClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . EcsClient::class);
+        return $this->mock(EcsClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfSsmClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . SsmClient::class);
+        return $this->mock(SsmClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfCloudWatchLogsClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . CloudWatchLogsClient::class);
+        return $this->mock(CloudWatchLogsClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfRoute53Client(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . Route53Client::class);
+        return $this->mock(Route53Client::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfAcmClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . AcmClient::class);
+        return $this->mock(AcmClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfSesClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . SesClient::class);
+        return $this->mock(SesClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfEcrClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . EcrClient::class);
+        return $this->mock(EcrClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfEc2Client(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . Ec2Client::class);
+        return $this->mock(Ec2Client::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockLaraSurfIamClient(): Mockery\MockInterface
     {
-        return Mockery::mock('overload:' . IamClient::class);
+        return $this->mock(IamClient::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 
     protected function mockCircleCI(): Mockery\MockInterface
     {
-        $mock = $this->mock(Client::class);
-        $mock->shouldReceive('configure')->andReturnSelf();
-
-        return $mock;
+        return $this->mock(Client::class, function ($mock) {
+            $mock->shouldReceive('configure')->andReturnSelf();
+        });
     }
 }

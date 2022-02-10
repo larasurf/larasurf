@@ -43,42 +43,6 @@ class CloudFormationClientTest extends TestCase
         );
     }
 
-    public function testCreateStackEnvironmentNotSet()
-    {
-        $this->expectException(EnvironmentNotSetException::class);
-
-        $this->mockAwsCloudFormationClient();
-
-        $cloudformation = new CloudFormationClient(
-            $this->project_name,
-            $this->project_id,
-            $this->aws_profile,
-            $this->aws_region
-        );
-
-        $cloudformation->createStack(
-            false,
-            'test.' . $this->faker->domainName,
-            $this->faker->domainName,
-            Str::random(),
-            Str::random(),
-            random_int(20, 100),
-            Arr::random(Cloud::DB_INSTANCE_TYPES),
-            Str::random(),
-            Str::random(),
-            Arr::random(Cloud::CACHE_NODE_TYPES),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            Str::random(),
-            random_int(1, 100),
-            random_int(1, 100),
-            random_int(1, 100)
-        );
-    }
-
     public function testUpdateStack()
     {
         $this->mockAwsCloudFormationClient()
