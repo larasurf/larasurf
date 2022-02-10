@@ -15,7 +15,7 @@ class LaraSurfConfigTest extends TestCase
     {
         $this->createValidLaraSurfConfig('local');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         foreach ([
             'project-name',
@@ -33,7 +33,7 @@ class LaraSurfConfigTest extends TestCase
     {
         $this->createValidLaraSurfConfig('local-production');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         foreach ([
             'project-name',
@@ -51,7 +51,7 @@ class LaraSurfConfigTest extends TestCase
     {
         $this->createValidLaraSurfConfig('local-stage-production');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         foreach ([
             'project-name',
@@ -70,7 +70,7 @@ class LaraSurfConfigTest extends TestCase
 
         $this->createValidLaraSurfConfig(Arr::random(self::ENVIRONMENT_CONFIGS));
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
         $config->exists($this->faker->word);
     }
 
@@ -80,7 +80,7 @@ class LaraSurfConfigTest extends TestCase
 
         $this->createValidLaraSurfConfig('local-stage-production');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         $config->set('project-name', strtoupper($this->faker->word));
     }
@@ -91,7 +91,7 @@ class LaraSurfConfigTest extends TestCase
 
         $this->createValidLaraSurfConfig('local-stage-production');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         $config->set('project-id', $this->faker->word);
     }
@@ -102,7 +102,7 @@ class LaraSurfConfigTest extends TestCase
 
         $this->createValidLaraSurfConfig('local-stage-production');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         $config->set('aws-profile', $this->faker->word . implode('', Arr::random([
                 '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', '\\', '/', ',', '.', '<', '>', '?',
@@ -115,7 +115,7 @@ class LaraSurfConfigTest extends TestCase
 
         $this->createValidLaraSurfConfig('local-stage-production');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         $config->set('environments.stage.aws-region', $this->faker->word);
     }
@@ -126,7 +126,7 @@ class LaraSurfConfigTest extends TestCase
 
         $this->createValidLaraSurfConfig('local-stage-production');
 
-        $config = new Config('larasurf.json');
+        $config = (new Config())->load();
 
         $config->set('environments.production.aws-region', $this->faker->word);
     }

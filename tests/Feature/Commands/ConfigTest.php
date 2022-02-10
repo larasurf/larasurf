@@ -47,7 +47,7 @@ class ConfigTest extends TestCase
             ->expectsOutput("File 'larasurf.json' updated successfully")
             ->assertExitCode(0);
 
-        $config = new Config();
+        $config = (new Config())->load();
         $this->assertEquals($value, $config->get('project-name'));
     }
 
@@ -61,7 +61,7 @@ class ConfigTest extends TestCase
             ->expectsOutput("File 'larasurf.json' updated successfully")
             ->assertExitCode(0);
 
-        $config = new Config();
+        $config = (new Config())->load();
         $this->assertEquals($value, $config->get('environments.production.aws-region'));
     }
 }

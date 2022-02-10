@@ -80,7 +80,7 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->expectsOutput("File 'larasurf.json' updated successfully")
             ->assertExitCode(0);
 
-        $config = new Config();
+        $config = (new Config())->load();
         $this->assertTrue($config->exists('environments.production'));
     }
 
@@ -94,7 +94,7 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->expectsOutput("File 'larasurf.json' updated successfully")
             ->assertExitCode(0);
 
-        $config = new Config();
+        $config = (new Config())->load();
         $this->assertTrue($config->exists('environments.stage'));
         $this->assertTrue($config->exists('environments.production'));
     }
@@ -109,7 +109,7 @@ class ConfigureNewEnvironmentsTest extends TestCase
             ->expectsOutput("File 'larasurf.json' updated successfully")
             ->assertExitCode(0);
 
-        $config = new Config();
+        $config = (new Config())->load();
         $this->assertTrue($config->exists('environments.stage'));
         $this->assertTrue($config->exists('environments.production'));
     }

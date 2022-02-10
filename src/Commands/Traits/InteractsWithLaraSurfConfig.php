@@ -8,13 +8,6 @@ use LaraSurf\LaraSurf\Config;
 trait InteractsWithLaraSurfConfig
 {
     /**
-     * The LaraSurf configuration file.
-     *
-     * @var Config|null
-     */
-    protected static ?Config $larasurf_config = null;
-
-    /**
      * The path to the LaraSurf configuration file.
      *
      * @return string
@@ -33,10 +26,12 @@ trait InteractsWithLaraSurfConfig
      */
     protected static function larasurfConfig(): Config
     {
-        if (!static::$larasurf_config) {
-            static::$larasurf_config = new Config(static::laraSurfConfigFilePath());
+        $config = app(Config::class);
+
+        if (!$config->isLoaded()) {
+            $config->load(static::laraSurfConfigFilePath());
         }
 
-        return static::$larasurf_config;
+        return $config;
     }
 }

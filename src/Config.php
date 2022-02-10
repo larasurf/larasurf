@@ -17,20 +17,37 @@ class Config
     /**
      * The JSON decoded LaraSurf configuration file.
      *
-     * @var array
+     * @var array|null
      */
-    protected array $config;
+    protected ?array $config = null;
 
     /**
-     * Config constructor.
+     * The name of the JSON encoded LaraSurf configuration file.
+     *
+     * @var string|null
+     */
+    protected ?string $filename = null;
+
+    /**
+     * Determines if the LaraSurf configuration file has been loaded.
+     *
+     * @return bool
+     */
+    public function isLoaded(): bool
+    {
+        return $this->filename && $this->config;
+    }
+
+    /**
      * JSON decodes the specified file name.
      *
      * @param string $filename
+     * @return $this
      * @throws FileNotFoundException
      * @throws InvalidConfigException
      * @throws \JsonException
      */
-    public function __construct(protected $filename = 'larasurf.json')
+    public function load(string $filename = 'larasurf.json'): static
     {
         $path = base_path($filename);
 
@@ -44,7 +61,10 @@ class Config
 
         $this->validateConfig($config);
 
+        $this->filename = $filename;
         $this->config = $config;
+
+        return $this;
     }
 
     /**

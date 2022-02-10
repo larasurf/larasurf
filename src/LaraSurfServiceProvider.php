@@ -35,6 +35,10 @@ class LaraSurfServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->singleton(\LaraSurf\LaraSurf\Config::class, function ($app) {
+            return new \LaraSurf\LaraSurf\Config();
+        });
+
         $this->app->bind(AcmClient::class, function ($app) {
             return new AcmClient();
         });
@@ -44,6 +48,10 @@ class LaraSurfServiceProvider extends ServiceProvider
 
         $this->app->bind(CloudFormationClient::class, function ($app) {
             return new CloudFormationClient();
+        });
+
+        $this->app->bind(CloudWatchLogsClient::class, function ($app) {
+            return new CloudWatchLogsClient();
         });
 
         $this->app->bind(CloudWatchLogsClient::class, function ($app) {
