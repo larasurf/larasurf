@@ -158,7 +158,7 @@ class Config
     {
         return [
             'project-name' => 'required|regex:/^[a-z0-9-]+$/',
-            'project-id' => 'required|regex:/^[0-9]{6}$/',
+            'project-id' => 'required|regex:/^[0-9]{12}$/',
             'aws-profile' => 'required|regex:/^[a-zA-Z0-9-_]+$/',
             'environments' => 'array|nullable',
             'environments.stage' => 'nullable',

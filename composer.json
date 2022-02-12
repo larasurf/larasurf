@@ -1,6 +1,6 @@
 {
     "name": "larasurf/larasurf",
-    "description": "LaraSurf combines Docker, CircleCI, and AWS to create an end to end solution for generating, implementing, and deploying Laravel applications.",
+    "description": "LaraSurf combines Docker, CircleCI, and AWS to create an end-to-end solution for generating, implementing, and deploying Laravel applications.",
     "keywords": [
         "laravel",
         "aws",
