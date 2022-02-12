@@ -17,7 +17,6 @@
   </p>
 </div>
 
-<!-- todo: add number of packagist downloads -->
 [![Latest Version](https://img.shields.io/github/v/tag/larasurf/larasurf?label=latest&sort=semver)](https://github.com/larasurf/larasurf/releases)
 [![CircleCI](https://circleci.com/gh/larasurf/larasurf/tree/main.svg?style=svg)](https://circleci.com/gh/larasurf/larasurf/?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
