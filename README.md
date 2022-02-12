@@ -5,12 +5,14 @@
 <h1 align="center">LaraSurf</h1>
 
   <p align="center">
-    LaraSurf combines Docker, CircleCI, and AWS to create an end to end solution for generating, implementing, and deploying Laravel applications.
+    LaraSurf combines Docker, CircleCI, and AWS to create an end-to-end solution for generating, implementing, and deploying Laravel applications.
     <br />
     <br />
     <a href="https://larasurf.com/how-it-works"><strong>How it works</strong></a>
     &bull;
     <a href="https://larasurf.com/docs"><strong>Documentation</strong></a>
+    &bull;
+    <a href="https://larasurf.com/new"><strong>New Project</strong></a>
     <br />
   </p>
 </div>
@@ -21,7 +23,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Project Roadmap
-### v1.0
 [ ] Optimize Laravel for production in Dockerfile<br/>
 [ ] Lock down CircleCI IAM user permissions<br/>
 [ ] Scan both container images even if first scan fails<br/>
@@ -31,7 +32,7 @@
 [ ] Support regions other than `us-east-1`<br/>
 [ ] Laravel Dusk support<br/>
 [ ] Show stack change events in terminal<br/>
-[ ] Linux local development testing<br/>
+[ ] Test local development on Linux<br/>
 [ ] Subcommand `rotate-keys` for cloud user AWS access keys<br/>
 [ ] Add `cloud-certs` command for ACM management<br/>
 [ ] Error messages audit/improvements<br/>
