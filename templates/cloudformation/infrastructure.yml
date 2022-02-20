@@ -843,8 +843,20 @@ Parameters:
     AllowedValues:
       - db.t2.small
       - db.t2.medium
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+      - db.t3.large
+      - db.t3.xlarge
+      - db.t3.2xlarge
       - db.m5.large
       - db.m5.xlarge
+      - db.m5.2xlarge
+      - db.m5.4xlarge
+      - db.m5.8xlarge
+      - db.m5.12xlarge
+      - db.m5.16xlarge
+      - db.m5.24xlarge
     ConstraintDescription: A database instance class type from the list must be selected.
   DBAvailabilityZone:
     Type: AWS::EC2::AvailabilityZone::Name
@@ -877,6 +889,9 @@ Parameters:
       - cache.t2.micro
       - cache.t2.small
       - cache.t2.medium
+      - cache.t3.micro
+      - cache.t3.small
+      - cache.t3.medium
   ApplicationImage:
     Type: String
     Description: The URL of an application image on ECR.

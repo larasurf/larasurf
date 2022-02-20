@@ -46,10 +46,20 @@ class Cloud
      * The supported database instance types.
      */
     const DB_INSTANCE_TYPES = [
-        'db.t2.small',
-        'db.t2.medium',
+        'db.t3.micro',
+        'db.t3.small',
+        'db.t3.medium',
+        'db.t3.large',
+        'db.t3.xlarge',
+        'db.t3.2xlarge',
         'db.m5.large',
         'db.m5.xlarge',
+        'db.m5.2xlarge',
+        'db.m5.4xlarge',
+        'db.m5.8xlarge',
+        'db.m5.12xlarge',
+        'db.m5.16xlarge',
+        'db.m5.24xlarge',
     ];
 
     /**
@@ -66,20 +76,15 @@ class Cloud
      * The supported cache node types.
      */
     const CACHE_NODE_TYPES = [
-        'cache.t2.micro',
-        'cache.t2.small',
-        'cache.t2.medium',
+        'cache.t3.micro',
+        'cache.t3.small',
+        'cache.t3.medium',
         'cache.m5.large',
         'cache.m5.xlarge',
         'cache.m5.2xlarge',
         'cache.m5.4xlarge',
         'cache.m5.12xlarge',
         'cache.m5.24xlarge',
-        'cache.m4.large',
-        'cache.m4.xlarge',
-        'cache.m4.2xlarge',
-        'cache.m4.4xlarge',
-        'cache.m4.10xlarge',
     ];
 
     /**
