@@ -35,7 +35,10 @@ class CloudFormationClient extends Client
         string $application_prefix_list_id,
         int $scale_out_cooldown,
         int $scale_in_cooldown,
-        int $scale_target_value_cpu
+        int $scale_target_value_cpu,
+        int $scale_min,
+        int $scale_max,
+        int $queue_workers
     )
     {
         $this->client->createStack([
@@ -138,6 +141,18 @@ class CloudFormationClient extends Client
                     'ParameterKey' => 'AutoScalingCpuValue',
                     'ParameterValue' => $scale_target_value_cpu,
                 ],
+                [
+                    'ParameterKey' => 'AutoScalingMinTasks',
+                    'ParameterValue' => $scale_min,
+                ],
+                [
+                    'ParameterKey' => 'AutoScalingMaxTasks',
+                    'ParameterValue' => $scale_max,
+                ],
+                [
+                    'ParameterKey' => 'QueueTasks',
+                    'ParameterValue' => $queue_workers,
+                ],
             ],
             'Tags' => $this->resourceTags(),
             'TemplateBody' => $this->template(),
@@ -158,7 +173,10 @@ class CloudFormationClient extends Client
         ?string $task_memory = null,
         ?int $scale_out_cooldown = null,
         ?int $scale_in_cooldown = null,
-        ?int $scale_target_value_cpu = null
+        ?int $scale_target_value_cpu = null,
+        ?int $scale_min = null,
+        ?int $scale_max = null,
+        ?int $queue_workers = null,
     )
     {
         $update_params = [];
@@ -177,6 +195,9 @@ class CloudFormationClient extends Client
             'AutoScalingScaleInCooldown' => $scale_in_cooldown,
             'AutoScalingScaleOutCooldown' => $scale_out_cooldown,
             'AutoScalingCpuValue' => $scale_target_value_cpu,
+            'AutoScalingMinTasks' => $scale_min,
+            'AutoScalingMaxTasks' => $scale_max,
+            'QueueTasks' => $queue_workers,
                  ] as $key => $value) {
             if ($value !== null) {
                 $update_params[] = [

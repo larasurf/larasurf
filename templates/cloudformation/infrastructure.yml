@@ -570,7 +570,7 @@ Resources:
       DeploymentConfiguration:
         MinimumHealthyPercent: 100
         MaximumPercent: 200
-      DesiredCount: !If [IsEnabled, 5, 0]
+      DesiredCount: !If [IsEnabled, !Ref AutoScalingMinTasks, 0]
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -595,8 +595,8 @@ Resources:
     Condition: IsEnabled
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
-      MinCapacity: 5
-      MaxCapacity: 15
+      MinCapacity: !Ref AutoScalingMinTasks
+      MaxCapacity: !Ref AutoScalingMaxTasks
       ResourceId: !Join [ '/', [ service, !Ref ContainerCluster, !GetAtt ContainerService.Name ] ]
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
@@ -652,7 +652,7 @@ Resources:
       DeploymentConfiguration:
         MinimumHealthyPercent: 100
         MaximumPercent: 200
-      DesiredCount: !If [ IsEnabled, 3, 0 ]
+      DesiredCount: !If [ IsEnabled, !Ref QueueTasks, 0 ]
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -928,6 +928,15 @@ Parameters:
   AutoScalingCpuValue:
     Type: Number
     Description: The AutoScaling target value for CPU.
+  AutoScalingMinTasks:
+    Type: Number
+    Description: The minimum number of task containers for AutoScaling.
+  AutoScalingMaxTasks:
+    Type: Number
+    Description: The maximum number of task containers for AutoScaling.
+  QueueTasks:
+    Type: Number
+    Description: Thenumber of task containers for queue workers.
 
 Conditions:
   IsProduction: !Equals [!Ref EnvironmentName, production]

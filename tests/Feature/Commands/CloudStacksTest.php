@@ -173,9 +173,12 @@ class CloudStacksTest extends TestCase
             ->expectsQuestion('Cache node type?', 'cache.t2.micro')
             ->expectsQuestion('Task definition CPU?', '256')
             ->expectsQuestion('Task definition memory?', '512')
+            ->expectsQuestion('Auto Scaling min number of Tasks?', '5')
+            ->expectsQuestion('Auto Scaling max number of Tasks?', '15')
             ->expectsQuestion('Auto Scaling target CPU percent?', '50')
             ->expectsQuestion('Auto Scaling scale out cooldown (seconds)?', '10')
             ->expectsQuestion('Auto Scaling scale in cooldown (seconds)?', '10')
+            ->expectsQuestion('Number of Queue Worker Tasks?', '3')
             ->expectsQuestion('Fully qualified domain name?', $domain)
             ->expectsOutput('Finding hosted zone from domain...')
             ->expectsOutput("Hosted zone found with ID: $hosted_zone_id")
@@ -338,9 +341,12 @@ class CloudStacksTest extends TestCase
             ->expectsQuestion('Cache node type?', 'cache.t2.micro')
             ->expectsQuestion('Task definition CPU?', '256')
             ->expectsQuestion('Task definition memory?', '512')
+            ->expectsQuestion('Auto Scaling min number of Tasks?', '5')
+            ->expectsQuestion('Auto Scaling max number of Tasks?', '15')
             ->expectsQuestion('Auto Scaling target CPU percent?', '50')
             ->expectsQuestion('Auto Scaling scale out cooldown (seconds)?', '10')
             ->expectsQuestion('Auto Scaling scale in cooldown (seconds)?', '10')
+            ->expectsQuestion('Number of Queue Worker Tasks?', '3')
             ->expectsQuestion('Fully qualified domain name?', $domain)
             ->expectsOutput('Finding hosted zone from domain...')
             ->expectsOutput("Hosted zone found with ID: $hosted_zone_id")
@@ -499,9 +505,12 @@ class CloudStacksTest extends TestCase
             ->expectsQuestion('Cache node type?', 'cache.t2.micro')
             ->expectsQuestion('Task definition CPU?', '256')
             ->expectsQuestion('Task definition memory?', '512')
+            ->expectsQuestion('Auto Scaling min number of Tasks?', '5')
+            ->expectsQuestion('Auto Scaling max number of Tasks?', '15')
             ->expectsQuestion('Auto Scaling target CPU percent?', '50')
             ->expectsQuestion('Auto Scaling scale out cooldown (seconds)?', '10')
             ->expectsQuestion('Auto Scaling scale in cooldown (seconds)?', '10')
+            ->expectsQuestion('Number of Queue Worker Tasks?', '3')
             ->expectsQuestion('Fully qualified domain name?', $domain)
             ->expectsOutput('Finding hosted zone from domain...')
             ->expectsOutput("Hosted zone for domain '$domain' could not be found")
@@ -544,9 +553,11 @@ class CloudStacksTest extends TestCase
                 'Database storage size',
                 'Cache node type',
                 'Task definition CPU + Memory',
+                'AutoScaling Min + Max number of Tasks',
                 'AutoScaling target CPU percent',
                 'AutoScaling scale out cooldown',
                 'AutoScaling scale in cooldown',
+                'Queue Worker number of Tasks',
             ])
             ->expectsOutput('Gathering cloud variables...')
             ->expectsOutput('Updating stack...')
@@ -607,9 +618,11 @@ class CloudStacksTest extends TestCase
                 'Database storage size',
                 'Cache node type',
                 'Task definition CPU + Memory',
+                'AutoScaling Min + Max number of Tasks',
                 'AutoScaling target CPU percent',
                 'AutoScaling scale out cooldown',
                 'AutoScaling scale in cooldown',
+                'Queue Worker number of Tasks',
             ], [
                 '(None)',
                 'Domain + ACM certificate ARN',
@@ -618,9 +631,11 @@ class CloudStacksTest extends TestCase
                 'Database storage size',
                 'Cache node type',
                 'Task definition CPU + Memory',
+                'AutoScaling Min + Max number of Tasks',
                 'AutoScaling target CPU percent',
                 'AutoScaling scale out cooldown',
                 'AutoScaling scale in cooldown',
+                'Queue Worker number of Tasks',
             ])
             ->expectsQuestion('Fully qualified domain name?', $domain)
             ->expectsQuestion('Is there a preexisting ACM certificate you\'d like to use?', false)
@@ -634,9 +649,12 @@ class CloudStacksTest extends TestCase
             ->expectsQuestion('Cache node type?', 'cache.t2.micro')
             ->expectsQuestion('Task definition CPU?', '256')
             ->expectsQuestion('Task definition memory?', '512')
+            ->expectsQuestion('Auto Scaling min number of Tasks?', '5')
+            ->expectsQuestion('Auto Scaling max number of Tasks?', '15')
             ->expectsQuestion('Auto Scaling target CPU percent?', '50')
             ->expectsQuestion('Auto Scaling scale out cooldown (seconds)?', '10')
             ->expectsQuestion('Auto Scaling scale in cooldown (seconds)?', '10')
+            ->expectsQuestion('Number of Queue Worker Tasks?', '3')
             ->expectsOutput('Gathering cloud variables...')
             ->expectsOutput('Updating stack...')
             ->expectsOutput('Stack update completed successfully')

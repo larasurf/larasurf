@@ -203,9 +203,12 @@ class CloudStacks extends Command
         $cache_node_type = $this->askCacheNodeType();
         $cpu = $this->askTaskDefinitionCpu();
         $memory = $this->askTaskDefinitionMemory($cpu);
+        $scale_min = $this->askScalingMinTasks();
+        $scale_max = $this->askScalingMaxTasks($scale_min);
         $scale_target_cpu = $this->askScalingTargetCpu();
         $scale_out_cooldown = $this->askScaleOutCooldown();
         $scale_in_cooldown = $this->askScaleInCooldown();
+        $queue_workers = $this->askQueueTasks();
         $domain = $this->askDomain();
 
         $hosted_zone_id_root_domain = $this->hostedZoneIdFromDomain($domain);
@@ -237,7 +240,10 @@ class CloudStacks extends Command
             $prefix_lists['application'],
             $scale_out_cooldown,
             $scale_in_cooldown,
-            $scale_target_cpu
+            $scale_target_cpu,
+            $scale_min,
+            $scale_max,
+            $queue_workers
         );
 
         if(!$db_credentials) {
@@ -365,9 +371,11 @@ class CloudStacks extends Command
                 'Database storage size',
                 'Cache node type',
                 'Task definition CPU + Memory',
+                'AutoScaling Min + Max number of Tasks',
                 'AutoScaling target CPU percent',
                 'AutoScaling scale out cooldown',
                 'AutoScaling scale in cooldown',
+                'Queue Worker number of Tasks',
             ],
             0,
             null,
@@ -385,6 +393,9 @@ class CloudStacks extends Command
         $new_scale_cpu = null;
         $new_scale_out_cooldown = null;
         $new_scale_in_cooldown = null;
+        $new_scale_min = null;
+        $new_scale_max = null;
+        $new_queue_workers = null;
 
         $route53 = $this->awsRoute53();
 
@@ -438,6 +449,12 @@ class CloudStacks extends Command
 
                     break;
                 }
+                case 'AutoScaling Min + Max number of Tasks': {
+                    $new_scale_min = $this->askScalingMinTasks();
+                    $new_scale_max = $this->askScalingMaxTasks($new_scale_min);
+
+                    break;
+                }
                 case 'AutoScaling target CPU percent': {
                     $new_scale_cpu = $this->askScalingTargetCpu();
 
@@ -450,6 +467,11 @@ class CloudStacks extends Command
                 }
                 case 'AutoScaling scale in cooldown': {
                     $new_scale_in_cooldown = $this->askScaleInCooldown();
+
+                    break;
+                }
+                case 'Queue Worker number of Tasks': {
+                    $new_queue_workers = $this->askQueueTasks();
 
                     break;
                 }
@@ -478,7 +500,10 @@ class CloudStacks extends Command
             $new_memory,
             $new_scale_out_cooldown,
             $new_scale_in_cooldown,
-            $new_scale_cpu
+            $new_scale_cpu,
+            $new_scale_min,
+            $new_scale_max,
+            $new_queue_workers
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_UPDATE_COMPLETE, $this->getOutput(), 'updated');
@@ -647,7 +672,10 @@ class CloudStacks extends Command
         string $application_prefix_list_id,
         int $scale_out_cooldown,
         int $scale_in_cooldown,
-        string $scale_target_cpu
+        string $scale_target_cpu,
+        int $scale_min,
+        int $scale_max,
+        int $queue_workers
     ): array|false
     {
         $this->line("Creating stack for '$environment' environment...");
@@ -682,7 +710,10 @@ class CloudStacks extends Command
             $application_prefix_list_id,
             $scale_out_cooldown,
             $scale_in_cooldown,
-            $scale_target_cpu
+            $scale_target_cpu,
+            $scale_min,
+            $scale_max,
+            $queue_workers
         );
 
         $result = $cloudformation->waitForStackInfoPanel(CloudFormationClient::STACK_STATUS_CREATE_COMPLETE, $this->getOutput(), 'created', false);
@@ -1106,15 +1137,67 @@ class CloudStacks extends Command
     protected function askScalingTargetCpu(): int
     {
         do {
-            $db_storage = (int) $this->ask('Auto Scaling target CPU percent?', '50');
-            $valid = $db_storage <= 100 && $db_storage >=10;
+            $percent = (int) $this->ask('Auto Scaling target CPU percent?', '50');
+            $valid = $percent <= 100 && $percent >=10;
 
             if (!$valid) {
                 $this->error('Invalid Auto Scaling target CPU percent');
             }
         } while (!$valid);
 
-        return $db_storage;
+        return $percent;
+    }
+
+    /**
+     * @return int
+     */
+    protected function askScalingMinTasks(): int
+    {
+        do {
+            $number = (int) $this->ask('Auto Scaling min number of Tasks?', '5');
+            $valid = $number > 0;
+
+            if (!$valid) {
+                $this->error('Invalid Auto Scaling min number of Tasks');
+            }
+        } while (!$valid);
+
+        return $number;
+    }
+
+    /**
+     * @param int $min
+     * @return int
+     */
+    protected function askScalingMaxTasks(int $min): int
+    {
+        do {
+            $number = (int) $this->ask('Auto Scaling max number of Tasks?', '15');
+            $valid = $number >= $min;
+
+            if (!$valid) {
+                $this->error('Invalid Auto Scaling max number of Tasks');
+            }
+        } while (!$valid);
+
+        return $number;
+    }
+
+    /**
+     * @return int
+     */
+    protected function askQueueTasks(): int
+    {
+        do {
+            $number = (int) $this->ask('Number of Queue Worker Tasks?', '3');
+            $valid = $number >= 0;
+
+            if (!$valid) {
+                $this->error('Invalid number of Queue Worker Tasks');
+            }
+        } while (!$valid);
+
+        return $number;
     }
 
     /**

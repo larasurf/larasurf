@@ -39,7 +39,10 @@ class CloudFormationClientTest extends TestCase
             Str::random(),
             random_int(1, 100),
             random_int(1, 100),
-            random_int(1, 100)
+            random_int(1, 100),
+            random_int(1, 5),
+            random_int(5, 15),
+            random_int(1, 5)
         );
     }
 
