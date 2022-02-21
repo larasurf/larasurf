@@ -21,6 +21,9 @@
 [![CircleCI](https://circleci.com/gh/larasurf/larasurf/tree/main.svg?style=svg)](https://circleci.com/gh/larasurf/larasurf/?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Resources
+* [AWS Cost Estimate Worksheet](https://docs.google.com/spreadsheets/d/1-BHba2Z1FiU84Kkw7YAyNgDhNnARdYdwOnpxr-uQYP4)
+
 ## Project Roadmap
 [ ] Optimize Laravel for production in Dockerfile<br/>
 [ ] Lock down CircleCI IAM user permissions<br/>
