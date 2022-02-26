@@ -484,7 +484,7 @@ Resources:
   ContainerAutoScalingRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-autoscaling-role'
+      RoleName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-ecs-autoscale-role'
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -605,7 +605,7 @@ Resources:
     Condition: IsEnabled
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-autoscaling-policy'
+      PolicyName: !Sub '${ProjectName}-${ProjectId}-${EnvironmentName}-autoscale-policy'
       PolicyType: TargetTrackingScaling
       ScalingTargetId: !Ref ContainerAutoScalingTarget
       TargetTrackingScalingPolicyConfiguration:
