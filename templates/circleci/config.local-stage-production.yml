@@ -90,7 +90,7 @@ jobs:
               docker cp ${DUSK_CONTAINER_ID}:/var/www/tests/Browser/screenshots/. artifacts/screenshots
               docker cp ${LARAVEL_CONTAINER_ID}:/var/www/storage/logs/. artifacts/logs
 
-              rm -f atifacts/screenshots/.gitignore
+              rm -f artifacts/screenshots/.gitignore
               rm -f artifacts/logs/.gitignore
 
               set -e
