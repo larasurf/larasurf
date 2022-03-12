@@ -16,7 +16,7 @@ class Publish extends Command
     /**
      * @var string
      */
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls} {--env-changes} {--awslocal} {--circleci} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls}  {--circleci} {--dusk} {--env-changes} {--awslocal} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
 
     /**
      * @var string
@@ -34,6 +34,7 @@ class Publish extends Command
                      'env-changes' => [$this, 'publishEnvChanges'],
                      'awslocal' => [$this, 'publishAwsLocalChanges'],
                      'circleci' => [$this, 'publishCircleCIConfig'],
+                     'dusk' => [$this, 'publishDusk'],
                      'cloudformation' => [$this, 'publishCloudFormation'],
                      'gitignore' => [$this, 'publishGitIgnore'],
                      'healthcheck' => [$this, 'publishHealthCheck'],
@@ -104,21 +105,45 @@ class Publish extends Command
                 if ($file === '.env') {
                     $app_url = $url;
                 } else {
-                    $app_url = $file === '.env.example' && Str::startsWith($url, 'https:')
-                        ? 'https://localhost'
-                        : 'http://localhost';
+                    $app_url = Str::startsWith($url, 'https:')  ? 'https://localhost' : 'http://localhost';
                 }
 
-                foreach ($contents as &$content) {
-                    foreach ([
-                                 'APP_URL=' => "$app_url",
-                                 'CACHE_DRIVER=' => 'redis',
-                                 'DB_CONNECTION=' => 'mysql',
-                                 'QUEUE_CONNECTION=' => 'sqs',
-                                 'SESSION_DRIVER=' => 'redis',
-                             ] as $find => $append) {
-                        if (str_starts_with($content, $find)) {
-                            $content = $find . $append;
+                $variables = [
+                    'APP_URL=' => "$app_url",
+                    'AWS_ENDPOINT=' => 'http://awslocal:4566',
+                    'AWS_ACCESS_KEY_ID=' => 'laravel',
+                    'AWS_SECRET_ACCESS_KEY=' => 'laravel',
+                    'AWS_DEFAULT_REGION=' => 'us-east-1',
+                    'AWS_BUCKET=' => 'laravel',
+                    'AWS_USE_PATH_STYLE_ENDPOINT=' => 'true',
+                    'AWS_URL=' => 'http://localhost:' . env('SURF_AWSLOCAL_PORT', '4566') . '/laravel',
+                    'CACHE_DRIVER=' => 'redis',
+                    'DB_CONNECTION=' => 'mysql',
+                    'DB_DATABASE=' => 'laravel',
+                    'DB_HOST=' => 'database',
+                    'DB_PASSWORD=' => 'supersecret',
+                    'DB_PORT=' => '3306',
+                    'DB_USERNAME=' => 'laravel',
+                    'MAIL_HOST=' => 'mail',
+                    'MAIL_PORT=' => '1025',
+                    'MAIL_FROM_ADDRESS=' => 'hello@example.com',
+                    'MAIL_FROM_NAME=' => '${APP_NAME}',
+                    'QUEUE_CONNECTION=' => 'sqs',
+                    'REDIS_HOST=' => 'cache',
+                    'REDIS_PORT=' => '6379',
+                    'SESSION_DRIVER=' => 'redis',
+                    'SQS_QUEUE=' => 'laravel',
+                    'SQS_PREFIX=' => 'http://awslocal:4566/000000000000',
+                ];
+
+                foreach ($variables as $find => $append) {
+                    if (empty(array_filter($contents, fn ($content) => str_starts_with($content, $find)))) {
+                        $contents[] = $find . $append;
+                    } else {
+                        foreach ($contents as &$content) {
+                            if (str_starts_with($content, $find)) {
+                                $content = $find . $append;
+                            }
                         }
                     }
                 }
@@ -130,6 +155,59 @@ class Publish extends Command
                 } else {
                     $this->error("Failed to modify $file");
                 }
+            }
+        }
+    }
+
+    protected function publishDusk()
+    {
+        if (!File::isDirectory(base_path('.circleci'))) {
+            File::makeDirectory(base_path('.circleci'));
+        }
+
+        $file_path = base_path('.circleci/docker-compose.ci.dusk.yml');
+
+        if (File::exists($file_path)) {
+            $this->warn("File '.circleci/docker-compose.ci.dusk.yml' exists");
+        } else {
+            $success = File::copy(__DIR__ . "/../../templates/circleci/docker-compose.ci.dusk.yml", $file_path);
+
+            if ($success) {
+                $this->info('Published CircleCI docker-compose file for Dusk successfully');
+            } else {
+                $this->error('Failed to publish CircleCI docker-compose file for Dusk');
+            }
+        }
+
+        $docker_compose_file_path = base_path('docker-compose.yml');
+
+        $contents = File::get($docker_compose_file_path);
+
+        if (Str::contains($contents, '  chrome:')) {
+            $this->warn("Service 'chrome' exists in docker-compose.yml");
+        } else {
+            $service = <<<EOD
+services:
+  chrome:
+    image: 'selenium/standalone-chrome'
+    volumes:
+      - '/dev/shm:/dev/shm'
+
+EOD;
+
+            $dependencies = <<<EOD
+      - cache
+      - chrome
+EOD;
+            $contents = Str::replace('services:', $service, $contents);
+            $contents = Str::replace('      - cache', $dependencies, $contents);
+
+            $success = File::put($docker_compose_file_path, $contents);
+
+            if ($success) {
+                $this->info('Published chrome service in docker-compose.yml file successfully');
+            } else {
+                $this->error('Failed to publish chrome service in docker-compose.yml file');
             }
         }
     }
@@ -202,7 +280,7 @@ EOD;
         $file_path = base_path('.circleci/inject-secrets.sh');
 
         if (File::exists($file_path)) {
-            $this->warn("File '.circleci/inject-secrets.sh exists");
+            $this->warn("File '.circleci/inject-secrets.sh' exists");
         } else {
             $success = File::copy(__DIR__ . "/../../templates/circleci/inject-secrets.sh", $file_path);
 

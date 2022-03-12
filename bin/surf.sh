@@ -146,6 +146,11 @@ elif [[ "$1" == 'test' ]]; then
 
   cd $(pwd)
   docker-compose exec laravel ./vendor/bin/phpunit "${@:2}"
+elif [[ "$1" == 'dusk' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+  docker-compose exec -e APP_URL=http://webserver -e DUSK_DRIVER_URL=http://chrome:4444/wd/hub laravel php artisan dusk "${@:2}"
 elif [[ "$1" == 'fix' ]]; then
   exit_if_containers_not_running
 

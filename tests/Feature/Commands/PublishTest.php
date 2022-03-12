@@ -77,6 +77,41 @@ EOF;
         $this->assertTrue(in_array('UNMODIFIED=value', $env_example_file));
     }
 
+    public function testPublishDusk()
+    {
+        $this->createValidLaraSurfConfig('local');
+        $this->createDockerComposeFile();
+
+        if (File::exists(base_path('.circleci/docker-compose.ci.dusk.yml'))) {
+            File::delete(base_path('.circleci/docker-compose.ci.dusk.yml'));
+        }
+
+        $this->artisan('larasurf:publish --dusk')
+            ->expectsOutput('Published CircleCI docker-compose file for Dusk successfully');
+
+        $this->assertFileExists(base_path('.circleci/docker-compose.ci.dusk.yml'));
+
+        $contents = <<<EOF
+version: '3.9'
+services:
+  chrome:
+    image: 'selenium/standalone-chrome'
+    volumes:
+      - '/dev/shm:/dev/shm'
+
+  laravel:
+    build:
+      context: ./
+      dockerfile: .docker/php-fpm/Dockerfile
+    depends_on:
+      - database
+      - cache
+      - chrome
+EOF;
+
+        $this->assertEquals($contents, File::get(base_path('docker-compose.yml')));
+    }
+
     public function testPublishCircleCIConfigLocal()
     {
         $this->createValidLaraSurfConfig('local');

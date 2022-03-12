@@ -16,7 +16,6 @@ jobs:
         type: env_var_name
       var_name_ecr_url_prefix:
         type: env_var_name
-
     docker:
       - image: cimg/base:2021.04
     steps:
@@ -34,25 +33,30 @@ jobs:
                   test -n "${AWS_SECRET_ACCESS_KEY}"
                   test -n "${<< parameters.var_name_region >>}"
                   test -n "${<< parameters.var_name_ecr_url_prefix >>}"
-            - run:
-                name: Build Images
-                command: |
-                  DOCKER_BUILDKIT=1 docker build -t "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" --ssh default --progress plain --file .docker/php-fpm/Dockerfile .
-                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}" .circleci/
-                  docker cp $(docker create --rm ${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}):/var/www/public/. ./public/
-                  docker build -t "${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}" --build-arg NGINX_CONFIG_TEMPLATE=.docker/nginx/laravel.conf.template.cloud --file .docker/nginx/Dockerfile .
-      - unless:
-          condition: << parameters.should_publish_images >>
-          steps:
-            - run:
-                name: Build Images
-                command: |
-                  DOCKER_BUILDKIT=1 docker build -t laravel-base --ssh default --progress plain --file .docker/php-fpm/Dockerfile .
-                  DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg BASE_IMAGE=laravel-base .circleci/
+      - run:
+          name: Build Images
+          command: |
+            if << parameters.should_publish_images >>; then
+              echo 'export APPLICATION_IMAGE_TAG="${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/application:commit-${CIRCLE_SHA1}"' >> $BASH_ENV
+              echo 'export WEBSERVER_IMAGE_TAG="${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}"' >> $BASH_ENV
+            else
+              echo 'export APPLICATION_IMAGE_TAG=laravel:base' >> $BASH_ENV
+              echo 'export WEBSERVER_IMAGE_TAG=webserver:base' >> $BASH_ENV
+            fi
+
+            source $BASH_ENV
+
+            DOCKER_BUILDKIT=1 docker build -t "${APPLICATION_IMAGE_TAG}" --ssh default --progress plain --file .docker/php-fpm/Dockerfile .
+            DOCKER_BUILDKIT=1 docker build -t laravel:test --ssh default --progress plain --build-arg "BASE_IMAGE=${APPLICATION_IMAGE_TAG}" .circleci/
+            docker cp $(docker create --rm ${APPLICATION_IMAGE_TAG}):/var/www/public/. ./public/
+            docker build -t "${WEBSERVER_IMAGE_TAG}" --build-arg NGINX_CONFIG_TEMPLATE=.docker/nginx/laravel.conf.template.cloud --file .docker/nginx/Dockerfile .
       - run:
           name: Check Code Style and Run Tests
           command: |
-            docker-compose -f .circleci/docker-compose.ci.yml run --rm --entrypoint bash -e CACHE_DRIVER=array laravel -c "
+            mkdir -p artifacts/screenshots
+            mkdir -p artifacts/logs
+
+            docker-compose -f .circleci/docker-compose.ci.yml run --rm --entrypoint bash -e CACHE_DRIVER=array laravel_test -c "
               set -e
               cp .env.example .env
               php artisan key:generate --force
@@ -61,6 +65,42 @@ jobs:
               php artisan migrate --force
               ./vendor/bin/phpunit
             "
+
+            if grep -q '"laravel/dusk"' 'composer.json'; then
+              LARAVEL_IMAGE=${APPLICATION_IMAGE_TAG} WEBSERVER_IMAGE=${WEBSERVER_IMAGE_TAG} docker-compose -f .circleci/docker-compose.ci.dusk.yml up -d
+              LARAVEL_CONTAINER_ID=$(docker-compose -f .circleci/docker-compose.ci.dusk.yml ps -q laravel)
+              AWS_TEMPLATE=$(cat .docker/localstack/init.d/app.yml)
+
+              docker-compose -f .circleci/docker-compose.ci.dusk.yml exec laravel php -r "file_exists('.env') || copy('.env.example', '.env');"
+              docker-compose -f .circleci/docker-compose.ci.dusk.yml exec laravel php artisan key:generate --force
+              docker-compose -f .circleci/docker-compose.ci.dusk.yml exec awslocal awslocal cloudformation create-stack --stack-name "app" --template-body "${AWS_TEMPLATE}"
+
+              set +e
+
+              docker-compose -f .circleci/docker-compose.ci.yml run --name laravel_dusk_test --entrypoint bash -e APP_URL=http://webserver -e DUSK_DRIVER_URL=http://chrome:4444/wd/hub laravel_test -c "
+                curl http://chrome:4444/wd/hub --http0.9 --retry-connrefused --retry 30 --output /dev/null --silent
+                cp .env.example .env
+                php artisan key:generate --force
+                php artisan dusk
+              "
+
+              DUSK_EXIT_CODE=$(docker inspect laravel_dusk_test --format='{{.State.ExitCode}}')
+              DUSK_CONTAINER_ID=$(docker inspect laravel_dusk_test --format='{{.Id}}')
+
+              docker cp ${DUSK_CONTAINER_ID}:/var/www/tests/Browser/screenshots/. artifacts/screenshots
+              docker cp ${LARAVEL_CONTAINER_ID}:/var/www/storage/logs/. artifacts/logs
+
+              rm -f atifacts/screenshots/.gitignore
+              rm -f artifacts/logs/.gitignore
+
+              set -e
+
+              test ${DUSK_EXIT_CODE} -eq 0
+            else
+              echo "Laravel Dusk is not installed"
+            fi
+      - store_artifacts:
+          path: artifacts
       - when:
           condition: << parameters.should_publish_images >>
           steps:

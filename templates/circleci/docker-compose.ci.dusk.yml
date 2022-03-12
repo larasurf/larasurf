@@ -1,0 +1,34 @@
+version: '3.9'
+services:
+  chrome:
+    image: 'selenium/standalone-chrome'
+
+  awslocal:
+    image: localstack/localstack
+    environment:
+      DATA_DIR: /tmp/localstack/data
+      HOSTNAME_EXTERNAL: localstack
+      SERVICES: 'cloudformation,s3,sqs'
+
+  webserver:
+    image: "${WEBSERVER_IMAGE}"
+    depends_on:
+      - laravel
+    environment:
+      UPSTREAM_HOST: laravel
+
+  mail:
+    image: mailhog/mailhog:latest
+
+  laravel:
+    image: "${LARAVEL_IMAGE}"
+    depends_on:
+      - cache
+      - chrome
+
+  cache:
+    image: redis:alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      retries: 3
+      timeout: 5s

@@ -63,6 +63,23 @@ class TestCase extends \Orchestra\Testbench\TestCase
         return [LaraSurfServiceProvider::class];
     }
 
+    protected function createDockerComposeFile()
+    {
+        $contents = <<<EOF
+version: '3.9'
+services:
+  laravel:
+    build:
+      context: ./
+      dockerfile: .docker/php-fpm/Dockerfile
+    depends_on:
+      - database
+      - cache
+EOF;
+
+        File::put(base_path('docker-compose.yml'), $contents);
+    }
+
     protected function createGitConfig(string $project_name)
     {
         if (!File::isDirectory(base_path('.git'))) {
