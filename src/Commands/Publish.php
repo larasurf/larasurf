@@ -158,7 +158,7 @@ class Publish extends Command
                     }
                 }
 
-                $success = File::put($env_file, implode(PHP_EOL, array_merge($contents, [''])));
+                $success = File::put($env_file, implode(PHP_EOL, $contents) . PHP_EOL);
 
                 if ($success) {
                     $this->info("Modified $file successfully");
