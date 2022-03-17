@@ -44,6 +44,7 @@ class PublishTest extends TestCase
 
         $contents = <<<EOF
 APP_URL=http://localhost
+FRONTEND_URL=http://localhost:3000
 CACHE_DRIVER=array
 DB_CONNECTION=sqlite
 QUEUE_CONNECTION=sync
@@ -52,6 +53,15 @@ UNMODIFIED=value
 EOF;
 
         File::put(base_path('.env'), $contents);
+
+        $contents = <<<EOF
+APP_URL=http://localhost
+CACHE_DRIVER=array
+DB_CONNECTION=sqlite
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
+UNMODIFIED=value
+EOF;
         File::put(base_path('.env.example'), $contents);
 
         $this->artisan('larasurf:publish --env-changes')
@@ -61,6 +71,7 @@ EOF;
         $env_file = array_map('trim', file(base_path('.env')));
 
         $this->assertTrue(in_array('APP_URL=https://localhost', $env_file));
+        $this->assertTrue(in_array('FRONTEND_URL=http://localhost:3000', $env_file));
         $this->assertTrue(in_array('CACHE_DRIVER=redis', $env_file));
         $this->assertTrue(in_array('DB_CONNECTION=mysql', $env_file));
         $this->assertTrue(in_array('QUEUE_CONNECTION=sqs', $env_file));
@@ -70,6 +81,7 @@ EOF;
         $env_example_file = array_map('trim', file(base_path('.env.example')));
 
         $this->assertTrue(in_array('APP_URL=https://localhost', $env_example_file));
+        $this->assertTrue(in_array('FRONTEND_URL=http://localhost:3000', $env_example_file));
         $this->assertTrue(in_array('CACHE_DRIVER=redis', $env_example_file));
         $this->assertTrue(in_array('DB_CONNECTION=mysql', $env_example_file));
         $this->assertTrue(in_array('QUEUE_CONNECTION=sqs', $env_example_file));

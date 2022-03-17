@@ -96,6 +96,8 @@ class Publish extends Command
     {
         $url = self::deriveAppUrl();
 
+        $is_api_only = false;
+
         foreach (['.env', '.env.example'] as $file) {
             $env_file = base_path($file);
 
@@ -104,6 +106,10 @@ class Publish extends Command
 
                 if ($file === '.env') {
                     $app_url = $url;
+
+                    if (in_array('FRONTEND_URL=http://localhost:3000', $contents)) {
+                        $is_api_only = true;
+                    }
                 } else {
                     $app_url = Str::startsWith($url, 'https:')  ? 'https://localhost' : 'http://localhost';
                 }
@@ -135,6 +141,10 @@ class Publish extends Command
                     'SQS_QUEUE=' => 'laravel',
                     'SQS_PREFIX=' => 'http://awslocal:4566/000000000000',
                 ];
+
+                if ($file === '.env.example' && $is_api_only) {
+                    $variables['FRONTEND_URL='] = 'http://localhost:3000';
+                }
 
                 foreach ($variables as $find => $append) {
                     if (empty(array_filter($contents, fn ($content) => str_starts_with($content, $find)))) {
