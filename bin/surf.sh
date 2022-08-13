@@ -31,14 +31,20 @@ elif [[ "$1" == 'composer' ]]; then
   cd $(pwd)
   docker-compose run --rm --no-deps laravel composer "${@:2}"
 elif [[ "$1" == 'yarn' ]]; then
+  exit_if_containers_not_running
+
   cd $(pwd)
-  docker-compose run --rm --no-deps laravel yarn "${@:2}"
+  docker-compose exec laravel php yarn "${@:2}"
 elif [[ "$1" == 'npx' ]]; then
+  exit_if_containers_not_running
+
   cd $(pwd)
-  docker-compose run --rm --no-deps laravel npx "${@:2}"
+  docker-compose exec laravel php npx "${@:2}"
 elif [[ "$1" == 'node' ]]; then
+  exit_if_containers_not_running
+
   cd $(pwd)
-  docker-compose run --rm --no-deps laravel node "${@:2}"
+  docker-compose exec laravel php node "${@:2}"
 elif [[ "$1" == 'aws' ]]; then
   docker-compose run --rm awscliv2 "${@:2}"
 elif [[ "$1" == 'awslocal' ]]; then
