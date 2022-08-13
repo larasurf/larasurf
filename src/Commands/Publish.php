@@ -16,7 +16,7 @@ class Publish extends Command
     /**
      * @var string
      */
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls}  {--circleci} {--dusk} {--env-changes} {--awslocal} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
+    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls} {--nginx-local-insecure} {--circleci} {--dusk} {--env-changes} {--awslocal} {--cloudformation} {--gitignore} {--healthcheck} {--proxies} {--vite-config}';
 
     /**
      * @var string
@@ -31,6 +31,7 @@ class Publish extends Command
         foreach ([
                      'cs-fixer' => [$this, 'publishCsFixerConfig'],
                      'nginx-local-tls' => [$this, 'publishNginxLocalTlsConfig'],
+                     'nginx-local-insecure' => [$this, 'publishNginxLocalInsecureConfig'],
                      'env-changes' => [$this, 'publishEnvChanges'],
                      'awslocal' => [$this, 'publishAwsLocalChanges'],
                      'circleci' => [$this, 'publishCircleCIConfig'],
@@ -38,7 +39,8 @@ class Publish extends Command
                      'cloudformation' => [$this, 'publishCloudFormation'],
                      'gitignore' => [$this, 'publishGitIgnore'],
                      'healthcheck' => [$this, 'publishHealthCheck'],
-                     'proxies' => [$this, 'publishProxies']
+                     'proxies' => [$this, 'publishProxies'],
+                     'vite-config' => [$this, 'publishViteConfig'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -83,6 +85,35 @@ class Publish extends Command
                 }
             } else {
                 $this->warn('NGINX is already configured to listen on port 443');
+            }
+        } else {
+            $this->error('Failed to modify nginx config; file does not exist');
+        }
+    }
+
+    /**
+     * Update the local NGINX configuration file to support Vite without TLS.
+     */
+    protected function publishNginxLocalInsecureConfig()
+    {
+        $nginx_config_path = base_path('.docker/nginx/laravel.conf.template');
+
+        if (File::exists($nginx_config_path)) {
+            $https_config = File::get(__DIR__ . '/../../templates/nginx-http.conf');
+            $current_config = File::get($nginx_config_path);
+
+            if (!Str::contains($current_config, 'listen 5173;')) {
+                $new_config = $current_config . PHP_EOL . PHP_EOL . $https_config;
+
+                $success = File::put($nginx_config_path, $new_config);
+
+                if ($success) {
+                    $this->info('Modified nginx config successfully');
+                } else {
+                    $this->error('Failed to modify nginx config');
+                }
+            } else {
+                $this->warn('NGINX is already configured to listen on port 5173');
             }
         } else {
             $this->error('Failed to modify nginx config; file does not exist');
@@ -391,6 +422,20 @@ EOD;
             $this->error('Failed to publish .gitignore');
         } else {
             $this->info('Published .gitignore successfully');
+        }
+    }
+
+    /**
+     * Publish the update vite.config.js file.
+     */
+    protected function publishViteConfig()
+    {
+        $contents = File::get(__DIR__ . '/../../templates/vite.config.js');
+
+        if (!File::put(base_path('vite.config.js'), $contents)) {
+            $this->error('Failed to publish vite.config.js');
+        } else {
+            $this->info('Published vite.config.js successfully');
         }
     }
 

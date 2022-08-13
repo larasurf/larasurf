@@ -20,7 +20,19 @@ class PublishTest extends TestCase
         $this->assertFileExists(base_path('.php-cs-fixer.dist.php'));
     }
 
-    public function testPublishNginxLocalSslConfig()
+    public function testPublishViteConfig()
+    {
+        if (File::exists(base_path('vite.config.js'))) {
+            File::delete(base_path('vite.config.js'));
+        }
+
+        $this->artisan('larasurf:publish --vite-config')
+            ->expectsOutput('Published vite.config.js successfully');
+
+        $this->assertFileExists(base_path('vite.config.js'));
+    }
+
+    public function testPublishNginxLocalTlsConfig()
     {
         if (!File::isDirectory(base_path('.docker/nginx/'))) {
             File::makeDirectory(base_path('.docker/nginx/'), 0755, true);
@@ -31,7 +43,24 @@ class PublishTest extends TestCase
         $this->artisan('larasurf:publish --nginx-local-tls')
             ->expectsOutput('Modified nginx config successfully');
 
-        $this->assertTrue(Str::contains(File::get(base_path('.docker/nginx/laravel.conf.template')), 'listen 443 ssl;'));
+        $template = File::get(base_path('.docker/nginx/laravel.conf.template'));
+
+        $this->assertTrue(Str::contains($template, 'listen 443 ssl;'));
+        $this->assertTrue(Str::contains($template, 'listen 5173 ssl;'));
+    }
+
+    public function testPublishNginxLocalInsecureConfig()
+    {
+        if (!File::isDirectory(base_path('.docker/nginx/'))) {
+            File::makeDirectory(base_path('.docker/nginx/'), 0755, true);
+        }
+
+        File::put(base_path('.docker/nginx/laravel.conf.template'), '');
+
+        $this->artisan('larasurf:publish --nginx-local-insecure')
+            ->expectsOutput('Modified nginx config successfully');
+
+        $this->assertTrue(Str::contains(File::get(base_path('.docker/nginx/laravel.conf.template')), 'listen 5173;'));
     }
 
     public function testPublishEnvChanges()
