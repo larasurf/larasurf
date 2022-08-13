@@ -222,10 +222,18 @@ elif [[ "$1" == 'down' ]]; then
   else
     docker-compose down --volumes
   fi
+elif [[ "$1" == 'stop' ]]; then
+  cd $(pwd)
+
+  docker-compose stop "${@:2}"
 elif [[ "$1" == 'rebuild' ]]; then
   cd $(pwd)
 
   docker-compose build "${@:2}"
+elif [[ "$1" == 'logs' ]]; then
+  cd $(pwd)
+
+  docker-compose logs "${@:2}"
 elif [[ "$1" == 'configure-new-environments' ]]; then
   exit_if_containers_not_running
 
