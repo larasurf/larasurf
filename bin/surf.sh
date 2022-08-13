@@ -234,6 +234,10 @@ elif [[ "$1" == 'logs' ]]; then
   cd $(pwd)
 
   docker-compose logs "${@:2}"
+elif [[ "$1" == 'permissions' ]]; then
+  cd $(pwd)
+
+  sudo chown -R $USER: .
 elif [[ "$1" == 'configure-new-environments' ]]; then
   exit_if_containers_not_running
 
