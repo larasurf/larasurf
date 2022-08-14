@@ -7,6 +7,7 @@ SUCCESS='\033[92m'
 RESET='\033[0m'
 
 export SURF_USER_ID=${UID}
+export SURF_GROUP_ID=$(id -g)
 
 function exit_if_containers_not_running() {
   CONTAINERS_RUNNING="$(docker-compose ps -q)"
@@ -29,22 +30,22 @@ if [[ "$1" == 'tls' ]]; then
     fi
 elif [[ "$1" == 'composer' ]]; then
   cd $(pwd)
-  docker-compose run --rm --no-deps laravel composer "${@:2}"
+  docker-compose run --rm --no-deps -u ${SURF_USER_ID} laravel composer "${@:2}"
 elif [[ "$1" == 'yarn' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel yarn "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel yarn "${@:2}"
 elif [[ "$1" == 'npx' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel npx "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel npx "${@:2}"
 elif [[ "$1" == 'node' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel node "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel node "${@:2}"
 elif [[ "$1" == 'aws' ]]; then
   docker-compose run --rm awscliv2 "${@:2}"
 elif [[ "$1" == 'awslocal' ]]; then
@@ -57,57 +58,57 @@ elif [[ "$1" == 'artisan' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan "${@:2}"
 elif [[ "$1" == 'publish' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:publish "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:publish "${@:2}"
 elif [[ "$1" == 'config' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:config "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:config "${@:2}"
 elif [[ "$1" == 'cloud-vars' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-vars "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-vars "${@:2}"
 elif [[ "$1" == 'cloud-stacks' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-stacks "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-stacks "${@:2}"
 elif [[ "$1" == 'cloud-emails' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-emails "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-emails "${@:2}"
 elif [[ "$1" == 'cloud-ingress' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-ingress "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-ingress "${@:2}"
 elif [[ "$1" == 'cloud-users' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-users "${@:2}"
 elif [[ "$1" == 'cloud-domains' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-domains "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-domains "${@:2}"
 elif [[ "$1" == 'cloud-images' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-images "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-images "${@:2}"
 elif [[ "$1" == 'cloud-users' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-users "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-users "${@:2}"
 elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]]; then
   if [[ "$3" != '--environment' ]] || [[ "$4" != 'stage' ]] && [[ "$4" != 'production' ]]; then
     echo -e "${ERROR}Invalid environment specified${RESET}"
@@ -120,7 +121,7 @@ elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]]; then
   echo "Waiting for task to start..."
 
   cd $(pwd)
-  TASK=$(docker-compose exec laravel php artisan larasurf:cloud-tasks run-for-exec --environment "$4")
+  TASK=$(docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-tasks run-for-exec --environment "$4")
   PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
   PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
   CLUSTER_NAME="larasurf-${PROJECT_ID}-$4"
@@ -136,38 +137,48 @@ elif [[ "$1" == 'cloud-artisan' ]] && [[ "$2" == 'tinker' ]]; then
     --task ${TASK}
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-tasks stop --environment "$4" --task "${TASK}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-tasks stop --environment "$4" --task "${TASK}"
 elif [[ "$1" == 'cloud-artisan' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:cloud-artisan "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:cloud-artisan "${@:2}"
 elif [[ "$1" == 'circleci' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:circleci "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:circleci "${@:2}"
 elif [[ "$1" == 'test' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec laravel ./vendor/bin/phpunit "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} laravel ./vendor/bin/phpunit "${@:2}"
 elif [[ "$1" == 'dusk' ]]; then
   exit_if_containers_not_running
 
   cd $(pwd)
-  docker-compose exec -e APP_URL=http://webserver -e DUSK_DRIVER_URL=http://chrome:4444/wd/hub laravel php artisan dusk "${@:2}"
+  docker-compose exec -u ${SURF_USER_ID} -e APP_URL=http://webserver -e DUSK_DRIVER_URL=http://chrome:4444/wd/hub laravel php artisan dusk "${@:2}"
 elif [[ "$1" == 'fix' ]]; then
   exit_if_containers_not_running
 
   if grep -q '"barryvdh/laravel-ide-helper"' 'composer.json'; then
     cd $(pwd)
-    docker-compose exec laravel bash -c 'php artisan ide-helper:generate && php artisan ide-helper:meta && php artisan ide-helper:models --write-mixin'
+    docker-compose exec -u ${SURF_USER_ID} laravel bash -c 'php artisan ide-helper:generate && php artisan ide-helper:meta && php artisan ide-helper:models --write-mixin'
   fi
 
   if grep -q '"friendsofphp/php-cs-fixer"' 'composer.json'; then
     cd $(pwd)
-    docker-compose exec laravel ./vendor/bin/php-cs-fixer fix
+    docker-compose exec -u ${SURF_USER_ID} laravel ./vendor/bin/php-cs-fixer fix
+  fi
+elif [[ "$1" == 'shell' ]]; then
+  exit_if_containers_not_running
+
+  cd $(pwd)
+
+  if [[ "$2" == '--root' ]]; then
+      docker-compose exec laravel bash
+  else
+    docker-compose exec -u ${SURF_USER_ID} laravel bash
   fi
 elif [[ "$1" == 'fresh' ]]; then
   REFRESH_COMMAND='php artisan migrate'
@@ -205,7 +216,7 @@ elif [[ "$1" == 'fresh' ]]; then
   echo 'Database is ready!'
 
   cd $(pwd)
-  docker-compose exec laravel $REFRESH_COMMAND
+  docker-compose exec -u ${SURF_USER_ID} laravel $REFRESH_COMMAND
 elif [[ "$1" == 'up' ]]; then
   cd $(pwd)
 
@@ -234,10 +245,6 @@ elif [[ "$1" == 'logs' ]]; then
   cd $(pwd)
 
   docker-compose logs "${@:2}"
-elif [[ "$1" == 'permissions' ]]; then
-  cd $(pwd)
-
-  sudo chown -R $USER: .
 elif [[ "$1" == 'configure-new-environments' ]]; then
   exit_if_containers_not_running
 
@@ -249,11 +256,11 @@ elif [[ "$1" == 'configure-new-environments' ]]; then
 
   cd $(pwd)
 
-  if ! docker-compose exec laravel php artisan larasurf:configure-new-environments validate-new-environments --environments "$3"; then
+  if ! docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:configure-new-environments validate-new-environments --environments "$3"; then
     exit 1
   fi
 
-  NEW_BRANCHES=$(docker-compose exec laravel php artisan larasurf:configure-new-environments get-new-branches --environments "$3")
+  NEW_BRANCHES=$(docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:configure-new-environments get-new-branches --environments "$3")
 
   cd $(pwd)
 
@@ -272,7 +279,7 @@ elif [[ "$1" == 'configure-new-environments' ]]; then
   fi
 
   cd $(pwd)
-  docker-compose exec laravel php artisan larasurf:configure-new-environments modify-larasurf-config --environments "$3"
+  docker-compose exec -u ${SURF_USER_ID} laravel php artisan larasurf:configure-new-environments modify-larasurf-config --environments "$3"
 else
   # todo
   echo 'See: https://larasurf.com/docs'
