@@ -22,14 +22,22 @@ class PublishTest extends TestCase
 
     public function testPublishViteConfig()
     {
-        if (File::exists(base_path('vite.config.js'))) {
-            File::delete(base_path('vite.config.js'));
+        foreach([
+            '--vite-inertia',
+            '--vite-livewire',
+            '--vite-breeze-vue',
+            '--vite-breeze-react',
+            '--vite-breeze-blade'
+                ] as $option) {
+            if (File::exists(base_path('vite.config.js'))) {
+                File::delete(base_path('vite.config.js'));
+            }
+
+            $this->artisan("larasurf:publish $option")
+                ->expectsOutput('Published vite.config.js successfully');
+
+            $this->assertFileExists(base_path('vite.config.js'));
         }
-
-        $this->artisan('larasurf:publish --vite-config')
-            ->expectsOutput('Published vite.config.js successfully');
-
-        $this->assertFileExists(base_path('vite.config.js'));
     }
 
     public function testPublishNginxLocalTlsConfig()

@@ -16,7 +16,7 @@ class Publish extends Command
     /**
      * @var string
      */
-    protected $signature = 'larasurf:publish {--cs-fixer} {--nginx-local-tls} {--nginx-local-insecure} {--circleci} {--dusk} {--env-changes} {--awslocal} {--cloudformation} {--gitignore} {--healthcheck} {--proxies} {--vite-config}';
+    protected $signature = 'larasurf:publish {--vite-inertia} {--vite-livewire} {--vite-breeze-vue} {--vite-breeze-react} {--vite-breeze-blade} {--cs-fixer} {--nginx-local-tls} {--nginx-local-insecure} {--circleci} {--dusk} {--env-changes} {--awslocal} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
 
     /**
      * @var string
@@ -40,7 +40,11 @@ class Publish extends Command
                      'gitignore' => [$this, 'publishGitIgnore'],
                      'healthcheck' => [$this, 'publishHealthCheck'],
                      'proxies' => [$this, 'publishProxies'],
-                     'vite-config' => [$this, 'publishViteConfig'],
+                     'vite-inertia' => [$this, 'publishViteInertia'],
+                     'vite-livewire' => [$this, 'publishViteLivewire'],
+                     'vite-breeze-vue' => [$this, 'publishViteBreezeVue'],
+                     'vite-breeze-react' => [$this, 'publishViteBreezeReact'],
+                     'vite-breeze-blade' => [$this, 'publishViteBreezeBlade'],
                  ] as $option => $method) {
             if ($this->option($option)) {
                 $method();
@@ -426,11 +430,54 @@ EOD;
     }
 
     /**
-     * Publish the update vite.config.js file.
+     * Publish the updated vite.config.js file for Jetsream Inertia.
      */
-    protected function publishViteConfig()
+    protected function publishViteInertia()
     {
-        $contents = File::get(__DIR__ . '/../../templates/vite.config.js');
+        $this->publishVite('vite.config.inertia.js');
+    }
+
+    /**
+     * Publish the updated vite.config.js file for Jetsream Livewire.
+     */
+    protected function publishViteLivewire()
+    {
+        $this->publishVite('vite.config.livewire.js');
+    }
+
+    /**
+     * Publish the updated vite.config.js file for Breeze Vue.
+     */
+    protected function publishViteBreezeVue()
+    {
+        $this->publishVite('vite.config.breeze.vue.js');
+    }
+
+    /**
+     * Publish the updated vite.config.js file for Breeze React.
+     */
+    protected function publishViteBreezeReact()
+    {
+        $this->publishVite('vite.config.breeze.react.js');
+    }
+
+    /**
+     * Publish the updated vite.config.js file for Breeze Blade.
+     */
+    protected function publishViteBreezeBlade()
+    {
+        $this->publishVite('vite.config.breeze.blade.js');
+    }
+
+    /**
+     * Publish the updated vite.config.js file.
+     *
+     * @param string $template_name
+     * @return void
+     */
+    protected function publishVite(string $template_name)
+    {
+        $contents = File::get(__DIR__ . "/../../templates/vite/$template_name");
 
         if (!File::put(base_path('vite.config.js'), $contents)) {
             $this->error('Failed to publish vite.config.js');
