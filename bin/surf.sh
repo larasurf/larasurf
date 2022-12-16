@@ -30,7 +30,7 @@ if [[ "$1" == 'tls' ]]; then
     fi
 elif [[ "$1" == 'composer' ]]; then
   cd $(pwd)
-  docker-compose run --rm --no-deps -u ${SURF_USER_ID} laravel composer "${@:2}"
+  docker-compose run --rm --no-deps laravel composer "${@:2}"
 elif [[ "$1" == 'yarn' ]]; then
   exit_if_containers_not_running
 
