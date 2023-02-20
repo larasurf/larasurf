@@ -43,7 +43,7 @@ jobs:
               echo 'export WEBSERVER_IMAGE_TAG="${<< parameters.var_name_ecr_url_prefix >>}/<< parameters.environment >>/webserver:commit-${CIRCLE_SHA1}"' >> $BASH_ENV
               export PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
               export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
-              aws ssm get-parameters-by-path --with-decryption --path "/${PROJECT_NAME}-${PROJECT_ID}/<< parameters.environment >>" | jq -r -c '.Parameters[]| "\(.Name|split("/")|.[-1])=\(.Value)"' > .env
+              aws ssm get-parameters-by-path --with-decryption --path "/${PROJECT_NAME}-${PROJECT_ID}/<< parameters.environment >>" | jq -r -c '.Parameters[]| "\(.Name|split("/")|.[-1])=\(.Value)"' | sed -n /^VITE_/p > .env
             else
               echo 'export APPLICATION_IMAGE_TAG=laravel:base' >> $BASH_ENV
               echo 'export WEBSERVER_IMAGE_TAG=webserver:base' >> $BASH_ENV
