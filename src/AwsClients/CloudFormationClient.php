@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use LaraSurf\LaraSurf\Exceptions\AwsClients\TimeoutExceededException;
 use Symfony\Component\Console\Cursor;
+use Illuminate\Support\Facades\Log;
 
 class CloudFormationClient extends Client
 {
@@ -280,7 +281,9 @@ class CloudFormationClient extends Client
                 'StackName' => $this->stackName(),
             ]);
         } catch (AwsException $e) {
-            //
+            Log::error('Failed to get stack status', [
+                'exception' => $e,
+            ]);
         }
 
         if (empty($result['Stacks'][0])) {
@@ -366,6 +369,9 @@ class CloudFormationClient extends Client
                     }
                 }
             } catch (AwsException $e) {
+                Log::error('Failed to get stack status', [
+                    'exception' => $e,
+                ]);
                 $finished = true;
                 $status = 'DELETED';
                 $success = $success_status === $status;

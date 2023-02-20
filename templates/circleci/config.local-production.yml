@@ -179,7 +179,7 @@ jobs:
             .circleci/inject-secrets.sh << parameters.environment >>
       - run:
           name: Deploy CloudFormation Stack
-          no_output_timeout: 30m
+          no_output_timeout: 1.5h
           command: |
             export PROJECT_NAME=$(cat larasurf.json | jq -r '."project-name"')
             export PROJECT_ID=$(cat larasurf.json | jq -r '."project-id"')
