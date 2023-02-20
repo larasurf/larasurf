@@ -49,6 +49,7 @@
             ]
         }
     },
+    "bin": ["bin/surf"],
     "require-dev": {
         "orchestra/testbench": "^8.0.1"
     }
