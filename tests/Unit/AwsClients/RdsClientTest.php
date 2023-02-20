@@ -11,6 +11,7 @@ class RdsClientTest extends TestCase
     {
         $this->mockAwsRdsClient()
             ->shouldReceive('describeDBInstances')
+            ->once()
             ->andReturn([
                 'DBInstances' => [
                     [
@@ -26,6 +27,7 @@ class RdsClientTest extends TestCase
     {
         $this->mockAwsRdsClient()
             ->shouldReceive('describeDBInstances')
+            ->once()
             ->andReturn([
                 'DBInstances' => [],
             ]);
@@ -36,7 +38,8 @@ class RdsClientTest extends TestCase
     public function testModifyDeletionProtection()
     {
         $this->mockAwsRdsClient()
-            ->shouldReceive('modifyDBInstance');
+            ->shouldReceive('modifyDBInstance')
+            ->once();
 
         $this->rdsClient()->modifyDeletionProtection(Str::random(), $this->faker->boolean);
     }

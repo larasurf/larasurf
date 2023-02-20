@@ -15,6 +15,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     [
@@ -34,6 +35,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     [
@@ -53,6 +55,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParameter')
+            ->once()
             ->andReturn([
                 'Parameter' => [
                     'Name' => $this->ssmParameterPath($name),
@@ -67,6 +70,7 @@ class SsmClientTest extends TestCase
     {
         $this->mockAwsSsmClient()
             ->shouldReceive('getParameter')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     'Parameter' => [
@@ -86,10 +90,12 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => []
             ])
-            ->shouldReceive('putParameter');
+            ->shouldReceive('putParameter')
+            ->once();
 
         $this->ssmClient()->putParameter($name, $value);
     }
@@ -101,6 +107,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     [
@@ -109,7 +116,8 @@ class SsmClientTest extends TestCase
                     ]
                 ]
             ])
-            ->shouldReceive('putParameter');
+            ->shouldReceive('putParameter')
+            ->once();
 
         $this->ssmClient()->putParameter($name, Str::random());
     }
@@ -117,7 +125,8 @@ class SsmClientTest extends TestCase
     public function testDeleteParameter()
     {
         $this->mockAwsSsmClient()
-            ->shouldReceive('deleteParameter');
+            ->shouldReceive('deleteParameter')
+            ->once();
 
         $this->ssmClient()->deleteParameter($this->faker->word);
     }
@@ -131,6 +140,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     [
@@ -161,6 +171,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     [
@@ -188,6 +199,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     [
@@ -218,6 +230,7 @@ class SsmClientTest extends TestCase
 
         $this->mockAwsSsmClient()
             ->shouldReceive('getParametersByPath')
+            ->once()
             ->andReturn([
                 'Parameters' => [
                     [

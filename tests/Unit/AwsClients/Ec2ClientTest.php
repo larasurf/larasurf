@@ -14,6 +14,7 @@ class Ec2ClientTest extends TestCase
 
         $this->mockAwsEc2Client()
             ->shouldReceive('createManagedPrefixList')
+            ->once()
             ->andReturn([
                 'PrefixList' => [
                     'PrefixListId' => $id,
@@ -27,6 +28,7 @@ class Ec2ClientTest extends TestCase
     {
         $this->mockAwsEc2Client()
             ->shouldReceive('deleteManagedPrefixList')
+            ->once()
             ->andReturn();
 
         $this->ec2Client()->deletePrefixList(Str::random());
@@ -40,6 +42,7 @@ class Ec2ClientTest extends TestCase
 
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [
                     [
@@ -47,7 +50,8 @@ class Ec2ClientTest extends TestCase
                     ],
                 ],
             ])
-            ->shouldReceive('modifyManagedPrefixList');
+            ->shouldReceive('modifyManagedPrefixList')
+            ->once();
 
         $this->ec2Client()->allowIpPrefixList(Str::random(), 'me');
     }
@@ -56,6 +60,7 @@ class Ec2ClientTest extends TestCase
     {
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [
                     [
@@ -63,7 +68,8 @@ class Ec2ClientTest extends TestCase
                     ],
                 ],
             ])
-            ->shouldReceive('modifyManagedPrefixList');
+            ->shouldReceive('modifyManagedPrefixList')
+            ->once();
 
         $this->ec2Client()->allowIpPrefixList(Str::random(), 'public');
     }
@@ -72,6 +78,7 @@ class Ec2ClientTest extends TestCase
     {
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [
                     [
@@ -79,12 +86,13 @@ class Ec2ClientTest extends TestCase
                     ],
                 ],
             ])
-            ->shouldReceive('modifyManagedPrefixList');
+            ->shouldReceive('modifyManagedPrefixList')
+            ->once();
 
         $this->ec2Client()->allowIpPrefixList(Str::random(), $this->faker->ipv4);
     }
-    
-    
+
+
     public function testRevokeIpPrefixListMe()
     {
         Http::fake([
@@ -93,6 +101,7 @@ class Ec2ClientTest extends TestCase
 
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [
                     [
@@ -100,7 +109,8 @@ class Ec2ClientTest extends TestCase
                     ],
                 ],
             ])
-            ->shouldReceive('modifyManagedPrefixList');
+            ->shouldReceive('modifyManagedPrefixList')
+            ->once();
 
         $this->ec2Client()->revokeIpPrefixList(Str::random(), 'me');
     }
@@ -109,6 +119,7 @@ class Ec2ClientTest extends TestCase
     {
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [
                     [
@@ -116,7 +127,8 @@ class Ec2ClientTest extends TestCase
                     ],
                 ],
             ])
-            ->shouldReceive('modifyManagedPrefixList');
+            ->shouldReceive('modifyManagedPrefixList')
+            ->once();
 
         $this->ec2Client()->revokeIpPrefixList(Str::random(), 'public');
     }
@@ -125,6 +137,7 @@ class Ec2ClientTest extends TestCase
     {
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [
                     [
@@ -132,7 +145,8 @@ class Ec2ClientTest extends TestCase
                     ],
                 ],
             ])
-            ->shouldReceive('modifyManagedPrefixList');
+            ->shouldReceive('modifyManagedPrefixList')
+            ->once();
 
         $this->ec2Client()->revokeIpPrefixList(Str::random(), $this->faker->ipv4);
     }
@@ -147,6 +161,7 @@ class Ec2ClientTest extends TestCase
 
         $this->mockAwsEc2Client()
             ->shouldReceive('getManagedPrefixListEntries')
+            ->once()
             ->andReturn([
                 'Entries' => [
                     [
@@ -175,6 +190,7 @@ class Ec2ClientTest extends TestCase
     {
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [
                     [
@@ -192,6 +208,7 @@ class Ec2ClientTest extends TestCase
     {
         $this->mockAwsEc2Client()
             ->shouldReceive('describeManagedPrefixLists')
+            ->once()
             ->andReturn([
                 'PrefixLists' => [],
             ]);

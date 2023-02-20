@@ -16,6 +16,7 @@ class Route53ClientTest extends TestCase
 
         $this->mockAwsRoute53Client()
             ->shouldReceive('listHostedZones')
+            ->once()
             ->andReturn([
                 'HostedZones' => [
                     [
@@ -34,6 +35,7 @@ class Route53ClientTest extends TestCase
 
         $this->mockAwsRoute53Client()
             ->shouldReceive('listHostedZones')
+            ->once()
             ->andReturn([
                 'HostedZones' => [
                     [
@@ -52,6 +54,7 @@ class Route53ClientTest extends TestCase
 
         $this->mockAwsRoute53Client()
             ->shouldReceive('changeResourceRecordSets')
+            ->once()
             ->andReturn([
                 'ChangeInfo' => [
                     'Id' => $id,
@@ -72,6 +75,7 @@ class Route53ClientTest extends TestCase
     {
         $this->mockAwsRoute53Client()
             ->shouldReceive('getChange')
+            ->once()
             ->andReturn([
                 'ChangeInfo' => [
                     'Status' => 'INSYNC',
@@ -87,6 +91,7 @@ class Route53ClientTest extends TestCase
 
         $this->mockAwsRoute53Client()
             ->shouldReceive('createHostedZone')
+            ->once()
             ->andReturn([
                 'HostedZone' => [
                     'Id' => $id,
@@ -102,6 +107,7 @@ class Route53ClientTest extends TestCase
 
         $this->mockAwsRoute53Client()
             ->shouldReceive('listResourceRecordSets')
+            ->once()
             ->andReturn([
                 'ResourceRecordSets' => [
                     [

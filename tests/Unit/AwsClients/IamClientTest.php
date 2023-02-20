@@ -14,6 +14,7 @@ class IamClientTest extends TestCase
     {
         $this->mockAwsIamClient()
             ->shouldReceive('getUser')
+            ->once()
             ->andReturn();
 
         $this->assertTrue($this->iamClient()->userExists($this->faker->word));
@@ -25,6 +26,7 @@ class IamClientTest extends TestCase
 
         $this->mockAwsIamClient()
             ->shouldReceive('getUser')
+            ->once()
             ->andThrow(new AwsException('test', new Command('test')));
 
         $this->assertFalse($this->iamClient()->userExists($name));
@@ -34,6 +36,7 @@ class IamClientTest extends TestCase
     {
         $this->mockAwsIamClient()
             ->shouldReceive('createUser')
+            ->once()
             ->andReturn();
 
         $this->iamClient()->createUser($this->faker->word);
@@ -43,6 +46,7 @@ class IamClientTest extends TestCase
     {
         $this->mockAwsIamClient()
             ->shouldReceive('deleteUser')
+            ->once()
             ->andReturn();
 
         $this->iamClient()->deleteUser($this->faker->word);
@@ -52,6 +56,7 @@ class IamClientTest extends TestCase
     {
         $this->mockAwsIamClient()
             ->shouldReceive('attachUserPolicy')
+            ->once()
             ->andReturn();
 
         $this->iamClient()->attachUserPolicy($this->faker->word, Str::random());
@@ -62,6 +67,7 @@ class IamClientTest extends TestCase
     {
         $this->mockAwsIamClient()
             ->shouldReceive('detachUserPolicy')
+            ->once()
             ->andReturn();
 
         $this->iamClient()->detachUserPolicy($this->faker->word, Str::random());
@@ -74,6 +80,7 @@ class IamClientTest extends TestCase
 
         $this->mockAwsIamClient()
             ->shouldReceive('createAccessKey')
+            ->once()
             ->andReturn([
                 'AccessKey' => [
                     'AccessKeyId' => $id,
@@ -91,6 +98,7 @@ class IamClientTest extends TestCase
     {
         $this->mockAwsIamClient()
             ->shouldReceive('deleteAccessKey')
+            ->once()
             ->andReturn();
 
         $this->iamClient()->deleteAccessKey($this->faker->word, Str::random());
@@ -103,6 +111,7 @@ class IamClientTest extends TestCase
 
         $this->mockAwsIamClient()
             ->shouldReceive('listAccessKeys')
+            ->once()
             ->andReturn([
                 'AccessKeyMetadata' => [
                     [

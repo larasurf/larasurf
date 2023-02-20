@@ -17,10 +17,12 @@ class AcmClientTest extends TestCase
 
         $this->mockAwsAcmClient()
             ->shouldReceive('requestCertificate')
+            ->once()
             ->andReturn([
                 'CertificateArn' => $arn,
             ])
             ->shouldReceive('describeCertificate')
+            ->once()
             ->andReturn([
                 'Certificate' => [
                     'DomainValidationOptions' => [
@@ -57,6 +59,7 @@ class AcmClientTest extends TestCase
 
         $this->mockAwsAcmClient()
             ->shouldReceive('describeCertificate')
+            ->once()
             ->andReturn([
                 'Certificate' => [
                     'Status' => 'ISSUED',
@@ -69,7 +72,8 @@ class AcmClientTest extends TestCase
     public function testDeleteCertificate()
     {
         $this->mockAwsAcmClient()
-            ->shouldReceive('deleteCertificate');
+            ->shouldReceive('deleteCertificate')
+            ->once();
 
         $this->acmClient()->deleteCertificate(Str::random());
     }
@@ -93,6 +97,7 @@ class AcmClientTest extends TestCase
     {
         $this->mockAwsAcmClient()
             ->shouldReceive('describeCertificate')
+            ->once()
             ->andReturn([]);
 
         $this->assertEquals('UNKNOWN', $this->acmClient()->certificateStatus(Str::random()));

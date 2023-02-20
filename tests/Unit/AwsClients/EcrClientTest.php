@@ -14,6 +14,7 @@ class EcrClientTest extends TestCase
 
         $this->mockAwsEcrClient()
             ->shouldReceive('describeRepositories')
+            ->once()
             ->andReturn([
                 'repositories' => [
                     [
@@ -31,6 +32,7 @@ class EcrClientTest extends TestCase
 
         $this->mockAwsEcrClient()
             ->shouldReceive('createRepository')
+            ->once()
             ->andReturn([
                 'repository' => [
                     'repositoryUri' => $uri,
@@ -43,7 +45,8 @@ class EcrClientTest extends TestCase
     public function testDeleteRepository()
     {
         $this->mockAwsEcrClient()
-            ->shouldReceive('deleteRepository');
+            ->shouldReceive('deleteRepository')
+            ->once();
 
         $this->ecrClient()->deleteRepository(Str::random());
     }

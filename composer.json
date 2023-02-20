@@ -26,11 +26,11 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": "^8.0.2",
+        "php": "^8.2.0",
         "ext-json": "*",
         "ext-pdo": "*",
-        "laravel/framework": "^9.0",
-        "aws/aws-sdk-php": "^3.20.0"
+        "laravel/framework": "^10.0",
+        "aws/aws-sdk-php": "^3.209"
     },
     "autoload": {
         "psr-4": {
@@ -50,6 +50,6 @@
         }
     },
     "require-dev": {
-        "orchestra/testbench": "^7.0"
+        "orchestra/testbench": "^8.0.1"
     }
 }

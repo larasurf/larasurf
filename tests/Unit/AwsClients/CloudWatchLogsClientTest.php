@@ -15,6 +15,7 @@ class CloudWatchLogsClientTest extends TestCase
 
         $this->mockAwsCloudWatchLogsClient()
             ->shouldReceive('getLogEvents')
+            ->once()
             ->andReturn([
                 'events' => [
                     [

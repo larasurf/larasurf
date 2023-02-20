@@ -11,6 +11,7 @@ class EcsClientTest extends TestCase
     {
         $this->mockAwsEcsClient()
             ->shouldReceive('runTask')
+            ->once()
             ->andReturn();
 
         $this->ecsClient()->runTask(Str::random(), [], [], [], Str::random());
@@ -20,6 +21,7 @@ class EcsClientTest extends TestCase
     {
         $this->mockAwsEcsClient()
             ->shouldReceive('stopTask')
+            ->once()
             ->andReturn();
 
         $this->ecsClient()->stopTask(Str::random(), Str::random());
@@ -32,6 +34,7 @@ class EcsClientTest extends TestCase
 
         $this->mockAwsEcsClient()
             ->shouldReceive('listTasks')
+            ->once()
             ->andReturn([
                 'taskArns' => [$arn1, $arn2],
             ]);
@@ -45,6 +48,7 @@ class EcsClientTest extends TestCase
     {
         $this->mockAwsEcsClient()
             ->shouldReceive('executeCommand')
+            ->once()
             ->andReturn();
 
         $this->ecsClient()->executeCommand(Str::random(), Str::random(), $this->faker->word, $this->faker->word, $this->faker->boolean);
@@ -54,6 +58,7 @@ class EcsClientTest extends TestCase
     {
         $this->mockAwsEcsClient()
             ->shouldReceive('describeTasks')
+            ->once()
             ->andReturn([
                 'tasks' => [
                     [

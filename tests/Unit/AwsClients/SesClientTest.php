@@ -15,6 +15,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('verifyDomainIdentity')
+            ->once()
             ->andReturn([
                 'VerificationToken' => $token,
             ]);
@@ -37,6 +38,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('verifyDomainDkim')
+            ->once()
             ->andReturn([
                 'DkimTokens' => $tokens,
             ]);
@@ -56,6 +58,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('getIdentityVerificationAttributes')
+            ->once()
             ->andReturn([
                 'VerificationAttributes' => [
                      $domain => [
@@ -73,6 +76,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('getIdentityVerificationAttributes')
+            ->once()
             ->andReturn([
                 'VerificationAttributes' => [
                     $domain => [
@@ -90,6 +94,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('getIdentityVerificationAttributes')
+            ->once()
             ->andReturn([
                 'VerificationAttributes' => [
                     $domain => [
@@ -107,6 +112,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('getIdentityDkimAttributes')
+            ->once()
             ->andReturn([
                 'DkimAttributes' => [
                     $domain => [
@@ -124,6 +130,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('getIdentityDkimAttributes')
+            ->once()
             ->andReturn([
                 'DkimAttributes' => [
                     $domain => [
@@ -141,6 +148,7 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesClient()
             ->shouldReceive('getIdentityDkimAttributes')
+            ->once()
             ->andReturn([
                 'DkimAttributes' => [
                     $domain => [
@@ -161,7 +169,10 @@ class SesClientTest extends TestCase
 
         $this->mockAwsSesV2Client()
             ->shouldReceive('putAccountDetails')
-            ->andReturn()->shouldReceive('getAccount')
+            ->once()
+            ->andReturn()
+            ->shouldReceive('getAccount')
+            ->once()
             ->andReturn([
                 'ProductionAccessEnabled' => $enabled,
             ]);

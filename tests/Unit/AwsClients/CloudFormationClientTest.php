@@ -3,20 +3,17 @@
 namespace LaraSurf\LaraSurf\Tests\Unit\AwsClients;
 
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use LaraSurf\LaraSurf\AwsClients\CloudFormationClient;
 use LaraSurf\LaraSurf\Constants\Cloud;
-use LaraSurf\LaraSurf\Exceptions\AwsClients\EnvironmentNotSetException;
 use LaraSurf\LaraSurf\Tests\TestCase;
-use League\Flysystem\FileNotFoundException;
 
 class CloudFormationClientTest extends TestCase
 {
     public function testCreateStack()
     {
         $this->mockAwsCloudFormationClient()
-            ->shouldReceive('createStack');
+            ->shouldReceive('createStack')
+            ->once();
 
         $this->createMockCloudformationTemplate();
 
@@ -49,7 +46,8 @@ class CloudFormationClientTest extends TestCase
     public function testUpdateStack()
     {
         $this->mockAwsCloudFormationClient()
-            ->shouldReceive('updateStack');
+            ->shouldReceive('updateStack')
+            ->once();
 
         $this->createMockCloudformationTemplate();
 
@@ -70,6 +68,7 @@ class CloudFormationClientTest extends TestCase
     {
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [
                     [
@@ -90,6 +89,7 @@ class CloudFormationClientTest extends TestCase
 
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [
                     [
@@ -110,6 +110,7 @@ class CloudFormationClientTest extends TestCase
 
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [
                     [
@@ -125,6 +126,7 @@ class CloudFormationClientTest extends TestCase
     {
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [],
             ]);
@@ -139,6 +141,7 @@ class CloudFormationClientTest extends TestCase
 
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [
                     [
@@ -164,6 +167,7 @@ class CloudFormationClientTest extends TestCase
 
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [
                     [
@@ -191,6 +195,7 @@ class CloudFormationClientTest extends TestCase
     {
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [
                     [
@@ -211,6 +216,7 @@ class CloudFormationClientTest extends TestCase
     {
         $this->mockAwsCloudFormationClient()
             ->shouldReceive('describeStacks')
+            ->once()
             ->andReturn([
                 'Stacks' => [
                     [
