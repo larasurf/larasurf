@@ -16,7 +16,7 @@ class Publish extends Command
     /**
      * @var string
      */
-    protected $signature = 'larasurf:publish {--vite-inertia} {--vite-livewire} {--vite-breeze-vue} {--vite-breeze-react} {--vite-breeze-blade} {--cs-fixer} {--nginx-local-tls} {--nginx-local-insecure} {--circleci} {--dusk} {--env-changes} {--awslocal} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
+    protected $signature = 'larasurf:publish {--vite-inertia} {--vite-livewire} {--vite-breeze-vue} {--vite-breeze-react} {--vite-breeze-blade} {--nginx-local-tls} {--nginx-local-insecure} {--circleci} {--dusk} {--env-changes} {--awslocal} {--cloudformation} {--gitignore} {--healthcheck} {--proxies}';
 
     /**
      * @var string
@@ -29,7 +29,6 @@ class Publish extends Command
     public function handle()
     {
         foreach ([
-                     'cs-fixer' => [$this, 'publishCsFixerConfig'],
                      'nginx-local-tls' => [$this, 'publishNginxLocalTlsConfig'],
                      'nginx-local-insecure' => [$this, 'publishNginxLocalInsecureConfig'],
                      'env-changes' => [$this, 'publishEnvChanges'],
@@ -49,20 +48,6 @@ class Publish extends Command
             if ($this->option($option)) {
                 $method();
             }
-        }
-    }
-
-    /**
-     * Publish the code style fixer configuration file.
-     */
-    protected function publishCsFixerConfig()
-    {
-        $success = File::copy(__DIR__ . '/../../templates/.php-cs-fixer.dist.php', base_path('.php-cs-fixer.dist.php'));
-
-        if ($success) {
-            $this->info('Published code style fixer config successfully');
-        } else {
-            $this->error('Failed to publish code style fixer config');
         }
     }
 

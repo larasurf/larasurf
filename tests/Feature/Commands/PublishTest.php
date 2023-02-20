@@ -8,18 +8,6 @@ use LaraSurf\LaraSurf\Tests\TestCase;
 
 class PublishTest extends TestCase
 {
-    public function testPublishCsFixerConfig()
-    {
-        if (File::exists(base_path('.php-cs-fixer.dist.php'))) {
-            File::delete(base_path('.php-cs-fixer.dist.php'));
-        }
-
-        $this->artisan('larasurf:publish --cs-fixer')
-            ->expectsOutput('Published code style fixer config successfully');
-
-        $this->assertFileExists(base_path('.php-cs-fixer.dist.php'));
-    }
-
     public function testPublishViteConfig()
     {
         foreach([
