@@ -325,7 +325,7 @@ class CloudFormationClient extends Client
 
             $footer = $can_exit
                 ? "║   <info>If you do not wish to wait, you can safely exit this screen with Ctrl+C.</info>   ║"
-                : "║   <info>Please do not exit this screen! There are still things to do after this.</info>   ║";
+                : "║   <warning>Please do not exit this screen! There are still things to do after this.</warning>   ║";
 
             $message = PHP_EOL .
                 "╔══════════════════════════════════════════════════════════════════════════════╗" . PHP_EOL .
