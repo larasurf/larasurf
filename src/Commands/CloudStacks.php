@@ -510,6 +510,7 @@ class CloudStacks extends Command
 
         if (!$result['success']) {
             $this->error("Stack update failed with status '{$result['status']}'");
+            $this->line('Check the laravel.log file for more information');
         } else {
             $this->info("Stack update completed successfully");
         }
@@ -603,6 +604,7 @@ class CloudStacks extends Command
 
         if (!$result['success']) {
             $this->error("Stack deletion failed with status '{$result['status']}'");
+            $this->line('Check the laravel.log file for more information');
         } else {
             $this->info('Stack deletion completed successfully');
         }
@@ -720,6 +722,7 @@ class CloudStacks extends Command
 
         if (!$result['success']) {
             $this->error("Stack creation failed with status '{$result['status']}'");
+            $this->line('Check the laravel.log file for more information');
 
             return false;
         }
@@ -750,6 +753,7 @@ class CloudStacks extends Command
 
         if (!$result['success']) {
             $this->error("Stack updating failed with status '{$result['status']}'");
+            $this->line('Check the laravel.log file for more information');
 
             return false;
         }
