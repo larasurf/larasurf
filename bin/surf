@@ -247,7 +247,7 @@ elif [[ "$1" == 'stop' ]]; then
   cd $(pwd)
 
   docker-compose stop "${@:2}"
-elif [[ "$1" == 'rebuild' ]]; then
+elif [[ "$1" == 'rebuild' ]] || [[ "$1" == 'build' ]]; then
   cd $(pwd)
 
   docker-compose build "${@:2}"
