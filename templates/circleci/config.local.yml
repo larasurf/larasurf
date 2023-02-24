@@ -40,8 +40,6 @@ jobs:
               LARAVEL_CONTAINER_ID=$(docker-compose -f .circleci/docker-compose.ci.dusk.yml ps -q laravel)
               AWS_TEMPLATE=$(cat .docker/localstack/init.d/app.yml)
 
-              docker-compose -f .circleci/docker-compose.ci.dusk.yml exec laravel php -r "file_exists('.env') || copy('.env.example', '.env');"
-              docker-compose -f .circleci/docker-compose.ci.dusk.yml exec laravel php artisan key:generate --force
               docker-compose -f .circleci/docker-compose.ci.dusk.yml exec awslocal awslocal cloudformation create-stack --stack-name "app" --template-body "${AWS_TEMPLATE}"
 
               set +e
@@ -50,6 +48,7 @@ jobs:
                 curl http://chrome:4444/wd/hub --http0.9 --retry-connrefused --retry 30 --output /dev/null --silent
                 cp .env.example .env
                 php artisan key:generate --force
+                php artisan dusk:chrome-driver
                 php artisan dusk
               "
 
