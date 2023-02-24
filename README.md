@@ -24,6 +24,10 @@
 ## Resources
 * [AWS Cost Estimate Worksheet](https://docs.google.com/spreadsheets/d/1-BHba2Z1FiU84Kkw7YAyNgDhNnARdYdwOnpxr-uQYP4)
 
+## Contributing
+- Issues, ideas, and pull requests are welcome
+- See `CONTRIBUTING.md`
+
 ## Project Roadmap
 - Optimize Laravel for production in Dockerfile<br/>
 - Lock down CircleCI IAM user permissions<br/>
