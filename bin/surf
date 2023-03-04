@@ -193,9 +193,7 @@ elif [[ "$1" == 'shell' ]]; then
 elif [[ "$1" == 'fresh' ]]; then
   REFRESH_COMMAND='php artisan migrate'
 
-  if [[ "$2" == '--seed' ]]; then
-    REFRESH_COMMAND="$REFRESH_COMMAND --seed"
-  elif [[ -n "$2" ]]; then
+  if [[ -n "$2" ]] && [[ "$2" != '--seed' ]]; then
     echo -e "${ERROR}Unrecognized option '$2'${RESET}"
 
     exit 1
@@ -227,6 +225,10 @@ elif [[ "$1" == 'fresh' ]]; then
 
   cd $(pwd)
   docker-compose exec -u www-data laravel $REFRESH_COMMAND
+
+  if [[ "$2" == '--seed' ]]; then
+      docker-compose exec -u www-data laravel php artisan db:seed
+  fi
 elif [[ "$1" == 'up' ]]; then
   cd $(pwd)
 
