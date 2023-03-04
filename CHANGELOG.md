@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Make `surf build` synonymous with `surf rebuild`
+- Change `surf fresh` command to allow post-migrations scripts to finish before seeding (when `--seed` flag is given)
 
 ### Fixed
 
