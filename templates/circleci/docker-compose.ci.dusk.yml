@@ -6,9 +6,10 @@ services:
   awslocal:
     image: localstack/localstack
     environment:
-      DATA_DIR: /tmp/localstack/data
-      HOSTNAME_EXTERNAL: localstack
+      HOSTNAME_EXTERNAL: awslocal
       SERVICES: 'cloudformation,s3,sqs'
+      DISABLE_CORS_CHECKS: 1
+      EXTRA_CORS_ALLOWED_HEADERS: x-requested-with
 
   webserver:
     image: "${WEBSERVER_IMAGE}"

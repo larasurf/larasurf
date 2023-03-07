@@ -38,7 +38,7 @@ jobs:
             if grep -q '"laravel/dusk"' 'composer.json'; then
               LARAVEL_IMAGE=${APPLICATION_IMAGE_TAG} WEBSERVER_IMAGE=${WEBSERVER_IMAGE_TAG} docker-compose -f .circleci/docker-compose.ci.dusk.yml up -d
               LARAVEL_CONTAINER_ID=$(docker-compose -f .circleci/docker-compose.ci.dusk.yml ps -q laravel)
-              AWS_TEMPLATE=$(cat .docker/localstack/init.d/app.yml)
+              AWS_TEMPLATE=$(cat .docker/localstack/ready.d/app.yml)
 
               docker-compose -f .circleci/docker-compose.ci.dusk.yml exec awslocal awslocal cloudformation create-stack --stack-name "app" --template-body "${AWS_TEMPLATE}"
 
