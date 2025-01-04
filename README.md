@@ -1,8 +1,14 @@
+# ⚠️ PROJECT ABANDONED ⚠️
+This project is no longer being maintained and continues to exist for education and reference purposes.
+
+### Why?
+This project started as mostly an educational excercise. I no longer agree with how a lot of the project was put together. Laravel has an amazing suite of first-party tools that renders the large majority of this project unneeded.
+
 <div align="center">
   <a href="https://larasurf.com">
-    <img src="https://twemoji.maxcdn.com/svg/1f30a.svg" alt="Logo" width="80" height="80">
+    🌊
   </a>
-<h1 align="center">LaraSurf</h1>
+  <h1 align="center">LaraSurf</h1>
 
   <p align="center">
     LaraSurf combines Docker, CircleCI, and AWS to create an end-to-end solution for generating, implementing, and deploying Laravel applications.
@@ -24,11 +30,7 @@
 ## Resources
 * [AWS Cost Estimate Worksheet](https://docs.google.com/spreadsheets/d/1-BHba2Z1FiU84Kkw7YAyNgDhNnARdYdwOnpxr-uQYP4)
 
-## Contributing
-- Issues, ideas, and pull requests are welcome
-- See `CONTRIBUTING.md`
-
-## Project Roadmap
+## Project Roadmap (Abandoned!)
 - Optimize Laravel for production in Dockerfile<br/>
 - Lock down CircleCI IAM user permissions<br/>
 - Scan both container images even if first scan fails<br/>
