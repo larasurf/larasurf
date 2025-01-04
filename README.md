@@ -1,5 +1,5 @@
 # ⚠️ PROJECT ABANDONED ⚠️
-This project is no longer being maintained and continues to exist for education and reference purposes.
+This project is no longer being maintained and continues to exist for educational and referential purposes.
 
 ### Why?
 This project started as mostly an educational excercise. I no longer agree with how a lot of the project was put together. Laravel has an amazing suite of first-party tools that renders the large majority of this project unneeded.
